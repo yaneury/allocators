@@ -5,4 +5,5 @@
 TEST_CASE("bump")
 {
     REQUIRE(1 == 1);
+    REQUIRE(1 == 2);
 }
