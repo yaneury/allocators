@@ -4,10 +4,9 @@
 
 SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   GIVEN("an integer allocator with a size of sizeof(int) * 2") {
-    dmt::allocator::Bump<
-        /*T=*/int,
-        /*StorageSize=*/sizeof(int) * 2>
-        allocator;
+    using Allocator =
+        dmt::allocator::Bump</*T=*/int, /*StorageSize=*/sizeof(int) * 2>;
+    Allocator allocator;
 
     int *a = allocator.allocate(sizeof(int));
     WHEN("an object (within size) is allocated") {
@@ -15,6 +14,7 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
     }
 
     WHEN("another object is allocated") {
+      REQUIRE(a != nullptr);
       int *b = allocator.allocate(sizeof(int));
       REQUIRE(b != nullptr);
 
@@ -24,11 +24,18 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
     }
 
     WHEN("deallocate is invoked") {
+      REQUIRE(a != nullptr);
       THEN("the allocated objects remain valid") {
         *a = 100;
         allocator.deallocate(a, sizeof(int));
         REQUIRE(*a == 100);
       }
+    }
+
+    WHEN("allocate is invoked over capacity") {
+      REQUIRE(allocator.allocate(sizeof(int)) != nullptr);
+
+      REQUIRE(allocator.allocate(sizeof(int)) == nullptr);
     }
   }
 }
