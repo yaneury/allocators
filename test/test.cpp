@@ -15,5 +15,5 @@ TEST_CASE("allocator::Bump") {
   int *b = allocator.allocate(sizeof(int));
   REQUIRE(b != nullptr);
   REQUIRE(*a == 100);
-  REQUIRE(a + sizeof(int) == b);
+  REQUIRE(a + 1 == b);
 }
