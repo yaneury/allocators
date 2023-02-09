@@ -7,8 +7,7 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
     using T = long;
     static constexpr std::size_t SizeOfT = sizeof(T);
 
-    using Allocator =
-        dmt::allocator::Bump<T, /*StorageSize=*/SizeOfT * 2>;
+    using Allocator = dmt::allocator::Bump<T, /*StorageSize=*/SizeOfT * 2>;
     Allocator allocator;
 
     T* a = allocator.allocate(SizeOfT);
