@@ -2,12 +2,14 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 
-SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
-  GIVEN("an integer allocator with a size of sizeof(int) * 2") {
-    using T = long;
-    static constexpr std::size_t SizeOfT = sizeof(T);
+using namespace dmt::allocator;
 
-    using Allocator = dmt::allocator::Bump<T, /*StorageSize=*/SizeOfT * 2>;
+SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
+  using T = long;
+  static constexpr std::size_t SizeOfT = sizeof(T);
+
+  GIVEN("an allocator can fit two objects") {
+    using Allocator = Bump<T, /*StorageSize=*/SizeOfT * 2>;
     Allocator allocator;
 
     T* a = allocator.allocate(SizeOfT);

@@ -9,7 +9,6 @@ namespace allocator {
 static constexpr std::size_t kDefaultStorageSize = 4096;
 
 // TODO: Lazy v. Eager Allocation
-// TODO: Static Buffer vs Heap
 // TODO: Arena allocations when at capacity and using heap
 // TODO: Implement free
 // TODO: Custom alignment
