@@ -3,7 +3,6 @@
 #include <cstddef>
 
 namespace dmt {
-namespace allocator {
 namespace internal {
 
 template <typename Default, typename... Args> struct GetValueT;
@@ -28,5 +27,4 @@ struct GetValueT<Default>
     : std::integral_constant<decltype(Default::value), Default::value> {};
 
 } // namespace internal
-} // namespace allocator
 } // namespace dmt
