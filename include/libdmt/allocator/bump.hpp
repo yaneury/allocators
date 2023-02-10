@@ -2,7 +2,8 @@
 
 #include <array>
 #include <cstdlib>
-#include <libdmt/allocator/internal.hpp>
+#include <libdmt/internal/predicates.hpp>
+#include <libdmt/internal/types.hpp>
 
 namespace dmt {
 namespace allocator {
@@ -32,12 +33,6 @@ public:
   // using pointer = value_type*.
   using value_type = T;
 
-  static constexpr std::size_t StorageSize_ =
-      internal::GetValueT<StorageSizeT<kDefaultStorageSize>, Args...>::value;
-
-  static constexpr std::size_t CustomAlignment_ =
-      internal::GetValueT<AlignmentT<0>, Args...>::value;
-
   explicit Bump(){};
 
   ~Bump() {
@@ -52,7 +47,7 @@ public:
       return nullptr;
 
     if (!head_) {
-      if (head_ = static_cast<Byte_*>(
+      if (head_ = static_cast<Byte*>(
               std::aligned_alloc(Alignment_, AlignedStorageSize_));
           !head_) {
         return nullptr;
@@ -65,7 +60,7 @@ public:
     if (request_size > remaining_size)
       return nullptr;
 
-    Byte_* result = head_ + offset;
+    Byte* result = head_ + offset;
     offset += request_size;
 
     return reinterpret_cast<T*>(result);
@@ -75,19 +70,33 @@ public:
   }
 
 private:
-  using Byte_ = uint8_t;
+  using Byte = uint8_t;
+
+  // There are several factors used to determine the alignment for the
+  // allocator. First, users can specify their own alignment if desired using
+  // |AlignmentT<>|. Otherwise, we use the alignment as determined by the C++
+  // compiler. There's a floor in the size of the alignment to be equal to or
+  // greater than |sizeof(void*)| for compatibility with std::aligned_alloc.
   static constexpr std::size_t Alignment_ =
-      std::max({std::alignment_of_v<T>, sizeof(void*), CustomAlignment_});
+      std::max({std::alignment_of_v<T>, sizeof(void*),
+                dmt::internal::GetValueT<AlignmentT<0>, Args...>::value});
+
+  static_assert(dmt::internal::IsPowerOfTwo(Alignment_),
+                "Alignment must be a power of 2.");
 
   static constexpr std::size_t AlignedStorageSize_ =
-      ((StorageSize_ - 1) | (Alignment_ - 1)) + 1;
+      ((dmt::internal::GetValueT<StorageSizeT<kDefaultStorageSize>,
+                                 Args...>::value -
+        1) |
+       (Alignment_ - 1)) +
+      1;
 
   std::size_t AlignUp(std::size_t n, std::size_t alignment) {
     return (n + alignment - 1) & ~(alignment - 1);
   }
 
   size_t offset = 0;
-  Byte_* head_ = nullptr;
+  Byte* head_ = nullptr;
 };
 
 template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {

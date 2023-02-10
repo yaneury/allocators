@@ -13,7 +13,6 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
     Allocator allocator;
 
     T* a = allocator.allocate(SizeOfT);
-    INFO("Size: " << Allocator::StorageSize_);
     WHEN("an object (within size) is allocated") {
       THEN("it is given a valid pointer address") { REQUIRE(a != nullptr); }
     }
