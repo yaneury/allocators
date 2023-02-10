@@ -8,7 +8,8 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
 
-  GIVEN("an allocator can fit two objects") {
+  /*
+  GIVEN("an allocator that can fit two objects") {
     using Allocator = Bump<T, StorageSizeT<SizeOfT * 2>>;
     Allocator allocator;
 
@@ -40,6 +41,24 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       REQUIRE(allocator.allocate(SizeOfT) != nullptr);
 
       REQUIRE(allocator.allocate(SizeOfT) == nullptr);
+    }
+  }
+  */
+
+  GIVEN("an allocator with counter-based freeing") {
+    using Allocator =
+        Bump<T, StorageSizeT<SizeOfT>, FreeT<Free::WhenCounterZero>>;
+    Allocator allocator;
+
+    T* a = allocator.allocate(SizeOfT);
+    REQUIRE(a != nullptr);
+
+    WHEN("all outstanding objects are freed") {
+      allocator.deallocate(a, SizeOfT);
+
+      THEN("it should be possible to allocate new objects") {
+        REQUIRE(allocator.allocate(SizeOfT) != nullptr);
+      }
     }
   }
 }

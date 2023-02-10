@@ -2,8 +2,8 @@
 
 #include <array>
 #include <cstdlib>
-#include <libdmt/internal/predicates.hpp>
 #include <libdmt/internal/types.hpp>
+#include <libdmt/internal/util.hpp>
 
 namespace dmt {
 namespace allocator {
@@ -24,8 +24,15 @@ struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
   using Id_ = AlignmentId_;
 };
 
+enum Free { Never = 0, WhenCounterZero = 1 };
+
+struct FreeId_ {};
+
+template <Free F> struct FreeT : std::integral_constant<Free, F> {
+  using Id_ = FreeId_;
+};
+
 // TODO: Arena allocations when at capacity and using heap
-// TODO: Implement free
 template <class T, typename... Args> class Bump {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
@@ -53,19 +60,34 @@ public:
       }
     }
 
-    size_t request_size = AlignUp(n, Alignment_);
-    size_t remaining_size = AlignedStorageSize_ - offset;
+    size_t request_size = dmt::internal::AlignUp(n, Alignment_);
+    size_t remaining_size = AlignedStorageSize_ - offset_;
 
     if (request_size > remaining_size)
       return nullptr;
 
-    Byte* result = head_ + offset;
-    offset += request_size;
+    Byte* result = head_ + offset_;
+    offset_ += request_size;
+
+    if constexpr (FreeStrategy_ == Free::WhenCounterZero)
+      allocation_counter_ += 1;
 
     return reinterpret_cast<T*>(result);
   }
 
-  void deallocate(T* p, std::size_t n) { /* no op */
+  void deallocate(T*, std::size_t) {
+    if constexpr (FreeStrategy_ == Free::WhenCounterZero) {
+      if (!allocation_counter_ || !head_)
+        return;
+
+      allocation_counter_ -= 1;
+      if (allocation_counter_)
+        return;
+
+      offset_ = 0;
+      std::free(head_);
+      head_ = nullptr;
+    }
   }
 
 private:
@@ -90,12 +112,16 @@ private:
        (Alignment_ - 1)) +
       1;
 
-  std::size_t AlignUp(std::size_t n, std::size_t alignment) {
-    return (n + alignment - 1) & ~(alignment - 1);
-  }
+  static constexpr Free FreeStrategy_ =
+      dmt::internal::GetValueT<FreeT<Free::Never>, Args...>::value;
 
-  size_t offset = 0;
+  size_t offset_ = 0;
   Byte* head_ = nullptr;
+
+  struct Empty {};
+  using Counter = std::conditional_t<FreeStrategy_ == Free::WhenCounterZero,
+                                     std::size_t, Empty>;
+  [[no_unique_address]] Counter allocation_counter_ = Counter();
 };
 
 template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {
