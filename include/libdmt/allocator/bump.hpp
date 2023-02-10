@@ -16,7 +16,13 @@ struct StorageSizeT : std::integral_constant<std::size_t, Size> {
   using Id_ = StorageSizeId_;
 };
 
-// TODO: Lazy v. Eager Allocation
+struct AlignmentId_ {};
+
+template <std::size_t Alignment>
+struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
+  using Id_ = AlignmentId_;
+};
+
 // TODO: Arena allocations when at capacity and using heap
 // TODO: Implement free
 // TODO: Custom alignment
@@ -28,6 +34,9 @@ public:
 
   static constexpr std::size_t StorageSize_ =
       internal::GetValueT<StorageSizeT<kDefaultStorageSize>, Args...>::value;
+
+  static constexpr std::size_t CustomAlignment_ =
+      internal::GetValueT<AlignmentT<0>, Args...>::value;
 
   explicit Bump(){};
 
@@ -68,7 +77,8 @@ public:
 private:
   using Byte_ = uint8_t;
   static constexpr std::size_t Alignment_ =
-      std::max(std::alignment_of_v<T>, sizeof(void*));
+      std::max({std::alignment_of_v<T>, sizeof(void*), CustomAlignment_});
+
   static constexpr std::size_t AlignedStorageSize_ =
       ((StorageSize_ - 1) | (Alignment_ - 1)) + 1;
 
