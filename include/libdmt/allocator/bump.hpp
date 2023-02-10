@@ -8,15 +8,45 @@ namespace allocator {
 
 static constexpr std::size_t kDefaultStorageSize = 4096;
 
+struct StorageSizeId_ {};
+
+template <std::size_t Size>
+struct StorageSizeT : std::integral_constant<std::size_t, Size> {
+  using Id_ = StorageSizeId_;
+};
+
+template <typename D, typename... Args> struct get_value_size_t;
+
+template <typename D>
+struct get_value_size_t<D> : std::integral_constant<std::size_t, D::value> {};
+
+template <typename D, typename T2, typename... Args>
+struct get_value_size_t<D, T2, Args...> {
+  template <typename D2, typename T22, typename Enable = void>
+  struct impl : std::integral_constant<std::size_t,
+                                       get_value_size_t<D, Args...>::value> {};
+
+  template <typename D2, typename T22>
+  struct impl<D2, T22,
+              std::enable_if_t<
+                  std::is_same<typename D2::Id_, typename T22::Id_>::value>>
+      : std::integral_constant<std::size_t, T22::value> {};
+
+  static constexpr const std::size_t value = impl<D, T2>::value;
+};
+
 // TODO: Lazy v. Eager Allocation
 // TODO: Arena allocations when at capacity and using heap
 // TODO: Implement free
 // TODO: Custom alignment
-template <class T, std::size_t StorageSize = kDefaultStorageSize> class Bump {
+template <class T, typename... Args> class Bump {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
   // using pointer = value_type*.
   using value_type = T;
+
+  static constexpr std::size_t StorageSize_ =
+      get_value_size_t<StorageSizeT<kDefaultStorageSize>, Args...>::value;
 
   explicit Bump(){};
 
@@ -59,7 +89,7 @@ private:
   static constexpr std::size_t Alignment_ =
       std::max(std::alignment_of_v<T>, sizeof(void*));
   static constexpr std::size_t AlignedStorageSize_ =
-      ((StorageSize - 1) | (Alignment_ - 1)) + 1;
+      ((StorageSize_ - 1) | (Alignment_ - 1)) + 1;
 
   std::size_t AlignUp(std::size_t n, std::size_t alignment) {
     return (n + alignment - 1) & ~(alignment - 1);
