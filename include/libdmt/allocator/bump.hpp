@@ -110,10 +110,8 @@ private:
   static_assert(dmt::internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
 
-  static constexpr std::size_t AlignedSize_ =
-      ((dmt::internal::GetValueT<SizeT<kDefaultSize>, Args...>::value - 1) |
-       (Alignment_ - 1)) +
-      1;
+  static constexpr std::size_t AlignedSize_ = internal::AlignUp(
+      internal::GetValueT<SizeT<kDefaultSize>, Args...>::value, Alignment_);
 
   static constexpr Free FreeStrategy_ =
       dmt::internal::GetValueT<FreeT<Free::Never>, Args...>::value;
