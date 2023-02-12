@@ -18,19 +18,19 @@ struct SizeT : std::integral_constant<std::size_t, Size> {
   using Id_ = SizeId;
 };
 
-struct AlignmentId_ {};
+struct AlignmentId {};
 
 template <std::size_t Alignment>
 struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
-  using Id_ = AlignmentId_;
+  using Id_ = AlignmentId;
 };
 
 enum Free { Never = 0, WhenCounterZero = 1 };
 
-struct FreeId_ {};
+struct FreeId {};
 
 template <Free F> struct FreeT : std::integral_constant<Free, F> {
-  using Id_ = FreeId_;
+  using Id_ = FreeId;
 };
 
 // TODO: Arena allocations when at capacity and using heap
@@ -46,18 +46,18 @@ public:
 
   template <class U> constexpr Bump(const Bump<U>&) noexcept {}
 
-  T* allocate(std::size_t n) {
+  T* allocate(std::size_t n) noexcept {
     if (n > AlignedSize_)
       return nullptr;
 
-    size_t request_size = dmt::internal::AlignUp(n, Alignment_);
+    size_t request_size = internal::AlignUp(n, Alignment_);
     size_t remaining_size = AlignedSize_ - offset_;
 
     if (request_size > remaining_size)
       return nullptr;
 
     if (!chunk_.has_value()) {
-      chunk_ = internal::AllocateObjects(AlignedSize_, Alignment_);
+      chunk_ = internal::AllocateBytes(AlignedSize_, Alignment_);
       if (!chunk_.has_value())
         return nullptr;
     }
@@ -71,7 +71,7 @@ public:
     return reinterpret_cast<T*>(result);
   }
 
-  void deallocate(T*, std::size_t) {
+  void deallocate(T*, std::size_t) noexcept {
     if constexpr (FreeStrategy_ == Free::WhenCounterZero) {
       if (!allocation_counter_ || !chunk_.has_value())
         return;
@@ -81,7 +81,7 @@ public:
         return;
 
       offset_ = 0;
-      internal::ReleaseObjects(chunk_.value());
+      internal::ReleaseBytes(chunk_.value());
       chunk_ = std::nullopt;
     }
   }
@@ -91,7 +91,7 @@ public:
     if constexpr (FreeStrategy_ == Free::WhenCounterZero)
       allocation_counter_ = 0;
     if (chunk_.has_value())
-      internal::ReleaseObjects(chunk_.value());
+      internal::ReleaseBytes(chunk_.value());
     chunk_ = std::nullopt;
   }
 
@@ -105,9 +105,9 @@ private:
   // greater than |sizeof(void*)| for compatibility with std::aligned_alloc.
   static constexpr std::size_t Alignment_ =
       std::max({std::alignment_of_v<T>, sizeof(void*),
-                dmt::internal::GetValueT<AlignmentT<0>, Args...>::value});
+                internal::GetValueT<AlignmentT<0>, Args...>::value});
 
-  static_assert(dmt::internal::IsPowerOfTwo(Alignment_),
+  static_assert(internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
 
   static constexpr std::size_t AlignedSize_ = internal::AlignUp(

@@ -15,8 +15,8 @@ struct Allocation {
   std::size_t size;
 };
 
-std::optional<Allocation> AllocateObjects(std::size_t size,
-                                          std::size_t alignment) {
+std::optional<Allocation> AllocateBytes(std::size_t size,
+                                        std::size_t alignment) {
   // TODO: Add more validation: alignment < size, alignment is power of two,
   // etc.
   if (size == 0 || alignment == 0)
@@ -29,7 +29,7 @@ std::optional<Allocation> AllocateObjects(std::size_t size,
   return Allocation({.base = static_cast<Byte*>(ptr), .size = size});
 }
 
-void ReleaseObjects(Allocation allocation) {
+void ReleaseBytes(Allocation allocation) {
   // TODO: Add validation
   std::free(allocation.base);
 }
