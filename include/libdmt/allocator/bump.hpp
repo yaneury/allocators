@@ -6,8 +6,7 @@
 #include <libdmt/internal/types.hpp>
 #include <libdmt/internal/util.hpp>
 
-namespace dmt {
-namespace allocator {
+namespace dmt::allocator {
 
 static constexpr std::size_t kDefaultStorageSize = 4096;
 
@@ -137,6 +136,4 @@ template <class T, class U> bool operator!=(const Bump<T>&, const Bump<U>&) {
   return false;
 }
 
-} // namespace allocator
-
-} // namespace dmt
+} // namespace dmt::allocator

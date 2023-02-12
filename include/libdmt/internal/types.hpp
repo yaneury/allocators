@@ -2,8 +2,7 @@
 
 #include <cstddef>
 
-namespace dmt {
-namespace internal {
+namespace dmt::internal {
 
 template <typename Default, typename... Args> struct GetValueT;
 
@@ -26,5 +25,4 @@ template <typename Default>
 struct GetValueT<Default>
     : std::integral_constant<decltype(Default::value), Default::value> {};
 
-} // namespace internal
-} // namespace dmt
+} // namespace dmt::internal
