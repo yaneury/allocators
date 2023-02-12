@@ -25,14 +25,6 @@ struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
   using Id_ = AlignmentId;
 };
 
-enum Free { Never = 0, WhenCounterZero = 1 };
-
-struct FreeId {};
-
-template <Free F> struct FreeT : std::integral_constant<Free, F> {
-  using Id_ = FreeId;
-};
-
 // TODO: Arena allocations when at capacity and using heap
 template <class T, typename... Args> class Bump {
 public:
@@ -65,31 +57,15 @@ public:
     Byte* result = chunk_->base + offset_;
     offset_ += request_size;
 
-    if constexpr (FreeStrategy_ == Free::WhenCounterZero)
-      allocation_counter_ += 1;
-
     return reinterpret_cast<T*>(result);
   }
 
   void deallocate(T*, std::size_t) noexcept {
-    if constexpr (FreeStrategy_ == Free::WhenCounterZero) {
-      if (!allocation_counter_ || !chunk_.has_value())
-        return;
-
-      allocation_counter_ -= 1;
-      if (allocation_counter_)
-        return;
-
-      offset_ = 0;
-      internal::ReleaseBytes(chunk_.value());
-      chunk_ = std::nullopt;
-    }
+    // The bump allocator does not support per-object deallocation.
   }
 
   void Reset() {
     offset_ = 0;
-    if constexpr (FreeStrategy_ == Free::WhenCounterZero)
-      allocation_counter_ = 0;
     if (chunk_.has_value())
       internal::ReleaseBytes(chunk_.value());
     chunk_ = std::nullopt;
@@ -113,16 +89,8 @@ private:
   static constexpr std::size_t AlignedSize_ = internal::AlignUp(
       internal::GetValueT<SizeT<kDefaultSize>, Args...>::value, Alignment_);
 
-  static constexpr Free FreeStrategy_ =
-      dmt::internal::GetValueT<FreeT<Free::Never>, Args...>::value;
-
   size_t offset_ = 0;
   std::optional<internal::Allocation> chunk_ = std::nullopt;
-
-  struct Empty {};
-  using Counter = std::conditional_t<FreeStrategy_ == Free::WhenCounterZero,
-                                     std::size_t, Empty>;
-  [[no_unique_address]] Counter allocation_counter_ = Counter();
 };
 
 template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {

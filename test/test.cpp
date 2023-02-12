@@ -44,20 +44,4 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       }
     }
   }
-
-  GIVEN("an allocator with counter-based freeing") {
-    using Allocator = Bump<T, SizeT<SizeOfT>, FreeT<Free::WhenCounterZero>>;
-    Allocator allocator;
-
-    T* a = allocator.allocate(SizeOfT);
-    REQUIRE(a != nullptr);
-
-    WHEN("all outstanding objects are freed") {
-      allocator.deallocate(a, SizeOfT);
-
-      THEN("it should be possible to allocate new objects") {
-        REQUIRE(allocator.allocate(SizeOfT) != nullptr);
-      }
-    }
-  }
 }
