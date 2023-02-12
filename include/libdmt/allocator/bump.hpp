@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdlib>
+#include <libdmt/internal/platform.hpp>
 #include <libdmt/internal/types.hpp>
 #include <libdmt/internal/util.hpp>
 
@@ -42,8 +43,9 @@ public:
   explicit Bump(){};
 
   ~Bump() {
-    if (head_)
-      std::free(head_);
+    if (chunk_.has_value()) {
+      internal::ObjectAllocator::Release(chunk_.value());
+    }
   }
 
   template <class U> constexpr Bump(const Bump<U>&) noexcept {}
@@ -52,21 +54,20 @@ public:
     if (n > AlignedStorageSize_)
       return nullptr;
 
-    if (!head_) {
-      if (head_ = static_cast<Byte*>(
-              std::aligned_alloc(Alignment_, AlignedStorageSize_));
-          !head_) {
-        return nullptr;
-      }
-    }
-
     size_t request_size = dmt::internal::AlignUp(n, Alignment_);
     size_t remaining_size = AlignedStorageSize_ - offset_;
 
     if (request_size > remaining_size)
       return nullptr;
 
-    Byte* result = head_ + offset_;
+    if (!chunk_.has_value()) {
+      chunk_ =
+          internal::ObjectAllocator::Allocate(AlignedStorageSize_, Alignment_);
+      if (!chunk_.has_value())
+        return nullptr;
+    }
+
+    Byte* result = chunk_->GetPtr() + offset_;
     offset_ += request_size;
 
     if constexpr (FreeStrategy_ == Free::WhenCounterZero)
@@ -77,7 +78,7 @@ public:
 
   void deallocate(T*, std::size_t) {
     if constexpr (FreeStrategy_ == Free::WhenCounterZero) {
-      if (!allocation_counter_ || !head_)
+      if (!allocation_counter_ || !chunk_.has_value())
         return;
 
       allocation_counter_ -= 1;
@@ -85,8 +86,8 @@ public:
         return;
 
       offset_ = 0;
-      std::free(head_);
-      head_ = nullptr;
+      internal::ObjectAllocator::Release(chunk_.value());
+      chunk_ = std::nullopt;
     }
   }
 
@@ -116,7 +117,7 @@ private:
       dmt::internal::GetValueT<FreeT<Free::Never>, Args...>::value;
 
   size_t offset_ = 0;
-  Byte* head_ = nullptr;
+  std::optional<internal::Allocation> chunk_ = std::nullopt;
 
   struct Empty {};
   using Counter = std::conditional_t<FreeStrategy_ == Free::WhenCounterZero,
