@@ -42,11 +42,7 @@ public:
 
   explicit Bump(){};
 
-  ~Bump() {
-    if (chunk_.has_value()) {
-      internal::ReleaseObjects(chunk_.value());
-    }
-  }
+  ~Bump() { Reset(); }
 
   template <class U> constexpr Bump(const Bump<U>&) noexcept {}
 
@@ -88,6 +84,15 @@ public:
       internal::ReleaseObjects(chunk_.value());
       chunk_ = std::nullopt;
     }
+  }
+
+  void Reset() {
+    offset_ = 0;
+    if constexpr (FreeStrategy_ == Free::WhenCounterZero)
+      allocation_counter_ = 0;
+    if (chunk_.has_value())
+      internal::ReleaseObjects(chunk_.value());
+    chunk_ = std::nullopt;
   }
 
 private:
