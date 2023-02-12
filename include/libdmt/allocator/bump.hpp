@@ -8,13 +8,14 @@
 
 namespace dmt::allocator {
 
-static constexpr std::size_t kDefaultStorageSize = 4096;
+// Default size for the storage backed by the Bump allocator.
+static constexpr std::size_t kDefaultSize = 4096;
 
-struct StorageSizeId_ {};
+struct SizeId {};
 
 template <std::size_t Size>
-struct StorageSizeT : std::integral_constant<std::size_t, Size> {
-  using Id_ = StorageSizeId_;
+struct SizeT : std::integral_constant<std::size_t, Size> {
+  using Id_ = SizeId;
 };
 
 struct AlignmentId_ {};
@@ -46,17 +47,17 @@ public:
   template <class U> constexpr Bump(const Bump<U>&) noexcept {}
 
   T* allocate(std::size_t n) {
-    if (n > AlignedStorageSize_)
+    if (n > AlignedSize_)
       return nullptr;
 
     size_t request_size = dmt::internal::AlignUp(n, Alignment_);
-    size_t remaining_size = AlignedStorageSize_ - offset_;
+    size_t remaining_size = AlignedSize_ - offset_;
 
     if (request_size > remaining_size)
       return nullptr;
 
     if (!chunk_.has_value()) {
-      chunk_ = internal::AllocateObjects(AlignedStorageSize_, Alignment_);
+      chunk_ = internal::AllocateObjects(AlignedSize_, Alignment_);
       if (!chunk_.has_value())
         return nullptr;
     }
@@ -109,10 +110,8 @@ private:
   static_assert(dmt::internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
 
-  static constexpr std::size_t AlignedStorageSize_ =
-      ((dmt::internal::GetValueT<StorageSizeT<kDefaultStorageSize>,
-                                 Args...>::value -
-        1) |
+  static constexpr std::size_t AlignedSize_ =
+      ((dmt::internal::GetValueT<SizeT<kDefaultSize>, Args...>::value - 1) |
        (Alignment_ - 1)) +
       1;
 
