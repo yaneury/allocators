@@ -44,7 +44,7 @@ public:
 
   ~Bump() {
     if (chunk_.has_value()) {
-      internal::ObjectAllocator::Release(chunk_.value());
+      internal::ReleaseObjects(chunk_.value());
     }
   }
 
@@ -61,13 +61,12 @@ public:
       return nullptr;
 
     if (!chunk_.has_value()) {
-      chunk_ =
-          internal::ObjectAllocator::Allocate(AlignedStorageSize_, Alignment_);
+      chunk_ = internal::AllocateObjects(AlignedStorageSize_, Alignment_);
       if (!chunk_.has_value())
         return nullptr;
     }
 
-    Byte* result = chunk_->GetPtr() + offset_;
+    Byte* result = chunk_->base + offset_;
     offset_ += request_size;
 
     if constexpr (FreeStrategy_ == Free::WhenCounterZero)
@@ -86,7 +85,7 @@ public:
         return;
 
       offset_ = 0;
-      internal::ObjectAllocator::Release(chunk_.value());
+      internal::ReleaseObjects(chunk_.value());
       chunk_ = std::nullopt;
     }
   }
