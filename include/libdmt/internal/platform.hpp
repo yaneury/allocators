@@ -46,7 +46,9 @@ void ReleasePages(Allocation allocation);
 
 namespace dmt::internal {
 
-std::size_t GetPageSize() { return static_cast<std::size_t>(getpagesize()); }
+std::size_t GetPageSize() {
+  return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
+}
 
 std::optional<Allocation> AllocatePages(std::size_t pages) {
   if (pages == 0)
