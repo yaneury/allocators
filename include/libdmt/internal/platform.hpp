@@ -1,5 +1,14 @@
 #pragma once
 
+#include <cstddef>
+
+namespace dmt::internal {
+
+// Gets the page size (in bytes) for the current platform.
+std::size_t GetPageSize();
+
+} // namespace dmt::internal
+
 #if __APPLE__
 
 #include <cassert>
@@ -8,8 +17,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-namespace dmt {
-namespace internal {
+namespace dmt::internal {
+
+std::size_t GetPageSize() { return static_cast<std::size_t>(getpagesize()); }
 
 using Byte = uint8_t;
 
@@ -71,12 +81,8 @@ public:
   }
 
 private:
-  static std::size_t GetPageSize() {
-    return static_cast<std::size_t>(getpagesize());
-  }
 };
 
-} // namespace internal
-} // namespace dmt
+} // namespace dmt::internal
 
 #endif
