@@ -50,20 +50,32 @@ public:
     if (n > AlignedSize_)
       return nullptr;
 
-    if (!chunks_)
+    if (!chunks_) {
       if (chunks_ = AllocateNewChunk(); !chunks_)
         return nullptr;
+
+      // Set current chunk to header
+      current_ = chunks_;
+    }
 
     size_t request_size = internal::AlignUp(n, Alignment_);
     size_t remaining_size =
         AlignedSize_ - offset_ - ChunkHeader::GetChunkHeaderSize();
 
     if (request_size > remaining_size) {
-      // TODO: Get new chunk
-      return nullptr;
+      if (!GrowWhenFull_)
+        return nullptr;
+
+      auto* chunk = AllocateNewChunk();
+      if (!chunk)
+        return nullptr;
+
+      current_->next = chunk;
+      current_ = chunk;
+      offset_ = 0;
     }
 
-    Byte* base = ChunkHeader::GetChunk(chunks_);
+    Byte* base = ChunkHeader::GetChunk(current_);
     Byte* result = base + offset_;
     offset_ += request_size;
 
@@ -158,6 +170,7 @@ private:
 
   size_t offset_ = 0;
   ChunkHeader* chunks_ = nullptr;
+  ChunkHeader* current_ = nullptr;
 };
 
 template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {

@@ -44,4 +44,16 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       }
     }
   }
+
+  GIVEN("a variable-sized allocator that can fit two objects") {
+    using Allocator = Bump<T, SizeT<SizeOfT * 2>, GrowT<WhenFull::GrowStorage>>;
+    Allocator allocator;
+
+    WHEN("making more allocation than can fit in one chunk") {
+      THEN("will grow until OOM") {
+        for (size_t i = 0; i < 100; ++i)
+          REQUIRE(allocator.allocate(SizeOfT) != nullptr);
+      }
+    }
+  }
 }
