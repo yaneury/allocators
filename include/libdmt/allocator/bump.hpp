@@ -33,7 +33,8 @@ template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
   using Id_ = WhenFullId;
 };
 
-// TODO: Arena allocations when at capacity and using heap
+// TODO: Add synchronization support.
+// TODO: Release all memory during reset.
 template <class T, typename... Args> class Bump {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
