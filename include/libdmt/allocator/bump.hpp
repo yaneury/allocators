@@ -15,14 +15,12 @@ struct SizeId {};
 
 template <std::size_t Size>
 struct SizeT : std::integral_constant<std::size_t, Size> {
-  using Id_ = SizeId;
+  using Id_ = struct {};
 };
-
-struct AlignmentId {};
 
 template <std::size_t Alignment>
 struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
-  using Id_ = AlignmentId;
+  using Id_ = struct {};
 };
 
 // TODO: Arena allocations when at capacity and using heap
