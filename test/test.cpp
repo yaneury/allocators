@@ -8,8 +8,8 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
 
-  GIVEN("an allocator that can fit two objects") {
-    using Allocator = Bump<T, SizeT<SizeOfT * 2>>;
+  GIVEN("a fixed-sized allocator that can fit two objects") {
+    using Allocator = Bump<T, SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>>;
     Allocator allocator;
 
     T* a = allocator.allocate(SizeOfT);

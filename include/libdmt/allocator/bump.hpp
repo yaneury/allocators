@@ -15,18 +15,22 @@ struct SizeId {};
 
 template <std::size_t Size>
 struct SizeT : std::integral_constant<std::size_t, Size> {
-  using Id_ = struct {};
+  using Id_ = SizeId;
 };
+
+struct AlignmentId {};
 
 template <std::size_t Alignment>
 struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
-  using Id_ = struct {};
+  using Id_ = AlignmentId;
 };
+
+struct WhenFullId {};
 
 enum WhenFull { ReturnNull = 0, GrowStorage = 1 };
 
 template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
-  using Id_ = struct {};
+  using Id_ = WhenFullId;
 };
 
 // TODO: Arena allocations when at capacity and using heap
@@ -51,7 +55,8 @@ public:
         return nullptr;
 
     size_t request_size = internal::AlignUp(n, Alignment_);
-    size_t remaining_size = AlignedSize_ - offset_;
+    size_t remaining_size =
+        AlignedSize_ - offset_ - ChunkHeader::GetChunkHeaderSize();
 
     if (request_size > remaining_size) {
       // TODO: Get new chunk
