@@ -5,12 +5,12 @@
 #include <libdmt/allocator/parameters.hpp>
 #include <libdmt/internal/chunk.hpp>
 #include <libdmt/internal/platform.hpp>
+#include <libdmt/internal/types.hpp>
 #include <libdmt/internal/util.hpp>
 
 namespace dmt::allocator {
 
 // TODO: Add synchronization support.
-// TODO: Release all memory during reset.
 template <class T, typename... Args> class Bump {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
@@ -52,8 +52,8 @@ public:
       offset_ = 0;
     }
 
-    Byte* base = dmt::internal::GetChunk(current_);
-    Byte* result = base + offset_;
+    internal::Byte* base = dmt::internal::GetChunk(current_);
+    internal::Byte* result = base + offset_;
     offset_ += request_size;
 
     return reinterpret_cast<T*>(result);
@@ -93,7 +93,7 @@ private:
       internal::GetValueT<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
 
-  static internal::Allocation CreateAllocation(Byte* base) {
+  static internal::Allocation CreateAllocation(internal::Byte* base) {
     std::size_t size = IsPageMultiple() ? AlignedSize_ / internal::GetPageSize()
                                         : AlignedSize_;
     return internal::Allocation{.base = static_cast<internal::Byte*>(base),

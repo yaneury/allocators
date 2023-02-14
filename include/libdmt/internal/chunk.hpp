@@ -1,3 +1,11 @@
+// The ChunkHeader class and associated functions.
+// A chunk is block of memory allocated by a memory allocator.
+// The bulk of the bytes in the block are reserved for direct
+// usage by the user requesting the memory. A small portion is
+// reserved in the beginning of the chunk to contain necessary
+// metadata for tracking chunks. This metadata is encapsulated
+// in the ChunkHeader class.
+
 #pragma once
 
 #include <cstddef>
@@ -6,14 +14,21 @@
 #include <functional>
 
 #include <libdmt/internal/platform.hpp>
+#include <libdmt/internal/types.hpp>
 
 namespace dmt::internal {
 
-// TODO: Find a single home for Byte. It's all over the place.
-using Byte = uint8_t;
-
+// A ChunkHeader contains the necessary metadata used to track
+// a chunk of memory. The chunk is the bytes starting from
+// the address of |ChunkHeader*| upto and including the
+// size of the chunk, stored in the |size| field.
 struct ChunkHeader {
+  // The size of the entire chunk. The size includes the portion
+  // of the chunk used up by this header.
   std::size_t size = 0;
+
+  // The next chunk in the list of chunks. Chunks are kept in a
+  // standard singly-linked list.
   ChunkHeader* next = nullptr;
 };
 

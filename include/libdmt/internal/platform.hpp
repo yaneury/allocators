@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <optional>
 
-namespace dmt::internal {
+#include <libdmt/internal/types.hpp>
 
-using Byte = uint8_t;
+namespace dmt::internal {
 
 // Gets the page size (in bytes) for the current platform.
 std::size_t GetPageSize();

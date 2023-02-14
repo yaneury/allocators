@@ -3,12 +3,9 @@
 #pragma once
 
 #include <cstddef>
-#include <libdmt/internal/types.hpp>
+#include <libdmt/internal/traits.hpp>
 
 namespace dmt::allocator {
-
-// A single byte.
-using Byte = uint8_t;
 
 // Default size (in bytes) for a single chunk allocated by the Bump allocator.
 static constexpr std::size_t kDefaultSize = 4096;
