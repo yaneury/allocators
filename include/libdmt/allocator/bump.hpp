@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdlib>
 #include <libdmt/allocator/parameters.hpp>
+#include <libdmt/internal/chunk.hpp>
 #include <libdmt/internal/platform.hpp>
 #include <libdmt/internal/util.hpp>
 
@@ -36,7 +37,7 @@ public:
 
     size_t request_size = internal::AlignUp(n, Alignment_);
     size_t remaining_size =
-        AlignedSize_ - offset_ - ChunkHeader::GetChunkHeaderSize();
+        AlignedSize_ - offset_ - dmt::internal::GetChunkHeaderSize();
 
     if (request_size > remaining_size) {
       if (!GrowWhenFull_)
@@ -51,7 +52,7 @@ public:
       offset_ = 0;
     }
 
-    Byte* base = ChunkHeader::GetChunk(current_);
+    Byte* base = dmt::internal::GetChunk(current_);
     Byte* result = base + offset_;
     offset_ += request_size;
 
@@ -65,23 +66,11 @@ public:
   void Reset() {
     offset_ = 0;
     if (chunks_)
-      ReleaseChunk(chunks_);
+      ReleaseChunks(chunks_);
     chunks_ = nullptr;
   }
 
 private:
-  struct ChunkHeader {
-    ChunkHeader* next = nullptr;
-
-    static constexpr std::size_t GetChunkHeaderSize() {
-      return sizeof(ChunkHeader);
-    }
-
-    static Byte* GetChunk(ChunkHeader* header) {
-      return reinterpret_cast<Byte*>(header) + sizeof(header->next);
-    }
-  };
-
   // There are several factors used to determine the alignment for the
   // allocator. First, users can specify their own alignment if desired using
   // |AlignmentT<>|. Otherwise, we use the alignment as determined by the C++
@@ -98,7 +87,7 @@ private:
       internal::GetValueT<SizeT<kDefaultSize>, Args...>::value;
 
   static constexpr std::size_t AlignedSize_ = internal::AlignUp(
-      RequestSize_ + ChunkHeader::GetChunkHeaderSize(), Alignment_);
+      RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
 
   static constexpr bool GrowWhenFull_ =
       internal::GetValueT<GrowT<WhenFull::GrowStorage>, Args...>::value ==
@@ -116,7 +105,7 @@ private:
     return AlignedSize_ > page_size && AlignedSize_ % page_size == 0;
   }
 
-  static ChunkHeader* AllocateNewChunk() {
+  static dmt::internal::ChunkHeader* AllocateNewChunk() {
     auto allocation =
         IsPageMultiple()
             ? internal::AllocatePages(AlignedSize_ / internal::GetPageSize())
@@ -125,26 +114,18 @@ private:
     if (!allocation.has_value())
       return nullptr;
 
-    Byte* base = allocation.value().base;
-    memset(static_cast<void*>(base), 0, allocation.value().size);
-    ChunkHeader* header =
-        reinterpret_cast<ChunkHeader*>(allocation.value().base);
-    header->next = nullptr;
-    return header;
+    return dmt::internal::CreateChunkHeaderFromAllocation(allocation.value());
   }
 
-  static void ReleaseChunk(ChunkHeader* chunk) {
-    auto allocation = CreateAllocation(reinterpret_cast<Byte*>(chunk));
-    if (IsPageMultiple()) {
-      internal::ReleasePages(allocation);
-    } else {
-      internal::ReleaseBytes(allocation);
-    }
+  static void ReleaseChunks(dmt::internal::ChunkHeader* chunk) {
+    auto release =
+        IsPageMultiple() ? internal::ReleasePages : internal::ReleaseBytes;
+    dmt::internal::ReleaseChunks(chunk, std::move(release));
   }
 
   size_t offset_ = 0;
-  ChunkHeader* chunks_ = nullptr;
-  ChunkHeader* current_ = nullptr;
+  dmt::internal::ChunkHeader* chunks_ = nullptr;
+  dmt::internal::ChunkHeader* current_ = nullptr;
 };
 
 template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {
