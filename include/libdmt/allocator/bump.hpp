@@ -126,31 +126,4 @@ private:
   dmt::internal::ChunkHeader* current_ = nullptr;
 };
 
-template <class T, class... Args>
-class BumpAdapter : public Bump<AlignmentT<std::alignment_of_v<T>>, Args...> {
-public:
-  // Require alias for std::allocator_traits to infer other types, e.g.
-  // using pointer = value_type*.
-  using value_type = T;
-
-  using Parent = Bump<AlignmentT<std::alignment_of_v<T>>, Args...>;
-
-  T* allocate(std::size_t n) noexcept {
-    internal::Byte* ptr = Parent::AllocateUnaligned(n);
-    return reinterpret_cast<T*>(ptr);
-  }
-
-  void deallocate(T*, std::size_t) noexcept {}
-};
-
-template <class T, class U>
-bool operator==(const BumpAdapter<T>&, const BumpAdapter<U>&) {
-  return true;
-}
-
-template <class T, class U>
-bool operator!=(const BumpAdapter<T>&, const BumpAdapter<U>&) {
-  return false;
-}
-
 } // namespace dmt::allocator
