@@ -10,24 +10,26 @@
 
 namespace dmt::allocator {
 
+struct Layout {
+  std::size_t size;
+  std::size_t alignment;
+};
+
 // TODO: Add synchronization support.
 // TODO: Remove the C++ stdlib-ism from this library and make this type
 // agnostic.
-template <class T, typename... Args> class Bump {
+template <class T, class... Args> class Bump {
 public:
-  // Require alias for std::allocator_traits to infer other types, e.g.
-  // using pointer = value_type*.
-  using value_type = T;
-
-  explicit Bump(){};
-
   ~Bump() { Reset(); }
 
-  template <class U> constexpr Bump(const Bump<U>&) noexcept {}
+  internal::Byte* AllocateUnaligned(std::size_t size) {
+    return Allocate(Layout{.size = size, .alignment = sizeof(void*)});
+  }
 
-  T* allocate(std::size_t n) noexcept {
-    size_t request_size =
-        internal::AlignUp(n + dmt::internal::GetChunkHeaderSize(), Alignment_);
+  internal::Byte* Allocate(Layout layout) noexcept {
+    assert(layout.alignment >= sizeof(void*));
+    std::size_t request_size = internal::AlignUp(
+        layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
     if (request_size > AlignedSize_)
       return nullptr;
 
@@ -39,7 +41,7 @@ public:
       current_ = chunks_;
     }
 
-    size_t remaining_size = AlignedSize_ - offset_;
+    std::size_t remaining_size = AlignedSize_ - offset_;
 
     if (request_size > remaining_size) {
       if (!GrowWhenFull_)
@@ -58,10 +60,10 @@ public:
     internal::Byte* result = base + offset_;
     offset_ += request_size;
 
-    return reinterpret_cast<T*>(result);
+    return result;
   }
 
-  void deallocate(T*, std::size_t) noexcept {
+  void Release(internal::Byte*) {
     // The bump allocator does not support per-object deallocation.
   }
 
@@ -71,14 +73,9 @@ public:
       ReleaseChunks(chunks_);
     chunks_ = nullptr;
   }
-  // There are several factors used to determine the alignment for the
-  // allocator. First, users can specify their own alignment if desired using
-  // |AlignmentT<>|. Otherwise, we use the alignment as determined by the C++
-  // compiler. There's a floor in the size of the alignment to be equal to or
-  // greater than |sizeof(void*)| for compatibility with std::aligned_alloc.
-  static constexpr std::size_t Alignment_ =
-      std::max({std::alignment_of_v<T>, sizeof(void*),
-                internal::GetValueT<AlignmentT<0>, Args...>::value});
+
+  static constexpr std::size_t Alignment_ = std::max(
+      {sizeof(void*), internal::GetValueT<AlignmentT<0>, Args...>::value});
 
   static_assert(internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
@@ -129,11 +126,30 @@ private:
   dmt::internal::ChunkHeader* current_ = nullptr;
 };
 
-template <class T, class U> bool operator==(const Bump<T>&, const Bump<U>&) {
+template <class T, class... Args>
+class BumpAdapter : public Bump<AlignmentT<std::alignment_of_v<T>>, Args...> {
+public:
+  // Require alias for std::allocator_traits to infer other types, e.g.
+  // using pointer = value_type*.
+  using value_type = T;
+
+  using Parent = Bump<AlignmentT<std::alignment_of_v<T>>, Args...>;
+
+  T* allocate(std::size_t n) noexcept {
+    internal::Byte* ptr = Parent::AllocateUnaligned(n);
+    return reinterpret_cast<T*>(ptr);
+  }
+
+  void deallocate(T*, std::size_t) noexcept {}
+};
+
+template <class T, class U>
+bool operator==(const BumpAdapter<T>&, const BumpAdapter<U>&) {
   return true;
 }
 
-template <class T, class U> bool operator!=(const Bump<T>&, const Bump<U>&) {
+template <class T, class U>
+bool operator!=(const BumpAdapter<T>&, const BumpAdapter<U>&) {
   return false;
 }
 
