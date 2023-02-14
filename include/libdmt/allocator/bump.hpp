@@ -11,6 +11,8 @@
 namespace dmt::allocator {
 
 // TODO: Add synchronization support.
+// TODO: Remove the C++ stdlib-ism from this library and make this type
+// agnostic.
 template <class T, typename... Args> class Bump {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
@@ -24,7 +26,9 @@ public:
   template <class U> constexpr Bump(const Bump<U>&) noexcept {}
 
   T* allocate(std::size_t n) noexcept {
-    if (n > AlignedSize_)
+    size_t request_size =
+        internal::AlignUp(n + dmt::internal::GetChunkHeaderSize(), Alignment_);
+    if (request_size > AlignedSize_)
       return nullptr;
 
     if (!chunks_) {
@@ -35,9 +39,7 @@ public:
       current_ = chunks_;
     }
 
-    size_t request_size = internal::AlignUp(n, Alignment_);
-    size_t remaining_size =
-        AlignedSize_ - offset_ - dmt::internal::GetChunkHeaderSize();
+    size_t remaining_size = AlignedSize_ - offset_;
 
     if (request_size > remaining_size) {
       if (!GrowWhenFull_)
@@ -69,8 +71,6 @@ public:
       ReleaseChunks(chunks_);
     chunks_ = nullptr;
   }
-
-private:
   // There are several factors used to determine the alignment for the
   // allocator. First, users can specify their own alignment if desired using
   // |AlignmentT<>|. Otherwise, we use the alignment as determined by the C++
@@ -93,6 +93,7 @@ private:
       internal::GetValueT<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
 
+private:
   static internal::Allocation CreateAllocation(internal::Byte* base) {
     std::size_t size = IsPageMultiple() ? AlignedSize_ / internal::GetPageSize()
                                         : AlignedSize_;
