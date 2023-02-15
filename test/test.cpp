@@ -1,3 +1,4 @@
+#include <libdmt/allocator/adapter.hpp>
 #include <libdmt/allocator/bump.hpp>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
@@ -76,5 +77,21 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
         REQUIRE(allocator.AllocateUnaligned(PageSize) == nullptr);
       }
     }
+  }
+}
+
+SCENARIO("BumpAdapter allocator works with standard containers",
+         "[allocator::BumpAdapter]") {
+  using T = long;
+
+  GIVEN("a fixed-sized allocator that can hold a page worth of objects") {
+    static constexpr std::size_t PageSize = 4096;
+    using Allocator = BumpAdapter<T, SizeT<PageSize>>;
+
+    std::vector<T, Allocator> values;
+    for (size_t i = 0; i < 100; ++i)
+      values.push_back(i);
+
+    REQUIRE(true); // Should not panic here.
   }
 }
