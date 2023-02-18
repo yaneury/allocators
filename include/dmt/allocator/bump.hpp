@@ -7,6 +7,7 @@
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
+#include <template/optional.hpp>
 
 namespace dmt::allocator {
 
@@ -74,8 +75,8 @@ public:
     chunks_ = nullptr;
   }
 
-  static constexpr std::size_t Alignment_ = std::max(
-      {sizeof(void*), internal::GetValueT<AlignmentT<0>, Args...>::value});
+  static constexpr std::size_t Alignment_ =
+      std::max({sizeof(void*), ta::optional<AlignmentT<0>, Args...>::value});
 
   static_assert(internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");

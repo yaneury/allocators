@@ -18,6 +18,20 @@ target_include_directories(
 install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include/${PROJECT_NAME}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
+
+# Import dep on named-template-parameters
+Include(FetchContent)
+
+FetchContent_Declare(
+  named-template-parameters 
+  GIT_REPOSITORY https://github.com/yaneury/named-template-parameters.git
+  GIT_TAG        main
+)
+
+FetchContent_MakeAvailable(named-template-parameters)
+
+target_link_libraries(${PROJECT_NAME} INTERFACE ntp)
+
 option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
 
 if (DMT_BUILD_TESTS)
