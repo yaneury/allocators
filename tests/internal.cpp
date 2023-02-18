@@ -10,7 +10,7 @@ TEST_CASE("IsPowerOfTwo is computed", "[internal::IsPowerOfTwo]") {
   size_t kMaxExp = 16;
   std::vector<size_t> powers_of_two = {};
   for (size_t i = 0; i < kMaxExp; ++i) {
-    powers_of_two.push_back(pow<size_t>(2, i));
+    powers_of_two.push_back(pow(static_cast<size_t>(2), i));
   }
 
   for (size_t i = 0; i < powers_of_two.back(); ++i) {
