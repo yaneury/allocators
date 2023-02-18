@@ -4,6 +4,7 @@
 #include <optional>
 
 #include <dmt/internal/types.hpp>
+#include <dmt/internal/util.hpp>
 
 namespace dmt::internal {
 
@@ -15,11 +16,12 @@ struct Allocation {
   std::size_t size;
 };
 
+static constexpr size_t kMinimumAlignment = sizeof(void*);
+
 inline std::optional<Allocation> AllocateBytes(std::size_t size,
                                                std::size_t alignment) {
-  // TODO: Add more validation: alignment < size, alignment is power of two,
-  // etc.
-  if (size == 0 || alignment == 0)
+  if (size == 0 || alignment == 0 || !IsPowerOfTwo(alignment) ||
+      alignment < kMinimumAlignment)
     return std::nullopt;
 
   void* ptr = std::aligned_alloc(alignment, size);

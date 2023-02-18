@@ -20,7 +20,7 @@ namespace dmt::internal {
 
 // A ChunkHeader contains the necessary metadata used to track
 // a chunk of memory. The chunk is the bytes starting from
-// the address of |ChunkHeader*| upto and including the
+// the address of |ChunkHeader*| up to and including the
 // size of the chunk, stored in the |size| field.
 struct ChunkHeader {
   // The size of the entire chunk. The size includes the portion
