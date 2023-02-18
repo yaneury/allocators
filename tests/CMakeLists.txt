@@ -5,7 +5,7 @@ project (dmt-tests
 )
 
 add_executable(${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE test.cpp)
+target_sources(${PROJECT_NAME} PRIVATE bump.cpp)
 
 # Link to dmt library
 target_link_libraries(${PROJECT_NAME} PRIVATE dmt)
