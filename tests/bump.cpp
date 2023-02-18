@@ -1,7 +1,6 @@
+#include <catch2/catch_all.hpp>
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch_all.hpp>
 
 using namespace dmt::allocator;
 

@@ -32,14 +32,17 @@ struct ChunkHeader {
   ChunkHeader* next = nullptr;
 };
 
-constexpr std::size_t GetChunkHeaderSize() { return sizeof(ChunkHeader); }
+inline constexpr std::size_t GetChunkHeaderSize() {
+  return sizeof(ChunkHeader);
+}
 
-Byte* GetChunk(ChunkHeader* header) {
+inline Byte* GetChunk(ChunkHeader* header) {
   return reinterpret_cast<Byte*>(header) + GetChunkHeaderSize();
 }
 
-ChunkHeader* CreateChunkHeaderFromAllocation(Allocation allocation,
-                                             ChunkHeader* next = nullptr) {
+inline ChunkHeader*
+CreateChunkHeaderFromAllocation(Allocation allocation,
+                                ChunkHeader* next = nullptr) {
   memset(static_cast<void*>(allocation.base), 0, allocation.size);
   ChunkHeader* header = reinterpret_cast<ChunkHeader*>(allocation.base);
   header->size = allocation.size;
@@ -47,7 +50,8 @@ ChunkHeader* CreateChunkHeaderFromAllocation(Allocation allocation,
   return header;
 }
 
-void ReleaseChunks(ChunkHeader* head, std::function<void(Allocation)> release) {
+inline void ReleaseChunks(ChunkHeader* head,
+                          std::function<void(Allocation)> release) {
   ChunkHeader* itr = head;
   while (itr != nullptr) {
     ChunkHeader* next = itr->next;

@@ -15,8 +15,8 @@ struct Allocation {
   std::size_t size;
 };
 
-std::optional<Allocation> AllocateBytes(std::size_t size,
-                                        std::size_t alignment) {
+inline std::optional<Allocation> AllocateBytes(std::size_t size,
+                                               std::size_t alignment) {
   // TODO: Add more validation: alignment < size, alignment is power of two,
   // etc.
   if (size == 0 || alignment == 0)
@@ -29,7 +29,7 @@ std::optional<Allocation> AllocateBytes(std::size_t size,
   return Allocation({.base = static_cast<Byte*>(ptr), .size = size});
 }
 
-void ReleaseBytes(Allocation allocation) {
+inline void ReleaseBytes(Allocation allocation) {
   // TODO: Add validation
   std::free(allocation.base);
 }
@@ -46,11 +46,11 @@ void ReleasePages(Allocation allocation);
 
 namespace dmt::internal {
 
-std::size_t GetPageSize() {
+inline std::size_t GetPageSize() {
   return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
 }
 
-std::optional<Allocation> AllocatePages(std::size_t pages) {
+inline std::optional<Allocation> AllocatePages(std::size_t pages) {
   if (pages == 0)
     return std::nullopt;
 
@@ -63,7 +63,7 @@ std::optional<Allocation> AllocatePages(std::size_t pages) {
   return Allocation({.base = static_cast<Byte*>(ptr), .size = size});
 }
 
-void ReleasePages(Allocation allocation) {
+inline void ReleasePages(Allocation allocation) {
   munmap(allocation.base, allocation.size);
 }
 

@@ -4,8 +4,11 @@ project (dmt-tests
   LANGUAGES CXX
 )
 
-add_executable(${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE bump.cpp)
+add_executable(${PROJECT_NAME}
+  bump.cpp
+  internal.cpp
+  test.cpp
+)
 
 # Link to dmt library
 target_link_libraries(${PROJECT_NAME} PRIVATE dmt)
