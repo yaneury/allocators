@@ -6,8 +6,8 @@
 #pragma once
 
 #include <cstddef>
-#include <libdmt/allocator/bump.hpp>
-#include <libdmt/internal/types.hpp>
+#include <dmt/allocator/bump.hpp>
+#include <dmt/internal/types.hpp>
 
 namespace dmt::allocator {
 

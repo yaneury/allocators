@@ -3,7 +3,7 @@
 #pragma once
 
 #include <cstddef>
-#include <libdmt/internal/traits.hpp>
+#include <dmt/internal/traits.hpp>
 
 namespace dmt::allocator {
 

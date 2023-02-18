@@ -13,8 +13,8 @@
 #include <cstdlib>
 #include <functional>
 
-#include <libdmt/internal/platform.hpp>
-#include <libdmt/internal/types.hpp>
+#include <dmt/internal/platform.hpp>
+#include <dmt/internal/types.hpp>
 
 namespace dmt::internal {
 

@@ -2,11 +2,11 @@
 
 #include <array>
 #include <cstdlib>
-#include <libdmt/allocator/parameters.hpp>
-#include <libdmt/internal/chunk.hpp>
-#include <libdmt/internal/platform.hpp>
-#include <libdmt/internal/types.hpp>
-#include <libdmt/internal/util.hpp>
+#include <dmt/allocator/parameters.hpp>
+#include <dmt/internal/chunk.hpp>
+#include <dmt/internal/platform.hpp>
+#include <dmt/internal/types.hpp>
+#include <dmt/internal/util.hpp>
 
 namespace dmt::allocator {
 
