@@ -7,7 +7,7 @@
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
-#include <template/optional.hpp>
+#include <template/parameters.hpp>
 
 namespace dmt::allocator {
 
@@ -76,19 +76,19 @@ public:
   }
 
   static constexpr std::size_t Alignment_ =
-      std::max({sizeof(void*), ta::optional<AlignmentT<0>, Args...>::value});
+      std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
 
   static_assert(internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
 
   static constexpr std::size_t RequestSize_ =
-      internal::GetValueT<SizeT<kDefaultSize>, Args...>::value;
+      ntp::optional<SizeT<kDefaultSize>, Args...>::value;
 
   static constexpr std::size_t AlignedSize_ = internal::AlignUp(
       RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
 
   static constexpr bool GrowWhenFull_ =
-      internal::GetValueT<GrowT<WhenFull::GrowStorage>, Args...>::value ==
+      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
 
 private:
