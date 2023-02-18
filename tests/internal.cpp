@@ -6,7 +6,7 @@
 
 using namespace dmt::internal;
 
-TEST_CASE("IsPowerOfTwo is computed", "[IsPowerOfTwo]") {
+TEST_CASE("IsPowerOfTwo is computed", "[internal::IsPowerOfTwo]") {
   size_t kMaxExp = 16;
   std::vector<size_t> powers_of_two = {};
   for (size_t i = 0; i < kMaxExp; ++i) {
@@ -18,4 +18,12 @@ TEST_CASE("IsPowerOfTwo is computed", "[IsPowerOfTwo]") {
                               i) != powers_of_two.cend();
     REQUIRE(IsPowerOfTwo(i) == expected);
   }
+}
+
+TEST_CASE("AlignUp", "[internal::AlignUp]") {
+  REQUIRE(AlignUp(4095, 4096) == 4096);
+  REQUIRE(AlignUp(0, 8) == 0);
+  REQUIRE(AlignUp(8, 0) == 0);
+  REQUIRE(AlignUp(4, 4) == 4);
+  REQUIRE(AlignUp(11, 8) == 16);
 }
