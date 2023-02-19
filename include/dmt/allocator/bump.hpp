@@ -7,6 +7,7 @@
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
+#include <mutex>
 #include <template/parameters.hpp>
 
 namespace dmt::allocator {
@@ -28,6 +29,8 @@ public:
   }
 
   internal::Byte* Allocate(Layout layout) noexcept {
+    // This class uses a very coarse-grained mutex for allocation.
+    std::lock_guard<std::mutex> lock(chunks_mutex_);
     assert(layout.alignment >= sizeof(void*));
     std::size_t request_size = internal::AlignUp(
         layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
@@ -69,6 +72,7 @@ public:
   }
 
   void Reset() {
+    std::lock_guard<std::mutex> lock(chunks_mutex_);
     offset_ = 0;
     if (chunks_)
       ReleaseChunks(chunks_);
@@ -125,6 +129,8 @@ private:
   size_t offset_ = 0;
   dmt::internal::ChunkHeader* chunks_ = nullptr;
   dmt::internal::ChunkHeader* current_ = nullptr;
+
+  std::mutex chunks_mutex_;
 };
 
 } // namespace dmt::allocator
