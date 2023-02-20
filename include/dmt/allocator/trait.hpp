@@ -2,6 +2,7 @@
 
 #include <concepts> // TODO: Guard this against a C++20 check
 #include <cstddef>
+#include <dmt/internal/types.hpp>
 
 namespace dmt::allocator {
 

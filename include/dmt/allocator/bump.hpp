@@ -5,6 +5,7 @@
 #include <dmt/allocator/parameters.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/chunk.hpp>
+#include <dmt/internal/logger.hpp>
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
