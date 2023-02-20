@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdlib>
 #include <dmt/allocator/parameters.hpp>
+#include <dmt/allocator/trait.hpp>
 #include <dmt/internal/chunk.hpp>
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
@@ -12,15 +13,7 @@
 
 namespace dmt::allocator {
 
-struct Layout {
-  std::size_t size;
-  std::size_t alignment;
-};
-
-// TODO: Add synchronization support.
-// TODO: Remove the C++ stdlib-ism from this library and make this type
-// agnostic.
-template <class T, class... Args> class Bump {
+template <class... Args> class Bump {
 public:
   ~Bump() { Reset(); }
 
