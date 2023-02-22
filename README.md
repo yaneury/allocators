@@ -1,3 +1,7 @@
-# Dynamic Memory Toolkit (libdmt)
+# Dynamic Memory Toolkit
 
-A modern C++ library offering highly tunable dynamic memory allocators configurable at compile-time.
+A header-only C++ library offering several general purpose memory allocators
+configurable at compile-time.
+
+__This library is in the early stages of development and is not ready for
+general consumption.__
