@@ -26,7 +26,9 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       REQUIRE(b != nullptr);
 
       THEN("it is set to the address next to the previously allocated one") {
-        REQUIRE(a + 1 == b);
+        auto* addr = reinterpret_cast<dmt::internal::Byte*>(a + 1);
+        REQUIRE(addr + dmt::internal::GetChunkHeaderSize() ==
+                reinterpret_cast<dmt::internal::Byte*>(b));
       }
     }
 
@@ -62,7 +64,9 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
 
   GIVEN("a page-sized allocator that can fit many pages") {
     static constexpr std::size_t PageSize = 4096;
-    using Allocator = Bump<SizeT<PageSize>, GrowT<WhenFull::GrowStorage>>;
+    using Allocator =
+        Bump<SizeT<PageSize - dmt::internal::GetChunkHeaderSize()>,
+             GrowT<WhenFull::GrowStorage>>;
     Allocator allocator;
 
     WHEN("making an allocation within page") {

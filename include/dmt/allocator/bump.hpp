@@ -28,6 +28,7 @@ public:
 #if DEBUG
     std::cout << "Instantiating allocator with following parameters: "
               << "\t"
+              << "HeaderSize: " << dmt::internal::GetChunkHeaderSize() << "\t"
               << "ObjectSize: " << ObjectSize_ << "\t"
               << "ObjectCount: " << ObjectCount_ << "\t"
               << "PerObjectAllocation: " << PerObjectAllocation << "\t"
@@ -129,7 +130,7 @@ public:
   // ObjectCount* with header size.
   static constexpr std::size_t RequestSize_ =
       PerObjectAllocation
-          ? ObjectSize_ * ObjectCount_ * dmt::internal::GetChunkHeaderSize()
+          ? ObjectCount_ * (ObjectSize_ + dmt::internal::GetChunkHeaderSize())
           : ntp::optional<SizeT<kDefaultSize>, Args...>::value;
 
   static constexpr std::size_t AlignedSize_ = internal::AlignUp(
