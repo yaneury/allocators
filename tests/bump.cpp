@@ -1,12 +1,15 @@
 #include <catch2/catch_all.hpp>
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
+#include <plog/Log.h>
 
 using namespace dmt::allocator;
 
 SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
+
+  PLOGD << "Hello!";
 
   GIVEN("a fixed-sized allocator that can fit two objects") {
     using Allocator = Bump<ObjectSizeT<SizeOfT>, ObjectCountT<2>,

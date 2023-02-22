@@ -17,7 +17,7 @@
 #endif
 
 #if DEBUG
-#include <iostream>
+#include <plog/Log.h>
 #endif
 
 namespace dmt::allocator {
@@ -26,14 +26,13 @@ template <class... Args> class Bump {
 public:
   Bump() {
 #if DEBUG
-    std::cout << "Instantiating allocator with following parameters: "
-              << "\t"
-              << "HeaderSize: " << dmt::internal::GetChunkHeaderSize() << "\t"
-              << "ObjectSize: " << ObjectSize_ << "\t"
-              << "ObjectCount: " << ObjectCount_ << "\t"
-              << "PerObjectAllocation: " << PerObjectAllocation << "\t"
-              << "RequestSize: " << RequestSize_ << "\t"
-              << "AlignedSize: " << AlignedSize_ << std::endl;
+    PLOGD << "Instantiating allocator with following parameters: "
+          << "HeaderSize: " << dmt::internal::GetChunkHeaderSize() << "\t"
+          << "ObjectSize: " << ObjectSize_ << "\t"
+          << "ObjectCount: " << ObjectCount_ << "\t"
+          << "PerObjectAllocation: " << PerObjectAllocation << "\t"
+          << "RequestSize: " << RequestSize_ << "\t"
+          << "AlignedSize: " << AlignedSize_;
 #endif
   }
 
@@ -51,9 +50,9 @@ public:
         layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
 
 #if DEBUG
-    std::cout << "[Allocate] Received layout(size=" << layout.size
-              << ", alignment=" << layout.alignment << ")." << std::endl;
-    std::cout << "[Allocate] Request size: " << request_size << std::endl;
+    PLOGD << "[Allocate] Received layout(size=" << layout.size
+          << ", alignment=" << layout.alignment << ").";
+    PLOGD << "[Allocate] Request size: " << request_size;
 #endif
 
     if (request_size > AlignedSize_)
@@ -69,8 +68,8 @@ public:
 
     std::size_t remaining_size = AlignedSize_ - offset_;
 #if DEBUG
-    std::cout << "[Allocate] Offset: " << offset_ << std::endl;
-    std::cout << "[Allocator] Remaining Size: " << remaining_size << std::endl;
+    PLOGD << "[Allocate] Offset: " << offset_;
+    PLOGD << "[Allocator] Remaining Size: " << remaining_size;
 #endif
 
     if (request_size > remaining_size) {
