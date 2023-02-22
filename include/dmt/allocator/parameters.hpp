@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <dmt/internal/logger.hpp>
 
 namespace dmt::allocator {
 
@@ -48,5 +49,11 @@ enum WhenFull {
 template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
   using Id_ = WhenFullId;
 };
+
+template <std::size_t ObjectSize>
+struct ObjectSizeT : std::integral_constant<std::size_t, ObjectSize> {};
+
+template <std::size_t ObjectCount>
+struct ObjectCountT : std::integral_constant<std::size_t, ObjectCount> {};
 
 } // namespace dmt::allocator

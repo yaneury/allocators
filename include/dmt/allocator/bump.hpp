@@ -79,15 +79,30 @@ public:
   static_assert(internal::IsPowerOfTwo(Alignment_),
                 "Alignment must be a power of 2.");
 
-  static constexpr std::size_t RequestSize_ =
-      ntp::optional<SizeT<kDefaultSize>, Args...>::value;
-
-  static constexpr std::size_t AlignedSize_ = internal::AlignUp(
-      RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
-
   static constexpr bool GrowWhenFull_ =
       ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
+
+  static constexpr std::size_t ObjectSize_ =
+      ntp::optional<ObjectSizeT<0>, Args...>::value;
+
+  static constexpr std::size_t ObjectCount_ =
+      ntp::optional<ObjectCountT<0>, Args...>::value;
+
+  static constexpr bool PerObjectAllocation =
+      ObjectSize_ > 0 && ObjectCount_ > 0;
+
+  // If allocator is using PerObjectAllocation, then set size to be amount
+  // requested by user: ObjectSize * ObjectCount; otherwise, go with
+  // RequestSize. To ensure that necessary objects fit, we also multiple
+  // ObjectCount* with header size.
+  static constexpr std::size_t RequestSize_ =
+      PerObjectAllocation
+          ? ObjectSize_ * ObjectCount_ * dmt::internal::GetChunkHeaderSize()
+          : ntp::optional<SizeT<kDefaultSize>, Args...>::value;
+
+  static constexpr std::size_t AlignedSize_ = internal::AlignUp(
+      RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
 
 private:
   static internal::Allocation CreateAllocation(internal::Byte* base) {
@@ -99,7 +114,7 @@ private:
 
   static bool IsPageMultiple() {
     static const auto page_size = internal::GetPageSize();
-    return AlignedSize_ > page_size && AlignedSize_ % page_size == 0;
+    return AlignedSize_ >= page_size && AlignedSize_ % page_size == 0;
   }
 
   static dmt::internal::ChunkHeader* AllocateNewChunk() {

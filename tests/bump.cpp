@@ -9,7 +9,8 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   static constexpr std::size_t SizeOfT = sizeof(T);
 
   GIVEN("a fixed-sized allocator that can fit two objects") {
-    using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>>;
+    using Allocator = Bump<ObjectSizeT<SizeOfT>, ObjectCountT<2>,
+                           GrowT<WhenFull::ReturnNull>>;
     Allocator allocator;
 
     INFO("AlignedSize: " << Allocator::AlignedSize_);
