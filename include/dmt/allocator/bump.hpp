@@ -12,10 +12,30 @@
 #include <mutex>
 #include <template/parameters.hpp>
 
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+
+#if DEBUG
+#include <iostream>
+#endif
+
 namespace dmt::allocator {
 
 template <class... Args> class Bump {
 public:
+  Bump() {
+#if DEBUG
+    std::cout << "Instantiating allocator with following parameters: "
+              << "\t"
+              << "ObjectSize: " << ObjectSize_ << "\t"
+              << "ObjectCount: " << ObjectCount_ << "\t"
+              << "PerObjectAllocation: " << PerObjectAllocation << "\t"
+              << "RequestSize: " << RequestSize_ << "\t"
+              << "AlignedSize: " << AlignedSize_ << std::endl;
+#endif
+  }
+
   ~Bump() { Reset(); }
 
   internal::Byte* AllocateUnaligned(std::size_t size) {
@@ -28,6 +48,13 @@ public:
     assert(layout.alignment >= sizeof(void*));
     std::size_t request_size = internal::AlignUp(
         layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
+
+#if DEBUG
+    std::cout << "[Allocate] Received layout(size=" << layout.size
+              << ", alignment=" << layout.alignment << ")." << std::endl;
+    std::cout << "[Allocate] Request size: " << request_size << std::endl;
+#endif
+
     if (request_size > AlignedSize_)
       return nullptr;
 
@@ -40,6 +67,10 @@ public:
     }
 
     std::size_t remaining_size = AlignedSize_ - offset_;
+#if DEBUG
+    std::cout << "[Allocate] Offset: " << offset_ << std::endl;
+    std::cout << "[Allocator] Remaining Size: " << remaining_size << std::endl;
+#endif
 
     if (request_size > remaining_size) {
       if (!GrowWhenFull_)

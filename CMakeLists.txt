@@ -33,7 +33,12 @@ FetchContent_MakeAvailable(named-template-parameters)
 target_link_libraries(${PROJECT_NAME} INTERFACE ntp)
 
 option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
+option(DMT_DEBUG "Set to ON to enable debug messages" OFF)
 
 if (DMT_BUILD_TESTS)
   add_subdirectory(tests)
+endif()
+
+if (DMT_DEBUG)
+  add_definitions(-DDEBUG)
 endif()
