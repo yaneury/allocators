@@ -7,7 +7,6 @@
 #include <dmt/internal/chunk.hpp>
 #include <dmt/internal/log.hpp>
 #include <dmt/internal/platform.hpp>
-#include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
 #include <mutex>
 #include <template/parameters.hpp>
@@ -28,11 +27,11 @@ public:
 
   ~Bump() { Reset(); }
 
-  internal::Byte* AllocateUnaligned(std::size_t size) {
+  Byte* AllocateUnaligned(std::size_t size) {
     return Allocate(Layout{.size = size, .alignment = sizeof(void*)});
   }
 
-  internal::Byte* Allocate(Layout layout) noexcept {
+  Byte* Allocate(Layout layout) noexcept {
     // This class uses a very coarse-grained mutex for allocation.
     std::lock_guard<std::mutex> lock(chunks_mutex_);
     assert(layout.alignment >= sizeof(void*));
@@ -71,14 +70,14 @@ public:
       offset_ = 0;
     }
 
-    internal::Byte* base = dmt::internal::GetChunk(current_);
-    internal::Byte* result = base + offset_;
+    Byte* base = dmt::internal::GetChunk(current_);
+    Byte* result = base + offset_;
     offset_ += request_size;
 
     return result;
   }
 
-  void Release(internal::Byte*) {
+  void Release(Byte*) {
     // The bump allocator does not support per-object deallocation.
   }
 
@@ -122,11 +121,10 @@ public:
       RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
 
 private:
-  static internal::Allocation CreateAllocation(internal::Byte* base) {
+  static internal::Allocation CreateAllocation(Byte* base) {
     std::size_t size = IsPageMultiple() ? AlignedSize_ / internal::GetPageSize()
                                         : AlignedSize_;
-    return internal::Allocation{.base = static_cast<internal::Byte*>(base),
-                                .size = size};
+    return internal::Allocation{.base = static_cast<Byte*>(base), .size = size};
   }
 
   static bool IsPageMultiple() {

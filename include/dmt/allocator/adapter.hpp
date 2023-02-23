@@ -7,7 +7,7 @@
 
 #include <cstddef>
 #include <dmt/allocator/bump.hpp>
-#include <dmt/internal/types.hpp>
+#include <dmt/allocator/trait.hpp>
 
 namespace dmt::allocator {
 
@@ -21,7 +21,7 @@ public:
   using Parent = Bump<AlignmentT<std::alignment_of_v<T>>, Args...>;
 
   T* allocate(std::size_t n) noexcept {
-    internal::Byte* ptr = Parent::AllocateUnaligned(n);
+    Byte* ptr = Parent::AllocateUnaligned(n);
     return reinterpret_cast<T*>(ptr);
   }
 

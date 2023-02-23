@@ -6,6 +6,8 @@
 
 namespace dmt::allocator {
 
+using Byte = internal::Byte;
+
 // A parameter used for making an allocation request.
 struct Layout {
   // Number of bytes requested for allocation.
@@ -19,9 +21,9 @@ struct Layout {
 
 template <class T>
 concept Trait = requires(T allocator, std::size_t size, Layout layout,
-                         internal::Byte* bytes) {
-  { allocator.AllocateUnaligned(size) } -> std::same_as<internal::Byte*>;
-  { allocator.Allocate(layout) } -> std::same_as<internal::Byte*>;
+                         Byte* bytes) {
+  { allocator.AllocateUnaligned(size) } -> std::same_as<Byte*>;
+  { allocator.Allocate(layout) } -> std::same_as<Byte*>;
   { allocator.Release(bytes) } -> std::same_as<void>;
 };
 
