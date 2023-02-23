@@ -21,14 +21,11 @@ def main():
   subparsers = parser.add_subparsers(help="Select command to run", required=True, dest="cmd")
 
   clean_parser = subparsers.add_parser('clean', help="Clean the project")
-  clean_parser.set_defaults(func=clean)
 
   build_parser = subparsers.add_parser('build', help="Build the project into build/")
   build_parser.add_argument('clean', action="store_true", help="Clean directory before building")
-  build_parser.set_defaults(func=build)
 
   run_parser = subparsers.add_parser('run', help="Run the tests")
-  run_parser.set_defaults(func=run)
 
   args = parser.parse_args()
 
