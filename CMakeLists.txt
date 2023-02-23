@@ -41,7 +41,7 @@ endif()
 
 if (DMT_DEBUG)
   # Enable logging if building with -D DMT_DEBUG
-  add_definitions(-DDMT_DEBUG)
+  target_compile_definitions(dmt INTERFACE -DDMT_DEBUG)
 
   FetchContent_Declare(
     plog

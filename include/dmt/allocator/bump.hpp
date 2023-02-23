@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef DMT_DEBUG
-#define DMT_DEBUG 1
-#endif
-
 #include <array>
 #include <cstdlib>
 #include <dmt/allocator/parameters.hpp>

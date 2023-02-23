@@ -1,7 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
-#include <plog/Log.h>
 
 using namespace dmt::allocator;
 
