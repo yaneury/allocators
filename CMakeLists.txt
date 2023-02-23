@@ -32,16 +32,6 @@ FetchContent_MakeAvailable(named-template-parameters)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ntp)
 
-FetchContent_Declare(
-  plog
-  GIT_REPOSITORY https://github.com/SergiusTheBest/plog.git
-  GIT_TAG        master
-)
-
-FetchContent_MakeAvailable(plog)
-
-target_link_libraries(${PROJECT_NAME} INTERFACE plog)
-
 option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
 option(DMT_DEBUG "Set to ON to enable debug messages" OFF)
 
@@ -50,5 +40,17 @@ if (DMT_BUILD_TESTS)
 endif()
 
 if (DMT_DEBUG)
-  add_definitions(-DDEBUG)
+  # Enable logging if building with -D DMT_DEBUG
+  add_definitions(-DDMT_DEBUG)
+
+  FetchContent_Declare(
+    plog
+    GIT_REPOSITORY https://github.com/SergiusTheBest/plog.git
+    GIT_TAG        master
+  )
+
+  FetchContent_MakeAvailable(plog)
+
+  target_link_libraries(${PROJECT_NAME} INTERFACE plog)
+
 endif()

@@ -9,14 +9,10 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
 
-  PLOGD << "Hello!";
-
   GIVEN("a fixed-sized allocator that can fit two objects") {
     using Allocator = Bump<ObjectSizeT<SizeOfT>, ObjectCountT<2>,
                            GrowT<WhenFull::ReturnNull>>;
     Allocator allocator;
-
-    INFO("AlignedSize: " << Allocator::AlignedSize_);
 
     T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
     WHEN("an object (within size) is allocated") {

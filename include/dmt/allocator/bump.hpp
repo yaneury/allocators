@@ -1,39 +1,33 @@
 #pragma once
 
+#ifndef DMT_DEBUG
+#define DMT_DEBUG 1
+#endif
+
 #include <array>
 #include <cstdlib>
 #include <dmt/allocator/parameters.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/chunk.hpp>
-#include <dmt/internal/logger.hpp>
+#include <dmt/internal/log.hpp>
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
 #include <mutex>
 #include <template/parameters.hpp>
 
-#ifndef DEBUG
-#define DEBUG 1
-#endif
-
-#if DEBUG
-#include <plog/Log.h>
-#endif
-
 namespace dmt::allocator {
 
 template <class... Args> class Bump {
 public:
   Bump() {
-#if DEBUG
-    PLOGD << "Instantiating allocator with following parameters: "
+    DINFO("Instantiating allocator with following parameters: "
           << "HeaderSize: " << dmt::internal::GetChunkHeaderSize() << "\t"
           << "ObjectSize: " << ObjectSize_ << "\t"
           << "ObjectCount: " << ObjectCount_ << "\t"
           << "PerObjectAllocation: " << PerObjectAllocation << "\t"
           << "RequestSize: " << RequestSize_ << "\t"
-          << "AlignedSize: " << AlignedSize_;
-#endif
+          << "AlignedSize: " << AlignedSize_);
   }
 
   ~Bump() { Reset(); }
@@ -49,11 +43,9 @@ public:
     std::size_t request_size = internal::AlignUp(
         layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
 
-#if DEBUG
-    PLOGD << "[Allocate] Received layout(size=" << layout.size
-          << ", alignment=" << layout.alignment << ").";
-    PLOGD << "[Allocate] Request size: " << request_size;
-#endif
+    DINFO("[Allocate] Received layout(size=" << layout.size << ", alignment="
+                                             << layout.alignment << ").");
+    DINFO("[Allocate] Request size: " << request_size);
 
     if (request_size > AlignedSize_)
       return nullptr;
@@ -67,10 +59,8 @@ public:
     }
 
     std::size_t remaining_size = AlignedSize_ - offset_;
-#if DEBUG
-    PLOGD << "[Allocate] Offset: " << offset_;
-    PLOGD << "[Allocator] Remaining Size: " << remaining_size;
-#endif
+    DINFO("[Allocate] Offset: " << offset_);
+    DINFO("[Allocator] Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
       if (!GrowWhenFull_)

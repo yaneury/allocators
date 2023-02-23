@@ -3,7 +3,6 @@
 #pragma once
 
 #include <cstddef>
-#include <dmt/internal/logger.hpp>
 
 namespace dmt::allocator {
 
