@@ -28,7 +28,7 @@ TEST_CASE("AlignUp", "[internal::AlignUp]") {
   REQUIRE(AlignUp(11, 8) == 16);
 }
 
-TEST_CASE("AllocateBytes", "[internal::AllocateBytes]") {
+TEST_CASE("Allocatestd::bytes", "[internal::Allocatestd::bytes]") {
   REQUIRE(AllocateBytes(/*invalid size */ 0,
                         /*a valid alignment=*/sizeof(void*)) == std::nullopt);
   REQUIRE(AllocateBytes(/*a valid size*/ 100, /*invalid alignment*/ 0) ==

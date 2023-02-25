@@ -21,7 +21,7 @@ public:
   using Parent = Bump<AlignmentT<std::alignment_of_v<T>>, Args...>;
 
   T* allocate(std::size_t n) noexcept {
-    Byte* ptr = Parent::AllocateUnaligned(n);
+    std::byte* ptr = Parent::AllocateUnaligned(n);
     return reinterpret_cast<T*>(ptr);
   }
 

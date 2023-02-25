@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <optional>
 
-#include <dmt/internal/types.hpp>
 #include <dmt/internal/util.hpp>
 
 namespace dmt::internal {
@@ -12,7 +11,7 @@ namespace dmt::internal {
 std::size_t GetPageSize();
 
 struct Allocation {
-  Byte* base;
+  std::byte* base;
   std::size_t size;
 };
 
@@ -28,7 +27,7 @@ inline std::optional<Allocation> AllocateBytes(std::size_t size,
   if (!ptr)
     return std::nullopt;
 
-  return Allocation({.base = static_cast<Byte*>(ptr), .size = size});
+  return Allocation({.base = static_cast<std::byte*>(ptr), .size = size});
 }
 
 inline void ReleaseBytes(Allocation allocation) {
@@ -62,7 +61,7 @@ inline std::optional<Allocation> AllocatePages(std::size_t pages) {
   if (ptr == MAP_FAILED)
     return std::nullopt;
 
-  return Allocation({.base = static_cast<Byte*>(ptr), .size = size});
+  return Allocation({.base = static_cast<std::byte*>(ptr), .size = size});
 }
 
 inline void ReleasePages(Allocation allocation) {

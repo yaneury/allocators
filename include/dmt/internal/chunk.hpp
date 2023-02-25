@@ -14,7 +14,6 @@
 #include <functional>
 
 #include <dmt/internal/platform.hpp>
-#include <dmt/internal/types.hpp>
 
 namespace dmt::internal {
 
@@ -36,8 +35,8 @@ inline constexpr std::size_t GetChunkHeaderSize() {
   return sizeof(ChunkHeader);
 }
 
-inline Byte* GetChunk(ChunkHeader* header) {
-  return reinterpret_cast<Byte*>(header) + GetChunkHeaderSize();
+inline std::byte* GetChunk(ChunkHeader* header) {
+  return reinterpret_cast<std::byte*>(header) + GetChunkHeaderSize();
 }
 
 inline ChunkHeader*
@@ -55,8 +54,8 @@ inline void ReleaseChunks(ChunkHeader* head,
   ChunkHeader* itr = head;
   while (itr != nullptr) {
     ChunkHeader* next = itr->next;
-    release(
-        Allocation{.base = reinterpret_cast<Byte*>(itr), .size = itr->size});
+    release(Allocation{.base = reinterpret_cast<std::byte*>(itr),
+                       .size = itr->size});
 
     itr = next;
   }

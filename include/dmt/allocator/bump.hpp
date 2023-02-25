@@ -27,11 +27,11 @@ public:
 
   ~Bump() { Reset(); }
 
-  Byte* AllocateUnaligned(std::size_t size) {
+  std::byte* AllocateUnaligned(std::size_t size) {
     return Allocate(Layout{.size = size, .alignment = sizeof(void*)});
   }
 
-  Byte* Allocate(Layout layout) noexcept {
+  std::byte* Allocate(Layout layout) noexcept {
     // This class uses a very coarse-grained mutex for allocation.
     std::lock_guard<std::mutex> lock(chunks_mutex_);
     assert(layout.alignment >= sizeof(void*));
@@ -70,14 +70,14 @@ public:
       offset_ = 0;
     }
 
-    Byte* base = dmt::internal::GetChunk(current_);
-    Byte* result = base + offset_;
+    std::byte* base = dmt::internal::GetChunk(current_);
+    std::byte* result = base + offset_;
     offset_ += request_size;
 
     return result;
   }
 
-  void Release(Byte*) {
+  void Release(std::byte*) {
     // The bump allocator does not support per-object deallocation.
   }
 
@@ -121,10 +121,11 @@ public:
       RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
 
 private:
-  static internal::Allocation CreateAllocation(Byte* base) {
+  static internal::Allocation CreateAllocation(std::byte* base) {
     std::size_t size = IsPageMultiple() ? AlignedSize_ / internal::GetPageSize()
                                         : AlignedSize_;
-    return internal::Allocation{.base = static_cast<Byte*>(base), .size = size};
+    return internal::Allocation{.base = static_cast<std::byte*>(base),
+                                .size = size};
   }
 
   static bool IsPageMultiple() {

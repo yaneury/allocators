@@ -24,9 +24,9 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       REQUIRE(b != nullptr);
 
       THEN("it is set to the address next to the previously allocated one") {
-        auto* addr = reinterpret_cast<dmt::internal::Byte*>(a + 1);
+        auto* addr = reinterpret_cast<std::byte*>(a + 1);
         REQUIRE(addr + dmt::internal::GetChunkHeaderSize() ==
-                reinterpret_cast<dmt::internal::Byte*>(b));
+                reinterpret_cast<std::byte*>(b));
       }
     }
 
@@ -34,7 +34,7 @@ SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
       REQUIRE(a != nullptr);
       THEN("the allocated objects remain valid") {
         *a = 100;
-        allocator.Release(reinterpret_cast<dmt::internal::Byte*>(a));
+        allocator.Release(reinterpret_cast<std::byte*>(a));
         REQUIRE(*a == 100);
       }
     }

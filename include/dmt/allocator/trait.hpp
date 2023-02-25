@@ -2,11 +2,8 @@
 
 #include <concepts> // TODO: Guard this against a C++20 check
 #include <cstddef>
-#include <dmt/internal/types.hpp>
 
 namespace dmt::allocator {
-
-using Byte = internal::Byte;
 
 // A parameter used for making an allocation request.
 struct Layout {
@@ -21,9 +18,9 @@ struct Layout {
 
 template <class T>
 concept Trait = requires(T allocator, std::size_t size, Layout layout,
-                         Byte* bytes) {
-  { allocator.AllocateUnaligned(size) } -> std::same_as<Byte*>;
-  { allocator.Allocate(layout) } -> std::same_as<Byte*>;
+                         std::byte* bytes) {
+  { allocator.AllocateUnaligned(size) } -> std::same_as<std::byte*>;
+  { allocator.Allocate(layout) } -> std::same_as<std::byte*>;
   { allocator.Release(bytes) } -> std::same_as<void>;
 };
 
