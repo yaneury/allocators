@@ -45,6 +45,7 @@ public:
     if (request_size > AlignedSize_)
       return nullptr;
 
+    // TODO: avoid N threads racing for double allocation here
     if (!chunks_) {
       if (chunks_ = AllocateNewChunk(); !chunks_)
         return nullptr;
@@ -53,6 +54,9 @@ public:
       current_ = chunks_;
     }
 
+    // TODO: Remaining size may be out of sync if another races to completing
+    // its allocation right after remaining_size is computed below, and this
+    // thread yields execution.
     std::size_t remaining_size = AlignedSize_ - offset_;
     DINFO("[Allocate] Offset: " << offset_);
     DINFO("[Allocator] Remaining Size: " << remaining_size);
@@ -61,6 +65,7 @@ public:
       if (!GrowWhenFull_)
         return nullptr;
 
+      // TODO: Avoid race here as well
       auto* chunk = AllocateNewChunk();
       if (!chunk)
         return nullptr;
@@ -76,6 +81,17 @@ public:
 
     return result;
   }
+
+  /*
+
+      N threads contending on same Bump allocator
+      1) Chunks is empty, N threads attempt to allocate first chunk.
+      2) Chunks is not empty, and has capacity for N threads.
+      3) Chunks is not empty, but only has capacity for some M threads where M <
+     N 4) Chunks is not empty, and has no capacity for any threads, requests
+     more chunks
+
+  */
 
   void Release(std::byte*) {
     // The bump allocator does not support per-object deallocation.
@@ -156,6 +172,54 @@ private:
   dmt::internal::ChunkHeader* current_ = nullptr;
 
   std::mutex chunks_mutex_;
+
+  using ChunkList = internal::Node<internal::ChunkHeader>;
+
+  inline static thread_local ChunkList* global_chunk_list_head_ = nullptr;
+  inline static thread_local ChunkList* global_chunk_list_tail_ = nullptr;
+
+  ChunkList* local_chunk_list = nullptr;
+
+  static void AddToGlobalChunkList(ChunkList* chunk_list) {
+    if (!global_chunk_list_head_) {
+      global_chunk_list_head_ = chunk_list;
+      global_chunk_list_head_->next = nullptr; // Sanity check.
+      global_chunk_list_head_->prev = nullptr; // Sanity check.
+    } else if (!global_chunk_list_tail_) {
+      global_chunk_list_tail_ = chunk_list;
+      global_chunk_list_head_->next = global_chunk_list_tail_;
+      global_chunk_list_tail_->prev = global_chunk_list_head_;
+    } else {
+      global_chunk_list_tail_->next = chunk_list;
+      chunk_list->prev = global_chunk_list_tail_;
+      global_chunk_list_tail_ = chunk_list;
+    }
+  }
+
+  static void RemoveFromGlobalChunkList(ChunkList* chunk_list) {
+    assert(chunk_list != nullptr);
+
+    if (chunk_list == global_chunk_list_head_) {
+      global_chunk_list_head_ = chunk_list->next;
+      if (global_chunk_list_head_) {
+        global_chunk_list_head_->prev = nullptr;
+      }
+    } else if (chunk_list == global_chunk_list_tail_) {
+      global_chunk_list_tail_ = chunk_list->prev;
+      global_chunk_list_tail_->next = nullptr;
+    } else {
+      internal::Extract(chunk_list);
+    }
+
+    if (chunk_list->prev)
+      chunk_list->prev = nullptr;
+
+    if (chunk_list->next)
+      chunk_list->next = nullptr;
+
+    if (global_chunk_list_head_ == global_chunk_list_tail_)
+      global_chunk_list_tail_ = nullptr;
+  }
 };
 
 } // namespace dmt::allocator
