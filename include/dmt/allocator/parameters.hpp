@@ -46,4 +46,14 @@ template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
   using Id_ = WhenFullId;
 };
 
+// Policy used to determine sizing constraint for chunks.
+enum ChunksMust {
+  // Chunk must have enough space to fulfill requested size in |SizeT|
+  // parameter.
+  HaveAtLeastSizeBytes = 0,
+
+  // Chunk can not be larger than requested size in |SizeT| parameter.
+  NoMoreThanSizeBytes = 1,
+};
+
 } // namespace dmt::allocator

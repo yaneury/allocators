@@ -31,7 +31,7 @@ struct ChunkHeader {
   ChunkHeader* next = nullptr;
 };
 
-inline constexpr std::size_t GetChunkHeaderSize() {
+[[gnu::const]] inline constexpr std::size_t GetChunkHeaderSize() {
   return sizeof(ChunkHeader);
 }
 
