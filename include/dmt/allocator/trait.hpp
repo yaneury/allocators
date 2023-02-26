@@ -1,9 +1,12 @@
 #pragma once
 
-#include <concepts> // TODO: Guard this against a C++20 check
 #include <cstddef>
 
 #include <dmt/internal/util.hpp>
+
+#if __cplusplus >= 202002L
+#include <concepts>
+#endif
 
 namespace dmt::allocator {
 
@@ -18,6 +21,12 @@ struct Layout {
   std::size_t alignment;
 };
 
+[[gnu::const]] inline bool IsValid(Layout layout) {
+  return internal::IsValidRequest(layout.size, layout.alignment);
+}
+
+#if __cplusplus >= 202002L
+
 template <class T>
 concept Trait = requires(T allocator, std::size_t size, Layout layout,
                          std::byte* bytes) {
@@ -26,8 +35,6 @@ concept Trait = requires(T allocator, std::size_t size, Layout layout,
   { allocator.Release(bytes) } -> std::same_as<void>;
 };
 
-[[gnu::const]] inline bool IsValid(Layout layout) {
-  return internal::IsValidRequest(layout.size, layout.alignment);
-}
+#endif
 
 } // namespace dmt::allocator
