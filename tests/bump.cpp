@@ -4,88 +4,87 @@
 
 using namespace dmt::allocator;
 
-SCENARIO("Bump allocator can allocate objects", "[allocator::Bump]") {
+TEST_CASE("Bump allocator", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
 
-  GIVEN("a fixed-sized allocator that can fit two objects") {
+  INFO("SizeOfT: " << SizeOfT);
+
+  SECTION("fb2", "a fixed-sized allocator that can fit two objects") {
     using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>>;
     Allocator allocator;
 
     T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
-    WHEN("an object (within size) is allocated") {
-      THEN("it is given a valid pointer address") { REQUIRE(a != nullptr); }
-    }
+    SECTION("an object (within size) is allocated") { REQUIRE(a != nullptr); }
 
-    WHEN("another object is allocated") {
+    SECTION("another object is allocated") {
       REQUIRE(a != nullptr);
       T* b = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
       REQUIRE(b != nullptr);
 
-      THEN("it is set to the address next to the previously allocated one") {
+      SECTION("it is set to the address next to the previously allocated one") {
         auto* addr = reinterpret_cast<std::byte*>(a + 1);
         REQUIRE(addr + dmt::internal::GetChunkHeaderSize() ==
                 reinterpret_cast<std::byte*>(b));
       }
     }
 
-    WHEN("deallocate is invoked") {
+    SECTION("deallocate is invoked") {
       REQUIRE(a != nullptr);
-      THEN("the allocated objects remain valid") {
+      SECTION("the allocated objects remain valid") {
         *a = 100;
         allocator.Release(reinterpret_cast<std::byte*>(a));
         REQUIRE(*a == 100);
       }
     }
 
-    WHEN("allocate is invoked over capacity") {
+    SECTION("allocate is invoked over capacity") {
       REQUIRE(allocator.AllocateUnaligned(SizeOfT) != nullptr);
 
-      THEN("allocate returns nullptr") {
+      SECTION("allocate returns nullptr") {
         REQUIRE(allocator.AllocateUnaligned(SizeOfT) == nullptr);
       }
     }
   }
 
-  GIVEN("a variable-sized allocator that can fit two objects") {
+  SECTION("a variable-sized allocator that can fit two objects") {
     using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::GrowStorage>>;
     Allocator allocator;
 
-    WHEN("making more allocation than can fit in one chunk") {
-      THEN("will grow until OOM") {
+    SECTION("making more allocation than can fit in one chunk") {
+      SECTION("will grow until OOM") {
         for (size_t i = 0; i < 100; ++i)
           REQUIRE(allocator.AllocateUnaligned(SizeOfT) != nullptr);
       }
     }
   }
 
-  GIVEN("a page-sized allocator that can fit many pages") {
+  SECTION("a page-sized allocator that can fit many pages") {
     static constexpr std::size_t PageSize = 4096;
     using Allocator =
         Bump<SizeT<PageSize - dmt::internal::GetChunkHeaderSize()>,
              GrowT<WhenFull::GrowStorage>>;
     Allocator allocator;
 
-    WHEN("making an allocation within page") {
-      THEN("it allocates") {
+    SECTION("making an allocation within page") {
+      SECTION("it allocates") {
         T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
         REQUIRE(a != nullptr);
       }
     }
 
-    WHEN("making an allocation greater than page size") {
-      THEN("it returns nullptr") {
+    SECTION("making an allocation greater than page size") {
+      SECTION("it returns nullptr") {
         REQUIRE(allocator.AllocateUnaligned(PageSize) == nullptr);
       }
     }
   }
 }
 
-SCENARIO("BumpAdapter allocator works with standard containers",
-         "[allocator::BumpAdapter]") {
+TEST_CASE("BumpAdapter allocator", "[allocator::BumpAdapter]") {
   using T = long;
 
-  GIVEN("a fixed-sized allocator that can hold a page worth of objects") {
+  SECTION("a fixed-sized allocator that can hold a page worth of objects") {
     static constexpr std::size_t PageSize = 4096;
     using Allocator = BumpAdapter<T, SizeT<PageSize>>;
 
