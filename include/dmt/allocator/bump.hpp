@@ -45,7 +45,6 @@ public:
     if (request_size > AlignedSize_)
       return nullptr;
 
-    // TODO: avoid N threads racing for double allocation here
     if (!chunks_) {
       if (chunks_ = AllocateNewChunk(); !chunks_)
         return nullptr;
@@ -172,54 +171,6 @@ private:
   dmt::internal::ChunkHeader* current_ = nullptr;
 
   std::mutex chunks_mutex_;
-
-  using ChunkList = internal::Node<internal::ChunkHeader>;
-
-  inline static thread_local ChunkList* global_chunk_list_head_ = nullptr;
-  inline static thread_local ChunkList* global_chunk_list_tail_ = nullptr;
-
-  ChunkList* local_chunk_list = nullptr;
-
-  static void AddToGlobalChunkList(ChunkList* chunk_list) {
-    if (!global_chunk_list_head_) {
-      global_chunk_list_head_ = chunk_list;
-      global_chunk_list_head_->next = nullptr; // Sanity check.
-      global_chunk_list_head_->prev = nullptr; // Sanity check.
-    } else if (!global_chunk_list_tail_) {
-      global_chunk_list_tail_ = chunk_list;
-      global_chunk_list_head_->next = global_chunk_list_tail_;
-      global_chunk_list_tail_->prev = global_chunk_list_head_;
-    } else {
-      global_chunk_list_tail_->next = chunk_list;
-      chunk_list->prev = global_chunk_list_tail_;
-      global_chunk_list_tail_ = chunk_list;
-    }
-  }
-
-  static void RemoveFromGlobalChunkList(ChunkList* chunk_list) {
-    assert(chunk_list != nullptr);
-
-    if (chunk_list == global_chunk_list_head_) {
-      global_chunk_list_head_ = chunk_list->next;
-      if (global_chunk_list_head_) {
-        global_chunk_list_head_->prev = nullptr;
-      }
-    } else if (chunk_list == global_chunk_list_tail_) {
-      global_chunk_list_tail_ = chunk_list->prev;
-      global_chunk_list_tail_->next = nullptr;
-    } else {
-      internal::Extract(chunk_list);
-    }
-
-    if (chunk_list->prev)
-      chunk_list->prev = nullptr;
-
-    if (chunk_list->next)
-      chunk_list->next = nullptr;
-
-    if (global_chunk_list_head_ == global_chunk_list_tail_)
-      global_chunk_list_tail_ = nullptr;
-  }
 };
 
 } // namespace dmt::allocator
