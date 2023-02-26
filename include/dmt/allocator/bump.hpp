@@ -141,7 +141,7 @@ private:
                                 .size = size};
   }
 
-  static bool IsPageMultiple() {
+  [[gnu::const]] static bool IsPageMultiple() {
     static const auto page_size = internal::GetPageSize();
     return kAlignedSize_ >= page_size && kAlignedSize_ % page_size == 0;
   }
