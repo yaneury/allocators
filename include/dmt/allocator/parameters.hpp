@@ -6,9 +6,6 @@
 
 namespace dmt::allocator {
 
-// Default size (in bytes) for a single chunk allocated by the Bump allocator.
-static constexpr std::size_t kDefaultSize = 4096;
-
 struct SizeId {};
 
 // Size (in bytes) for allocator's chunks. Usually, an allocator uses fixed-size
@@ -48,11 +45,5 @@ enum WhenFull {
 template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
   using Id_ = WhenFullId;
 };
-
-template <std::size_t ObjectSize>
-struct ObjectSizeT : std::integral_constant<std::size_t, ObjectSize> {};
-
-template <std::size_t ObjectCount>
-struct ObjectCountT : std::integral_constant<std::size_t, ObjectCount> {};
 
 } // namespace dmt::allocator

@@ -13,17 +13,56 @@
 
 namespace dmt::allocator {
 
+// A simple Bump allocator. This allocator creates a big block of bytes on
+// first allocation, hereafter "chunk", that fits a large number of objects.
+// Each allocation moves a pointer upward, tracking the location of the most
+// recent allocation. When an allocation request is made that is greater than
+// the size remaining in the current chunk, this allocator may optionally
+// request for more memory, creating a linked list of chunks. Per-object
+// allocation, i.e. the standard `free` call, is not supported. Instead, this
+// allocator only supports freeing an entire chunk(s).
+//
+// This allocation is very fast at performing allocations, but of course limited
+// in its utility. It is most appropriate for so-called "phase-based"
+// allocations, where objects are created in a group in a phase, and all freed
+// at the same time.
+//
+// For more information about this form of memory allocation, visit:
+// https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
 template <class... Args> class Bump {
 public:
-  Bump() {
-    DINFO("Instantiating allocator with following parameters: "
-          << "HeaderSize: " << dmt::internal::GetChunkHeaderSize() << "\t"
-          << "ObjectSize: " << ObjectSize_ << "\t"
-          << "ObjectCount: " << ObjectCount_ << "\t"
-          << "PerObjectAllocation: " << PerObjectAllocation << "\t"
-          << "RequestSize: " << RequestSize_ << "\t"
-          << "AlignedSize: " << AlignedSize_);
-  }
+  // Alignment used for the chunks requested. N.b. this is *not* the alignment
+  // for individual allocation requests, of which may have different alignment
+  // requirements.
+  //
+  // This field is optional. If not provided, will default to |sizeof(void*)|.
+  // If provided, it must greater than |sizeof(void*)| and be a power of two.
+  static constexpr std::size_t kAlignment =
+      std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
+
+  // Size of the chunks. This allocator doesn't support variable-sized chunks.
+  // All chunks allocated are of the same size. N.b. that the size here will
+  // *not* be the size of memory ultimately requested for chunks. This is so
+  // because supplemental memory is needed for chunk headers and to ensure
+  // alignment as specified with |kAlignment|.
+  //
+  // This field is optional. If not provided, will default to the common page
+  // size, 4096.
+  static constexpr std::size_t kSize =
+      ntp::optional<SizeT<4096>, Args...>::value;
+
+  // Policy employed when chunk has no more space for pending request.
+  // If |GrowStorage| is provided, then a new chunk will be requested;
+  // if |ReturnNull| is provided, then nullptr is returned on the allocation
+  // request. This does not mean that it's impossible to request more memory
+  // though. It only means that the chunk has no more space for the requested
+  // size. If a smaller size request comes along, it may be possible that the
+  // chunk has sufficient storage for it.
+  static constexpr bool kGrowWhenFull =
+      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
+      WhenFull::GrowStorage;
+
+  Bump() = default;
 
   ~Bump() { Reset(); }
 
@@ -36,13 +75,13 @@ public:
     std::lock_guard<std::mutex> lock(chunks_mutex_);
     assert(layout.alignment >= sizeof(void*));
     std::size_t request_size = internal::AlignUp(
-        layout.size + dmt::internal::GetChunkHeaderSize(), Alignment_);
+        layout.size + dmt::internal::GetChunkHeaderSize(), kAlignment);
 
     DINFO("[Allocate] Received layout(size=" << layout.size << ", alignment="
                                              << layout.alignment << ").");
     DINFO("[Allocate] Request size: " << request_size);
 
-    if (request_size > AlignedSize_)
+    if (request_size > kAlignedSize_)
       return nullptr;
 
     if (!chunks_) {
@@ -53,18 +92,14 @@ public:
       current_ = chunks_;
     }
 
-    // TODO: Remaining size may be out of sync if another races to completing
-    // its allocation right after remaining_size is computed below, and this
-    // thread yields execution.
-    std::size_t remaining_size = AlignedSize_ - offset_;
+    std::size_t remaining_size = kAlignedSize_ - offset_;
     DINFO("[Allocate] Offset: " << offset_);
     DINFO("[Allocator] Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
-      if (!GrowWhenFull_)
+      if (!kGrowWhenFull)
         return nullptr;
 
-      // TODO: Avoid race here as well
       auto* chunk = AllocateNewChunk();
       if (!chunk)
         return nullptr;
@@ -81,17 +116,6 @@ public:
     return result;
   }
 
-  /*
-
-      N threads contending on same Bump allocator
-      1) Chunks is empty, N threads attempt to allocate first chunk.
-      2) Chunks is not empty, and has capacity for N threads.
-      3) Chunks is not empty, but only has capacity for some M threads where M <
-     N 4) Chunks is not empty, and has no capacity for any threads, requests
-     more chunks
-
-  */
-
   void Release(std::byte*) {
     // The bump allocator does not support per-object deallocation.
   }
@@ -104,55 +128,29 @@ public:
     chunks_ = nullptr;
   }
 
-  static constexpr std::size_t Alignment_ =
-      std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
-
-  static_assert(internal::IsPowerOfTwo(Alignment_),
-                "Alignment must be a power of 2.");
-
-  static constexpr bool GrowWhenFull_ =
-      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
-      WhenFull::GrowStorage;
-
-  static constexpr std::size_t ObjectSize_ =
-      ntp::optional<ObjectSizeT<0>, Args...>::value;
-
-  static constexpr std::size_t ObjectCount_ =
-      ntp::optional<ObjectCountT<0>, Args...>::value;
-
-  static constexpr bool PerObjectAllocation =
-      ObjectSize_ > 0 && ObjectCount_ > 0;
-
-  // If allocator is using PerObjectAllocation, then set size to be amount
-  // requested by user: ObjectSize * ObjectCount; otherwise, go with
-  // RequestSize. To ensure that necessary objects fit, we also multiple
-  // ObjectCount* with header size.
-  static constexpr std::size_t RequestSize_ =
-      PerObjectAllocation
-          ? ObjectCount_ * (ObjectSize_ + dmt::internal::GetChunkHeaderSize())
-          : ntp::optional<SizeT<kDefaultSize>, Args...>::value;
-
-  static constexpr std::size_t AlignedSize_ = internal::AlignUp(
-      RequestSize_ + internal::GetChunkHeaderSize(), Alignment_);
-
 private:
+  // Ultimate size of the chunks after accounting for header and alignment.
+  static constexpr std::size_t kAlignedSize_ =
+      internal::AlignUp(kSize + internal::GetChunkHeaderSize(), kAlignment);
+
   static internal::Allocation CreateAllocation(std::byte* base) {
-    std::size_t size = IsPageMultiple() ? AlignedSize_ / internal::GetPageSize()
-                                        : AlignedSize_;
+    std::size_t size = IsPageMultiple()
+                           ? kAlignedSize_ / internal::GetPageSize()
+                           : kAlignedSize_;
     return internal::Allocation{.base = static_cast<std::byte*>(base),
                                 .size = size};
   }
 
   static bool IsPageMultiple() {
     static const auto page_size = internal::GetPageSize();
-    return AlignedSize_ >= page_size && AlignedSize_ % page_size == 0;
+    return kAlignedSize_ >= page_size && kAlignedSize_ % page_size == 0;
   }
 
   static dmt::internal::ChunkHeader* AllocateNewChunk() {
     auto allocation =
         IsPageMultiple()
-            ? internal::AllocatePages(AlignedSize_ / internal::GetPageSize())
-            : internal::AllocateBytes(AlignedSize_, Alignment_);
+            ? internal::AllocatePages(kAlignedSize_ / internal::GetPageSize())
+            : internal::AllocateBytes(kAlignedSize_, kAlignment);
 
     if (!allocation.has_value())
       return nullptr;
@@ -171,6 +169,11 @@ private:
   dmt::internal::ChunkHeader* current_ = nullptr;
 
   std::mutex chunks_mutex_;
+
+  // Various assertions hidden from user API but added here to ensure invariants
+  // are met at compile time.
+  static_assert(internal::IsPowerOfTwo(kAlignment),
+                "kAlignment must be a power of 2.");
 };
 
 } // namespace dmt::allocator
