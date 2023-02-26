@@ -51,6 +51,14 @@ public:
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<4096>, Args...>::value;
 
+  // Sizing limits placed on |kSize|.
+  // If |HaveAtLeastSizeBytes| is provided, then chunk must have |kSize| bytes
+  // available not including header size and alignment.
+  // If |NoMoreThanSizeBytes| is provided, then chunk must not exceed |kSize|
+  // bytes, including after accounting for header size and alignment.
+  static constexpr bool kMustContainSizeBytesInSpace =
+      ntp::optional<LimitT<ChunksMust::HaveAtLeastSizeBytes>, Args...>::value;
+
   // Policy employed when chunk has no more space for pending request.
   // If |GrowStorage| is provided, then a new chunk will be requested;
   // if |ReturnNull| is provided, then nullptr is returned on the allocation
@@ -62,27 +70,25 @@ public:
       ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
 
-  Bump() = default;
+  Bump() { DINFO("kAlignedSize: " << kAlignedSize_); }
 
   ~Bump() { Reset(); }
 
   std::byte* AllocateUnaligned(std::size_t size) {
-    return Allocate(Layout{.size = size, .alignment = sizeof(void*)});
+    return Allocate(
+        Layout{.size = size, .alignment = internal::kMinimumAlignment});
   }
 
   std::byte* Allocate(Layout layout) noexcept {
     // This class uses a very coarse-grained mutex for allocation.
     std::lock_guard<std::mutex> lock(chunks_mutex_);
-    assert(layout.alignment >= sizeof(void*));
-    std::size_t request_size = internal::AlignUp(
-        layout.size + dmt::internal::GetChunkHeaderSize(), kAlignment);
+    assert(layout.alignment >= internal::kMinimumAlignment);
+    std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
 
-    DINFO("[Allocate] Received layout(size=" << layout.size << ", alignment="
-                                             << layout.alignment << ").");
-    DINFO("[Allocate] Request size: " << request_size);
-
-    if (request_size > kAlignedSize_)
+    if (request_size > kMaxRequestSize_)
       return nullptr;
+
+    DINFO("Request Size: " << request_size);
 
     if (!chunks_) {
       if (chunks_ = AllocateNewChunk(); !chunks_)
@@ -90,11 +96,12 @@ public:
 
       // Set current chunk to header
       current_ = chunks_;
+      offset_ = internal::GetChunkHeaderSize();
     }
 
     std::size_t remaining_size = kAlignedSize_ - offset_;
-    DINFO("[Allocate] Offset: " << offset_);
-    DINFO("[Allocator] Remaining Size: " << remaining_size);
+
+    DINFO("Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
       if (!kGrowWhenFull)
@@ -106,7 +113,7 @@ public:
 
       current_->next = chunk;
       current_ = chunk;
-      offset_ = 0;
+      offset_ = internal::GetChunkHeaderSize();
     }
 
     std::byte* base = dmt::internal::GetChunk(current_);
@@ -122,7 +129,7 @@ public:
 
   void Reset() {
     std::lock_guard<std::mutex> lock(chunks_mutex_);
-    offset_ = 0;
+    offset_ = internal::GetChunkHeaderSize();
     if (chunks_)
       ReleaseChunks(chunks_);
     chunks_ = nullptr;
@@ -131,7 +138,17 @@ public:
 private:
   // Ultimate size of the chunks after accounting for header and alignment.
   static constexpr std::size_t kAlignedSize_ =
-      internal::AlignUp(kSize + internal::GetChunkHeaderSize(), kAlignment);
+      kMustContainSizeBytesInSpace
+          ? internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
+                              kAlignment)
+          // TODO: Constrain size to be no more than |kSize| here.
+          : internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
+                              kAlignment);
+
+  // Max size allowed per request when accounting for aligned size and chunk
+  // header.
+  static constexpr std::size_t kMaxRequestSize_ =
+      kAlignedSize_ - internal::GetChunkHeaderSize();
 
   static internal::Allocation CreateAllocation(std::byte* base) {
     std::size_t size = IsPageMultiple()

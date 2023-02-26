@@ -6,28 +6,18 @@
 
 namespace dmt::allocator {
 
-struct SizeId {};
-
 // Size (in bytes) for allocator's chunks. Usually, an allocator uses fixed-size
 // chunks to allocate memory. Within a chunk, several objects of varying length
 // can be "allocated", so long as they fit within the amount of memory already
 // acquired. Currently, this field is used by the Bump allocator.
 template <std::size_t Size>
-struct SizeT : std::integral_constant<std::size_t, Size> {
-  using Id_ = SizeId;
-};
-
-struct AlignmentId {};
+struct SizeT : std::integral_constant<std::size_t, Size> {};
 
 // Alignment used when making an allocation. Usually, allocators defer to the
 // alignment of the underlying object they are allocating. The constrains for
 // this value are that it is a power of two and greater than |sizeof(void*)|.
 template <std::size_t Alignment>
-struct AlignmentT : std::integral_constant<std::size_t, Alignment> {
-  using Id_ = AlignmentId;
-};
-
-struct WhenFullId {};
+struct AlignmentT : std::integral_constant<std::size_t, Alignment> {};
 
 // Policy to employ when Bump allocator's chunk is out of space and
 // can't fullfill an allocation request.
@@ -42,9 +32,7 @@ enum WhenFull {
   GrowStorage = 1
 };
 
-template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {
-  using Id_ = WhenFullId;
-};
+template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {};
 
 // Policy used to determine sizing constraint for chunks.
 enum ChunksMust {
@@ -55,5 +43,8 @@ enum ChunksMust {
   // Chunk can not be larger than requested size in |SizeT| parameter.
   NoMoreThanSizeBytes = 1,
 };
+
+template <ChunksMust CM>
+struct LimitT : std::integral_constant<ChunksMust, CM> {};
 
 } // namespace dmt::allocator

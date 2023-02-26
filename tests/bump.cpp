@@ -11,7 +11,8 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
   INFO("SizeOfT: " << SizeOfT);
 
   SECTION("fb2", "a fixed-sized allocator that can fit two objects") {
-    using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>>;
+    using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>,
+                           LimitT<ChunksMust::HaveAtLeastSizeBytes>>;
     Allocator allocator;
 
     T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
@@ -23,9 +24,7 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
       REQUIRE(b != nullptr);
 
       SECTION("it is set to the address next to the previously allocated one") {
-        auto* addr = reinterpret_cast<std::byte*>(a + 1);
-        REQUIRE(addr + dmt::internal::GetChunkHeaderSize() ==
-                reinterpret_cast<std::byte*>(b));
+        REQUIRE(a + 1 == b);
       }
     }
 
@@ -59,10 +58,11 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
     }
   }
 
-  SECTION("a page-sized allocator that can fit many pages") {
+  SECTION("pb", "a page-sized, page-aligned allocator with growth storage") {
     static constexpr std::size_t PageSize = 4096;
     using Allocator =
         Bump<SizeT<PageSize - dmt::internal::GetChunkHeaderSize()>,
+             AlignmentT<PageSize>, LimitT<ChunksMust::HaveAtLeastSizeBytes>,
              GrowT<WhenFull::GrowStorage>>;
     Allocator allocator;
 
@@ -73,7 +73,9 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
       }
     }
 
-    SECTION("making an allocation greater than page size") {
+    // When accounting for header, page size should be larger than size of
+    // chunk.
+    SECTION("making an allocation greater than chunk size") {
       SECTION("it returns nullptr") {
         REQUIRE(allocator.AllocateUnaligned(PageSize) == nullptr);
       }
