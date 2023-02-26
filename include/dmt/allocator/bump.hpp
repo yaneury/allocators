@@ -5,7 +5,6 @@
 #include <dmt/allocator/parameters.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/chunk.hpp>
-#include <dmt/internal/log.hpp>
 #include <dmt/internal/platform.hpp>
 #include <dmt/internal/util.hpp>
 #include <mutex>
@@ -57,7 +56,8 @@ public:
   // If |NoMoreThanSizeBytes| is provided, then chunk must not exceed |kSize|
   // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<ChunksMust::HaveAtLeastSizeBytes>, Args...>::value;
+      ntp::optional<LimitT<ChunksMust::HaveAtLeastSizeBytes>, Args...>::value ==
+      ChunksMust::HaveAtLeastSizeBytes;
 
   // Policy employed when chunk has no more space for pending request.
   // If |GrowStorage| is provided, then a new chunk will be requested;
@@ -80,27 +80,28 @@ public:
   }
 
   std::byte* Allocate(Layout layout) noexcept {
-    // This class uses a very coarse-grained mutex for allocation.
-    std::lock_guard<std::mutex> lock(chunks_mutex_);
-    assert(layout.alignment >= internal::kMinimumAlignment);
+    if (!IsValid(layout))
+      return nullptr;
+
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
+    DINFO("Request Size: " << request_size);
 
     if (request_size > kMaxRequestSize_)
       return nullptr;
 
-    DINFO("Request Size: " << request_size);
+    // This class uses a very coarse-grained mutex for allocation.
+    std::lock_guard<std::mutex> lock(chunks_mutex_);
 
     if (!chunks_) {
       if (chunks_ = AllocateNewChunk(); !chunks_)
         return nullptr;
 
-      // Set current chunk to header
+      // Set current chunk to header.
       current_ = chunks_;
       offset_ = internal::GetChunkHeaderSize();
     }
 
     std::size_t remaining_size = kAlignedSize_ - offset_;
-
     DINFO("Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
@@ -141,8 +142,7 @@ private:
       kMustContainSizeBytesInSpace
           ? internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
                               kAlignment)
-          // TODO: Constrain size to be no more than |kSize| here.
-          : internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
+          : internal::AlignUp(kSize - internal::GetChunkHeaderSize(),
                               kAlignment);
 
   // Max size allowed per request when accounting for aligned size and chunk
@@ -181,10 +181,19 @@ private:
     dmt::internal::ReleaseChunks(chunk, std::move(release));
   }
 
-  size_t offset_ = 0;
+  // List of all allocated chunks.
   dmt::internal::ChunkHeader* chunks_ = nullptr;
+
+  // Current chunk in used.
   dmt::internal::ChunkHeader* current_ = nullptr;
 
+  // Offset for current chunk. This is reset everytime a new chunk is allocated.
+  // Offset starts past chunk header size.
+  size_t offset_ = internal::GetChunkHeaderSize();
+
+  // Coarse-grained mutex.
+  // TODO: Look into fine-grained alternatives.
+  // One option is to use atomic instructions, e.g. __sync_fetch_and_add.
   std::mutex chunks_mutex_;
 
   // Various assertions hidden from user API but added here to ensure invariants

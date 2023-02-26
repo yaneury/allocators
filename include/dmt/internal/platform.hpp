@@ -15,12 +15,9 @@ struct Allocation {
   std::size_t size;
 };
 
-static constexpr size_t kMinimumAlignment = sizeof(void*);
-
 inline std::optional<Allocation> AllocateBytes(std::size_t size,
                                                std::size_t alignment) {
-  if (size == 0 || alignment == 0 || !IsPowerOfTwo(alignment) ||
-      alignment < kMinimumAlignment)
+  if (!IsValidRequest(size, alignment))
     return std::nullopt;
 
   void* ptr = std::aligned_alloc(alignment, size);
@@ -31,7 +28,9 @@ inline std::optional<Allocation> AllocateBytes(std::size_t size,
 }
 
 inline void ReleaseBytes(Allocation allocation) {
-  // TODO: Add validation
+  if (!allocation.base)
+    return;
+
   std::free(allocation.base);
 }
 

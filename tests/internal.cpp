@@ -6,7 +6,7 @@
 
 using namespace dmt::internal;
 
-TEST_CASE("IsPowerOfTwo is computed", "[internal::IsPowerOfTwo]") {
+TEST_CASE("IsPowerOfTwo", "[internal/util]") {
   size_t kMaxExp = 16;
   std::vector<size_t> powers_of_two = {};
   for (size_t i = 0; i < kMaxExp; ++i) {
@@ -20,7 +20,17 @@ TEST_CASE("IsPowerOfTwo is computed", "[internal::IsPowerOfTwo]") {
   }
 }
 
-TEST_CASE("AlignUp", "[internal::AlignUp]") {
+TEST_CASE("IsValidRequest", "[internal/util]") {
+  REQUIRE(IsValidRequest(/*size of zero*/ 0, kMinimumAlignment) == false);
+  REQUIRE(IsValidRequest(1, /*alignment of zero*/ 0) == false);
+  REQUIRE(IsValidRequest(/*size of zero*/ 0, /*and alignment of zero*/ 0) ==
+          false);
+  REQUIRE(IsValidRequest(1, /*alignment less than minimum*/ 4) == false);
+  REQUIRE(IsValidRequest(1, /*alignment not power of two*/ 13) == false);
+  REQUIRE(IsValidRequest(1, /*alignment not power of two*/ 13) == false);
+}
+
+TEST_CASE("AlignUp", "[internal/util]") {
   REQUIRE(AlignUp(4095, 4096) == 4096);
   REQUIRE(AlignUp(0, 8) == 0);
   REQUIRE(AlignUp(8, 0) == 0);
@@ -28,13 +38,17 @@ TEST_CASE("AlignUp", "[internal::AlignUp]") {
   REQUIRE(AlignUp(11, 8) == 16);
 }
 
-TEST_CASE("Allocatestd::bytes", "[internal::Allocatestd::bytes]") {
-  REQUIRE(AllocateBytes(/*invalid size */ 0,
-                        /*a valid alignment=*/sizeof(void*)) == std::nullopt);
+TEST_CASE("AllocateBytes", "[internal/platform]") {
+  REQUIRE(AllocateBytes(/*invalid size*/ 0,
+                        /*a valid alignment*/ sizeof(void*)) == std::nullopt);
   REQUIRE(AllocateBytes(/*a valid size*/ 100, /*invalid alignment*/ 0) ==
           std::nullopt);
-  REQUIRE(AllocateBytes(/* a valid size */ 100,
+  REQUIRE(AllocateBytes(/*a valid size*/ 100,
                         /*a non-power of two alignment*/ 3) == std::nullopt);
-  REQUIRE(AllocateBytes(/* a valid size */ 100,
+  REQUIRE(AllocateBytes(/*a valid size*/ 100,
                         /*an alignment less than minimum*/ 2) == std::nullopt);
+}
+
+TEST_CASE("AllocatePages", "[internal/platform]") {
+  REQUIRE(AllocatePages(/*invalid size*/ 0) == std::nullopt);
 }

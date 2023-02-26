@@ -1,8 +1,21 @@
 #pragma once
 
+#ifdef DMT_DEBUG
+
+#include <plog/Log.h>
+
+#define DINFO(x) PLOGD << x;
+#define DERROR(x) PLOGE << x;
+#else
+#define DINFO(x)
+#define DERROR(x)
+#endif
+
 #include <cstddef>
 
 namespace dmt::internal {
+
+static constexpr size_t kMinimumAlignment = sizeof(void*);
 
 [[gnu::const]] inline constexpr bool IsPowerOfTwo(std::size_t n) {
   return n && !(n & (n - 1));
@@ -14,6 +27,12 @@ namespace dmt::internal {
     return 0;
 
   return (n + alignment - 1) & ~(alignment - 1);
+}
+
+[[gnu::const]] inline bool IsValidRequest(std::size_t size,
+                                          std::size_t alignment) {
+  return size > 0 && alignment >= internal::kMinimumAlignment &&
+         internal::IsPowerOfTwo(alignment);
 }
 
 } // namespace dmt::internal

@@ -3,6 +3,8 @@
 #include <concepts> // TODO: Guard this against a C++20 check
 #include <cstddef>
 
+#include <dmt/internal/util.hpp>
+
 namespace dmt::allocator {
 
 // A parameter used for making an allocation request.
@@ -23,5 +25,9 @@ concept Trait = requires(T allocator, std::size_t size, Layout layout,
   { allocator.Allocate(layout) } -> std::same_as<std::byte*>;
   { allocator.Release(bytes) } -> std::same_as<void>;
 };
+
+[[gnu::const]] inline bool IsValid(Layout layout) {
+  return internal::IsValidRequest(layout.size, layout.alignment);
+}
 
 } // namespace dmt::allocator
