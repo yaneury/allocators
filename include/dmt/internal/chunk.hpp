@@ -61,34 +61,4 @@ inline void ReleaseChunks(ChunkHeader* head,
   }
 }
 
-template <class T> struct Node {
-  T* value = nullptr;
-  Node<T>* prev = nullptr;
-  Node<T>* next = nullptr;
-
-  Node(T* value, Node<T>* prev = nullptr, Node<T>* next = nullptr)
-      : value(value), prev(prev), next(next) {}
-};
-
-template <class T> inline void Extract(Node<T>* node) {
-  if (!node)
-    return;
-
-  if (!node->prev)
-    return;
-
-  node->prev->next = node->next;
-
-  if (!node->next)
-    return;
-
-  node->next->prev = node->prev;
-}
-
-template <class T> inline void Append(Node<T>* node, Node<T>* other) {
-  assert(node != nullptr && other != nullptr);
-  node->next = other;
-  other->prev = node;
-}
-
 } // namespace dmt::internal
