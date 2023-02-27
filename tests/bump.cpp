@@ -36,7 +36,6 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
         REQUIRE(*a == 100);
       }
     }
-
     SECTION("allocate is invoked over capacity") {
       REQUIRE(allocator.AllocateUnaligned(SizeOfT) != nullptr);
 

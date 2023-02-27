@@ -98,10 +98,11 @@ public:
 
       // Set current chunk to header.
       current_ = chunks_;
-      offset_ = internal::GetChunkHeaderSize();
+      offset_ = 0;
     }
 
-    std::size_t remaining_size = kAlignedSize_ - offset_;
+    std::size_t remaining_size =
+        kAlignedSize_ - internal::GetChunkHeaderSize() - offset_;
     DINFO("Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
@@ -114,7 +115,7 @@ public:
 
       current_->next = chunk;
       current_ = chunk;
-      offset_ = internal::GetChunkHeaderSize();
+      offset_ = 0;
     }
 
     std::byte* base = dmt::internal::GetChunk(current_);
@@ -130,7 +131,7 @@ public:
 
   void Reset() {
     std::lock_guard<std::mutex> lock(chunks_mutex_);
-    offset_ = internal::GetChunkHeaderSize();
+    offset_ = 0;
     if (chunks_)
       ReleaseChunks(chunks_);
     chunks_ = nullptr;

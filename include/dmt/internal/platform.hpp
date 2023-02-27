@@ -8,7 +8,7 @@
 namespace dmt::internal {
 
 // Gets the page size (in bytes) for the current platform.
-[[gnu::const]] std::size_t GetPageSize();
+std::size_t GetPageSize();
 
 struct Allocation {
   std::byte* base;
@@ -31,7 +31,8 @@ inline void ReleaseBytes(Allocation allocation) {
   if (!allocation.base)
     return;
 
-  std::free(allocation.base);
+  void* ptr = static_cast<void*>(allocation.base);
+  std::free(ptr);
 }
 
 std::optional<Allocation> AllocatePages(std::size_t pages);
@@ -46,7 +47,7 @@ void ReleasePages(Allocation allocation);
 
 namespace dmt::internal {
 
-[[gnu::const]] inline std::size_t GetPageSize() {
+inline std::size_t GetPageSize() {
   return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
 }
 
