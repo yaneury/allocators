@@ -31,7 +31,7 @@ struct ChunkHeader {
   ChunkHeader* next = nullptr;
 };
 
-[[gnu::const]] inline constexpr std::size_t GetChunkHeaderSize() {
+inline constexpr std::size_t GetChunkHeaderSize() {
   return sizeof(ChunkHeader);
 }
 
@@ -59,6 +59,19 @@ inline void ReleaseChunks(ChunkHeader* head,
 
     itr = next;
   }
+}
+
+inline ChunkHeader* FindChunkByFirstFit(ChunkHeader* header) {
+  return nullptr;
+  // TODO
+}
+
+inline void SplitChunk(ChunkHeader* header) {
+  // TODO
+}
+
+inline void CoalesceChunk(ChunkHeader* header) {
+  // TODO
 }
 
 } // namespace dmt::internal

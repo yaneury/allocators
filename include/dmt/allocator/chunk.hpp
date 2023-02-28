@@ -2,6 +2,7 @@
 
 #include <dmt/allocator/parameters.hpp>
 #include <dmt/allocator/trait.hpp>
+#include <dmt/internal/chunk.hpp>
 #include <dmt/internal/util.hpp>
 #include <template/parameters.hpp>
 
