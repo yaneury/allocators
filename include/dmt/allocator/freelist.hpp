@@ -17,7 +17,29 @@ public:
         Layout{.size = size, .alignment = internal::kMinimumAlignment});
   }
 
-  std::byte* Allocate(Layout layout) noexcept {}
+  std::byte* Allocate(Layout layout) noexcept {
+    if (!IsValid(layout))
+      return nullptr;
+
+    std::size_t request_size = internal::AlignUp(
+        layout.size + internal::GetChunkHeaderSize(), layout.alignment);
+
+    if (request_size > Parent::kMaxRequestSize_)
+      return nullptr;
+
+    // TODO: Add sync primitives
+    if (!chunk_) {
+      if (chunk_ = Parent::AllocateNewChunk(); !chunk_) {
+        return nullptr;
+      }
+
+      free_list_ = chunk_;
+    }
+
+    internal::ChunkHeader* first_fit = FindFirstFit(request_size);
+    std::byte* ptr = reinterpret_cast<std::byte*>(first_fit);
+    return ptr + internal::GetChunkHeaderSize();
+  }
 
   void Release(std::byte*) {}
 
@@ -26,6 +48,54 @@ private:
   // nondepedent name. For more information, see:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
   using Parent = Chunk<Args...>;
+
+  internal::ChunkHeader* FindFirstFit(std::size_t size) {
+    internal::ChunkHeader* itr = free_list_;
+
+    internal::ChunkHeader* prev = nullptr;
+    while (itr) {
+      if (itr->size < size) {
+        prev = itr;
+        itr = itr->next;
+        continue;
+      }
+
+      internal::ChunkHeader* new_header = Split(itr, size);
+      if (prev) {
+        prev->next = new_header->next;
+      }
+
+      if (free_list_ == itr) {
+        free_list_ = new_header;
+      }
+
+      itr->next = nullptr;
+      return itr;
+    }
+
+    return nullptr;
+  }
+
+  internal::ChunkHeader* Split(internal::ChunkHeader* chunk, std::size_t size) {
+    assert(chunk != nullptr && size > 0);
+
+    std::size_t new_chunk_size = chunk->size - size;
+    std::byte* new_chunk_addr = reinterpret_cast<std::byte*>(chunk) + size;
+    memset(new_chunk_addr, 0, new_chunk_size);
+    internal::ChunkHeader* new_header =
+        reinterpret_cast<internal::ChunkHeader*>(new_chunk_addr);
+
+    chunk->size = size;
+    new_header->next = chunk->next;
+    new_header->size = new_chunk_size;
+
+    return new_header;
+  }
+
+  // Pointer to entire chunk of memory.
+  internal::ChunkHeader* chunk_ = nullptr;
+
+  internal::ChunkHeader* free_list_ = nullptr;
 };
 
 } // namespace dmt::allocator
