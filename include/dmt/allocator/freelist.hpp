@@ -41,7 +41,16 @@ public:
     return ptr + internal::GetChunkHeaderSize();
   }
 
-  void Release(std::byte*) {}
+  void Release(std::byte* ptr) {
+    if (!ptr)
+      return;
+
+    internal::ChunkHeader* chunk = reinterpret_cast<internal::ChunkHeader*>(
+        ptr - internal::GetChunkHeaderSize());
+    SetHeadTo(chunk);
+
+    // TODO: Add Coalescing
+  }
 
 private:
   // We have to explicitly provide the parent class in contexts with a
@@ -90,6 +99,11 @@ private:
     new_header->size = new_chunk_size;
 
     return new_header;
+  }
+
+  void SetHeadTo(internal::ChunkHeader* chunk) {
+    chunk_->next = free_list_;
+    free_list_ = chunk;
   }
 
   // Pointer to entire chunk of memory.
