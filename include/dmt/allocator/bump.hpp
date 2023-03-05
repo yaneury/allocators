@@ -28,7 +28,7 @@ namespace dmt::allocator {
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
 template <class... Args> class Bump : public Chunk<Args...> {
 public:
-  Bump() { DINFO("kAlignedSize: " << kAlignedSize_); }
+  Bump() { DINFO("kAlignedSize: " << Parent::kAlignedSize_); }
 
   ~Bump() { Reset(); }
 

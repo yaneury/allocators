@@ -105,8 +105,9 @@ private:
   }
 
   void Coalesce(internal::ChunkHeader* chunk) {
-    while (reinterpret_cast<std::byte*>(chunk->next) !=
-           (reinterpret_cast<std::byte*>(chunk) + chunk->size)) {
+    while (chunk->next &&
+           reinterpret_cast<std::byte*>(chunk->next) ==
+               reinterpret_cast<std::byte*>(chunk) + chunk->size) {
       internal::ChunkHeader* next = chunk->next;
       chunk->size += next->size;
       chunk->next = next->next;

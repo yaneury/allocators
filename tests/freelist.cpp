@@ -54,7 +54,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
       }
     }
 
-    SECTION("Coalesces free block such that page-sized object fits") {
+    SECTION("PSAC", "Coalesces free block such that page-sized object fits") {
       T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(kPageSize));
       REQUIRE(p != nullptr);
       allocator.Release(reinterpret_cast<std::byte*>(p));
