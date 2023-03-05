@@ -2,11 +2,12 @@
 
 import argparse
 import subprocess
+import sys
 
-def clean(args):
+def clean(args, extra = []):
   subprocess.run("rm -rf build/*", shell=True)
 
-def gen(args):
+def gen(args, extra = []):
   if 'clean' in args and args.clean:
       clean(args)
 
@@ -20,7 +21,7 @@ def gen(args):
   cmd += " " + flags
   subprocess.run(cmd, shell=True)
 
-def build(args):
+def build(args, extra = []):
   if 'clean' in args and args.clean:
     clean(args)
 
@@ -29,11 +30,13 @@ def build(args):
 
   subprocess.run("make -C build", shell=True)
 
-def run(args):
+def run(args, extra = []):
   if 'build' in args and args.build:
     build(args)
-
-  subprocess.run("./build/tests/dmt-tests", shell=True)
+  cmd = "./build/tests/dmt-tests"
+  cmd += " " + " ".join(extra)
+  print (f"Running '{cmd}'")
+  subprocess.run(cmd, shell=True)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -52,16 +55,25 @@ def main():
   run_parser = subparsers.add_parser('run', help="Run the tests")
   run_parser.add_argument('--build', default=False, action=argparse.BooleanOptionalAction, help="Build before running")
 
-  args = parser.parse_args()
+  args = sys.argv
+  extra = []
+  if "--" in args:
+    break_point = sys.argv.index("--")
+    args = sys.argv[1:break_point]  # Discard invoking command
+    extra = sys.argv[break_point+1:] # Discard "--" and get remaining elements
+  else:
+    args = sys.argv[1:] # Discard invoking command
 
-  if args.cmd == "clean":
-    clean(args)
-  elif args.cmd == "gen":
-      gen(args)
-  elif args.cmd == "build":
-    build(args)
-  elif args.cmd == "run":
-    run(args)
+  parsed_args = parser.parse_args(args)
+
+  if parsed_args.cmd == "clean":
+    clean(parsed_args, extra)
+  elif parsed_args.cmd == "gen":
+      gen(parsed_args, extra)
+  elif parsed_args.cmd == "build":
+    build(parsed_args, extra)
+  elif parsed_args.cmd == "run":
+    run(parsed_args, extra)
   else:
     parser.exit(1)
 
