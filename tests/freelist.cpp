@@ -40,5 +40,24 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
       allocator.Release(reinterpret_cast<std::byte*>(allocs[i]));
       allocs[i] = nullptr;
     }
+
+    SECTION("Can reallocate objects using freed space") {
+      for (size_t i = 0; i < kNumAllocs; ++i) {
+        T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+        REQUIRE(p != nullptr);
+        allocs[i] = p;
+      }
+
+      for (size_t i = 0; i < kNumAllocs; ++i) {
+        allocator.Release(reinterpret_cast<std::byte*>(allocs[i]));
+        allocs[i] = nullptr;
+      }
+    }
+
+    SECTION("Coalesces free block such that page-sized object fits") {
+      T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(kPageSize));
+      REQUIRE(p != nullptr);
+      allocator.Release(reinterpret_cast<std::byte*>(p));
+    }
   }
 }

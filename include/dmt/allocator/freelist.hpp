@@ -47,9 +47,12 @@ public:
 
     internal::ChunkHeader* chunk = reinterpret_cast<internal::ChunkHeader*>(
         ptr - internal::GetChunkHeaderSize());
+    // Zero out content
+    memset(reinterpret_cast<std::byte*>(chunk) + internal::GetChunkHeaderSize(),
+           0, chunk->size - internal::GetChunkHeaderSize());
+    chunk->next = nullptr;
     SetHeadTo(chunk);
-
-    // TODO: Add Coalescing
+    Coalesce(chunk);
   }
 
 private:
@@ -99,6 +102,18 @@ private:
     new_header->size = new_chunk_size;
 
     return new_header;
+  }
+
+  void Coalesce(internal::ChunkHeader* chunk) {
+    while (reinterpret_cast<std::byte*>(chunk->next) !=
+           (reinterpret_cast<std::byte*>(chunk) + chunk->size)) {
+      internal::ChunkHeader* next = chunk->next;
+      chunk->size += next->size;
+      chunk->next = next->next;
+      memset(reinterpret_cast<std::byte*>(chunk) +
+                 internal::GetChunkHeaderSize(),
+             0, chunk->size - internal::GetChunkHeaderSize());
+    }
   }
 
   void SetHeadTo(internal::ChunkHeader* chunk) {
