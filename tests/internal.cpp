@@ -3,6 +3,7 @@
 #include <dmt/internal/chunk.hpp>
 #include <dmt/internal/util.hpp>
 #include <vector>
+#include <queue>
 
 using namespace dmt::internal;
 
@@ -52,3 +53,76 @@ TEST_CASE("AllocateBytes", "[internal/platform]") {
 TEST_CASE("AllocatePages", "[internal/platform]") {
   REQUIRE(AllocatePages(/*invalid size*/ 0) == std::nullopt);
 }
+
+TEST_CASE("ZeroChunk", "[internal/chunk]") {
+  // Basic test that passing in a |nullptr| doesn't crash the process.
+  // Of course, there's nothing to assert.
+  ZeroChunk(nullptr);
+
+  static constexpr std::size_t kBufferSize = 32;
+  static constexpr char kTestChar = 'a';
+
+  // Initialize buffer with all 'a' characters to ensure that zero out works
+  // as expected.
+  char kBuffer[kBufferSize];
+  std::fill_n(kBuffer, kBufferSize, 'a');
+
+  ChunkHeader* header = reinterpret_cast<ChunkHeader*>(kBuffer);
+  // Add self-pointer to validate that it's not zeroed out.
+  header->next = reinterpret_cast<ChunkHeader*>(&kBuffer);
+  header->size = kBufferSize;
+
+  for (size_t i = GetChunkHeaderSize(); i < kBufferSize; ++i)
+    REQUIRE(kBuffer[i] == 'a');
+
+  ZeroChunk(header);
+
+  REQUIRE(header->next == reinterpret_cast<ChunkHeader*>(&kBuffer));
+  REQUIRE(header->size == kBufferSize);
+  for (size_t i = GetChunkHeaderSize(); i < kBufferSize; ++i)
+    REQUIRE(kBuffer[i] == 0);
+}
+
+std::unique_ptr<std::byte[]>
+CreateFreeList(std::vector<std::size_t> chunk_sizes) {
+  std::transform(chunk_sizes.begin(), chunk_sizes.end(), chunk_sizes.begin(), [](auto sz) {
+    return sz + GetChunkHeaderSize();
+  });
+
+  std::size_t total_size = 0;
+  for (auto size: chunk_sizes)
+    total_size += size;
+
+  auto buffer = std::make_unique<std::byte[]>(total_size);
+
+  std::byte* itr = buffer.get();
+  for (std::size_t i = 0; i < chunk_sizes.size(); ++i) {
+    auto size = chunk_sizes[i];
+    ChunkHeader* h = reinterpret_cast<ChunkHeader*>(itr);
+    h->size = size;
+    itr = itr+size;
+    if (i < chunk_sizes.size() - 1)
+      h->next = reinterpret_cast<ChunkHeader*>(itr);
+  }
+
+ return std::move(buffer);
+}
+
+TEST_CASE("FindChunkByFirstFit", "[internal/chunk]") {
+  auto buffer = CreateFreeList({3, 5, 3});
+  auto head = reinterpret_cast<ChunkHeader*>(buffer.get());
+  auto actual = FindChunkByFirstFit(head, 5);
+
+  REQUIRE(actual.has_value());
+
+  REQUIRE(actual.value().prev == head);
+  REQUIRE(actual.value().header == reinterpret_cast<ChunkHeader*>(buffer.get() + 3 + GetChunkHeaderSize()));
+}
+
+TEST_CASE("FindChunkByBestFit", "[internal/chunk]") {}
+
+TEST_CASE("FindChunkByWorstFit", "[internal/chunk]") {}
+
+TEST_CASE("SplitChunk", "[internal/chunk]") {}
+
+TEST_CASE("CoalesceChunk", "[internal/chunk]") {}
