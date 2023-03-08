@@ -4,6 +4,8 @@ import argparse
 import subprocess
 import sys
 
+import os
+
 def clean(args, extra = []):
   subprocess.run("rm -rf build/*", shell=True)
 

@@ -2,8 +2,8 @@
 #include <catch2/catch_all.hpp>
 #include <dmt/internal/chunk.hpp>
 #include <dmt/internal/util.hpp>
+#include <ranges>
 #include <vector>
-#include <queue>
 
 using namespace dmt::internal;
 
@@ -83,45 +83,99 @@ TEST_CASE("ZeroChunk", "[internal/chunk]") {
     REQUIRE(kBuffer[i] == 0);
 }
 
-std::unique_ptr<std::byte[]>
-CreateFreeList(std::vector<std::size_t> chunk_sizes) {
-  std::transform(chunk_sizes.begin(), chunk_sizes.end(), chunk_sizes.begin(), [](auto sz) {
-    return sz + GetChunkHeaderSize();
-  });
+class TestFreeList {
+public:
+  TestFreeList(std::vector<std::size_t> chunk_sizes)
+      : chunk_sizes_(std::move(chunk_sizes)) {
+    std::size_t total_size = 0;
+    std::ranges::for_each(chunk_sizes, [&total_size](std::size_t& sz) {
+      sz += GetChunkHeaderSize();
+      total_size += sz;
+    });
 
-  std::size_t total_size = 0;
-  for (auto size: chunk_sizes)
-    total_size += size;
+    buffer_ = std::make_unique<std::byte[]>(total_size);
 
-  auto buffer = std::make_unique<std::byte[]>(total_size);
-
-  std::byte* itr = buffer.get();
-  for (std::size_t i = 0; i < chunk_sizes.size(); ++i) {
-    auto size = chunk_sizes[i];
-    ChunkHeader* h = reinterpret_cast<ChunkHeader*>(itr);
-    h->size = size;
-    itr = itr+size;
-    if (i < chunk_sizes.size() - 1)
-      h->next = reinterpret_cast<ChunkHeader*>(itr);
+    std::byte* itr = buffer_.get();
+    for (std::size_t i = 0; i < chunk_sizes.size(); ++i) {
+      auto size = chunk_sizes[i];
+      ChunkHeader* h = reinterpret_cast<ChunkHeader*>(itr);
+      h->size = size;
+      itr = itr + size;
+      if (i < chunk_sizes.size() - 1)
+        h->next = reinterpret_cast<ChunkHeader*>(itr);
+    }
   }
 
- return std::move(buffer);
+  ChunkHeader* AsHeader() {
+    CHECK(buffer_ != nullptr);
+    return reinterpret_cast<ChunkHeader*>(buffer_.get());
+  }
+
+  ChunkHeader* GetHeader(std::size_t target) {
+    CHECK(target < chunk_sizes_.size());
+    std::size_t offset = 0;
+    for (size_t i = 0; i < target; ++i)
+      offset += chunk_sizes_[i] + GetChunkHeaderSize();
+
+    return reinterpret_cast<ChunkHeader*>(buffer_.get() + offset);
+  }
+
+private:
+  std::vector<std::size_t> chunk_sizes_;
+
+  std::unique_ptr<std::byte[]> buffer_ = nullptr;
+};
+
+TEST_CASE("Find Chunk returns std::nullopt on bad input", "[internal/chunk]") {
+  auto fn =
+      GENERATE(FindChunkByFirstFit, FindChunkByBestFit, FindChunkByWorstFit);
+
+  REQUIRE(fn(nullptr, 5) == std::nullopt);
+  REQUIRE(fn(TestFreeList({3, 5, 3}).AsHeader(), 0) == std::nullopt);
 }
 
-TEST_CASE("FindChunkByFirstFit", "[internal/chunk]") {
-  auto buffer = CreateFreeList({3, 5, 3});
-  auto head = reinterpret_cast<ChunkHeader*>(buffer.get());
-  auto actual = FindChunkByFirstFit(head, 5);
+TEST_CASE("Find Chunk returns std::nullopt if no minimun size found",
+          "[internal/chunk]") {
+  auto fn =
+      GENERATE(FindChunkByFirstFit, FindChunkByBestFit, FindChunkByWorstFit);
+  TestFreeList free_list({3, 3, 3});
+
+  auto actual = fn(free_list.AsHeader(), 4);
+
+  REQUIRE(actual == std::nullopt);
+}
+
+TEST_CASE("FindChunkByFirstFit selects first header even if not optimal choice",
+          "[internal/chunk]") {
+  TestFreeList free_list({3, 5, 4});
+
+  auto actual = FindChunkByFirstFit(free_list.AsHeader(), 4);
 
   REQUIRE(actual.has_value());
-
-  REQUIRE(actual.value().prev == head);
-  REQUIRE(actual.value().header == reinterpret_cast<ChunkHeader*>(buffer.get() + 3 + GetChunkHeaderSize()));
+  REQUIRE(actual.value().prev == free_list.GetHeader(0));
+  REQUIRE(actual.value().header == free_list.GetHeader(1));
 }
 
-TEST_CASE("FindChunkByBestFit", "[internal/chunk]") {}
+TEST_CASE("FindChunkByBestFit selects header closest to size",
+          "[internal/chunk]") {
+  TestFreeList free_list({3, 5, 4});
 
-TEST_CASE("FindChunkByWorstFit", "[internal/chunk]") {}
+  auto actual = FindChunkByBestFit(free_list.AsHeader(), 4);
+
+  REQUIRE(actual.has_value());
+  REQUIRE(actual.value().prev == free_list.GetHeader(1));
+  REQUIRE(actual.value().header == free_list.GetHeader(2));
+}
+TEST_CASE("FindChunkByWorstFit selects header furthest away from size",
+          "[internal/chunk]") {
+  TestFreeList free_list({3, 4, 5});
+
+  auto actual = FindChunkByWorstFit(free_list.AsHeader(), 4);
+
+  REQUIRE(actual.has_value());
+  REQUIRE(actual.value().prev == free_list.GetHeader(1));
+  REQUIRE(actual.value().header == free_list.GetHeader(2));
+}
 
 TEST_CASE("SplitChunk", "[internal/chunk]") {}
 

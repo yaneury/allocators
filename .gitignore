@@ -1,7 +1,10 @@
 # CMake
 build/
 
-##### MacOS
+# MacOS
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# IDEs
+.vscode/

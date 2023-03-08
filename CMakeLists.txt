@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
+set(CXX_STANDARD_REQUIRED ON)
 
 project(
   dmt
@@ -32,6 +32,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(named-template-parameters)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ntp)
+
+# Enable incomplete features for Ranges support in clang@15
+add_definitions(-DLIBCXX_ENABLE_INCOMPLETE_FEATURES=ON)
 
 option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
 option(DMT_DEBUG "Set to ON to enable debug messages" OFF)

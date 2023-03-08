@@ -15,6 +15,8 @@
 
 #include <dmt/internal/platform.hpp>
 
+#include <iostream>
+
 namespace dmt::internal {
 
 // A ChunkHeader contains the necessary metadata used to track
@@ -49,6 +51,15 @@ template <class T> inline std::byte* BytePtr(T* ptr) {
 // Fixed sized of Chunk header.
 inline constexpr std::size_t GetChunkHeaderSize() {
   return sizeof(ChunkHeader);
+}
+
+inline std::size_t ChunkSize(ChunkHeader* header) {
+  if (!header)
+    return 0;
+
+  std::cout << "Header Size: " << header->size << std::endl;
+
+  return header->size - GetChunkHeaderSize();
 }
 
 // Get pointer to chunk referenced by |header|.
@@ -96,24 +107,16 @@ inline std::optional<HeaderPair> FindChunkByFirstFit(ChunkHeader* head,
   if (!head || minimum_size == 0)
     return std::nullopt;
 
-  ChunkHeader* itr = head;
-  ChunkHeader* prev = nullptr;
-
-  while (itr) {
-    if (itr->size < minimum_size) {
-      prev = itr;
-      itr = itr->next;
-      continue;
-    }
-
-    return HeaderPair(itr, prev);
-  }
+  for (ChunkHeader *itr = head, *prev = nullptr; itr != nullptr;
+       prev = itr, itr = itr->next)
+    if (ChunkSize(itr) >= minimum_size)
+      return HeaderPair(itr, prev);
 
   return std::nullopt;
 }
 
 // Return header that most closely fits |minimum_size| using |cmp| as the
-// criteria. 
+// criteria.
 inline std::optional<HeaderPair>
 FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
                std::size_t default_fit_size,
@@ -121,19 +124,14 @@ FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
   if (!head || minimum_size == 0)
     return std::nullopt;
 
-  ChunkHeader* itr = head;
   ChunkHeader* prev = nullptr;
-
-  ChunkHeader* fit_header = itr;
+  ChunkHeader* fit_header = head;
   auto fit_size = default_fit_size;
-  while (itr) {
-    if (itr->size >= minimum_size && cmp(itr->size, fit_size)) {
-      fit_size = itr->size;
+  for (ChunkHeader* itr = head; itr != nullptr; prev = itr, itr = itr->next) {
+    if (ChunkSize(itr) >= minimum_size && cmp(ChunkSize(itr), fit_size)) {
+      fit_size = ChunkSize(itr);
       fit_header = itr;
     }
-
-    prev = itr;
-    itr = itr->next;
   }
 
   if (fit_size == default_fit_size)
