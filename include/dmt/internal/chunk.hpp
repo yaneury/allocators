@@ -15,8 +15,6 @@
 
 #include <dmt/internal/platform.hpp>
 
-#include <iostream>
-
 namespace dmt::internal {
 
 // A ChunkHeader contains the necessary metadata used to track
@@ -56,8 +54,6 @@ inline constexpr std::size_t GetChunkHeaderSize() {
 inline std::size_t ChunkSize(ChunkHeader* header) {
   if (!header)
     return 0;
-
-  std::cout << "Header Size: " << header->size << std::endl;
 
   return header->size - GetChunkHeaderSize();
 }
@@ -119,39 +115,34 @@ inline std::optional<HeaderPair> FindChunkByFirstFit(ChunkHeader* head,
 // criteria.
 inline std::optional<HeaderPair>
 FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
-               std::size_t default_fit_size,
                std::function<bool(std::size_t, std::size_t)> cmp) {
   if (!head || minimum_size == 0)
     return std::nullopt;
 
-  ChunkHeader* prev = nullptr;
-  ChunkHeader* fit_header = head;
-  auto fit_size = default_fit_size;
-  for (ChunkHeader* itr = head; itr != nullptr; prev = itr, itr = itr->next) {
-    if (ChunkSize(itr) >= minimum_size && cmp(ChunkSize(itr), fit_size)) {
-      fit_size = ChunkSize(itr);
-      fit_header = itr;
+  std::optional<HeaderPair> target = std::nullopt;
+  for (ChunkHeader* itr = head, *prev = nullptr; itr != nullptr; prev = itr, itr = itr->next) {
+    if (ChunkSize(itr) < minimum_size)
+      continue;
+
+    if (!target.has_value() || cmp(ChunkSize(itr), ChunkSize(target->header))) {
+      target = HeaderPair(itr, prev);
     }
   }
-
-  if (fit_size == default_fit_size)
-    return std::nullopt;
-
-  return HeaderPair(fit_header, prev);
+3
+  return target;
 }
 
 inline std::optional<HeaderPair> FindChunkByBestFit(ChunkHeader* head,
                                                     std::size_t minimum_size) {
   return FindChunkByFit(
       head, minimum_size,
-      /*default_fit_size=*/std::numeric_limits<std::size_t>::max(),
       /*cmp=*/[](std::size_t a, std::size_t b) { return a < b; });
 }
 
 inline std::optional<HeaderPair> FindChunkByWorstFit(ChunkHeader* head,
                                                      std::size_t minimum_size) {
   return FindChunkByFit(
-      head, minimum_size, /*default_fit_size=*/0,
+      head, minimum_size,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a > b; });
 }
 

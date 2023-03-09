@@ -7,11 +7,11 @@ import sys
 import os
 
 def clean(args, extra = []):
-  subprocess.run("rm -rf build/*", shell=True)
+  return subprocess.run("rm -rf build/*", shell=True)
 
 def gen(args, extra = []):
   if 'clean' in args and args.clean:
-      clean(args)
+    clean(args).check_returncode()
 
   flags = ""
   if 'debug' in args and args.debug:
@@ -21,24 +21,24 @@ def gen(args, extra = []):
     print (f"Generating with flags: '{flags}'")
   cmd = "cmake -S . -B build/ -D DMT_BUILD_TESTS=ON"
   cmd += " " + flags
-  subprocess.run(cmd, shell=True)
+  return subprocess.run(cmd, shell=True)
 
 def build(args, extra = []):
   if 'clean' in args and args.clean:
-    clean(args)
+    clean(args).check_returncode()
 
   if 'gen' in args and args.gen:
-    gen(args)
+    gen(args).check_returncode()
 
-  subprocess.run("make -C build", shell=True)
+  return subprocess.run("make -C build", shell=True)
 
 def run(args, extra = []):
   if 'build' in args and args.build:
-    build(args)
+    build(args).check_returncode()
   cmd = "./build/tests/dmt-tests"
   cmd += " " + " ".join(extra)
   print (f"Running '{cmd}'")
-  subprocess.run(cmd, shell=True)
+  return subprocess.run(cmd, shell=True)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -68,16 +68,19 @@ def main():
 
   parsed_args = parser.parse_args(args)
 
-  if parsed_args.cmd == "clean":
-    clean(parsed_args, extra)
-  elif parsed_args.cmd == "gen":
-      gen(parsed_args, extra)
-  elif parsed_args.cmd == "build":
-    build(parsed_args, extra)
-  elif parsed_args.cmd == "run":
-    run(parsed_args, extra)
-  else:
-    parser.exit(1)
+  try:
+    if parsed_args.cmd == "clean":
+      clean(parsed_args, extra)
+    elif parsed_args.cmd == "gen":
+        gen(parsed_args, extra)
+    elif parsed_args.cmd == "build":
+      build(parsed_args, extra)
+    elif parsed_args.cmd == "run":
+      run(parsed_args, extra)
+    else:
+      parser.exit(1)
+  except subprocess.CalledProcessError as e:
+    print (f"\nCommand '{e.cmd}' failed with return code: {e.returncode}")
 
 if __name__ == "__main__" :
   main()
