@@ -115,7 +115,8 @@ public:
   ChunkHeader* GetHeader(std::size_t target) {
     CHECK(target < chunk_sizes_.size());
 
-    std::size_t offset = std::accumulate(begin(chunk_sizes_), begin(chunk_sizes_) + target, 0);
+    std::size_t offset =
+        std::accumulate(begin(chunk_sizes_), begin(chunk_sizes_) + target, 0);
 
     return reinterpret_cast<ChunkHeader*>(buffer_.get() + offset);
   }
@@ -123,8 +124,9 @@ public:
 private:
   TestFreeList() = delete;
 
-  TestFreeList(std::unique_ptr<std::byte[]> buffer, std::vector<std::size_t> chunk_sizes)
-    : buffer_(std::move(buffer)), chunk_sizes_(std::move(chunk_sizes)) {}
+  TestFreeList(std::unique_ptr<std::byte[]> buffer,
+               std::vector<std::size_t> chunk_sizes)
+      : buffer_(std::move(buffer)), chunk_sizes_(std::move(chunk_sizes)) {}
 
   std::vector<std::size_t> chunk_sizes_;
   std::unique_ptr<std::byte[]> buffer_;
@@ -135,7 +137,8 @@ TEST_CASE("Find Chunk returns std::nullopt on bad input", "[internal/chunk]") {
       GENERATE(FindChunkByFirstFit, FindChunkByBestFit, FindChunkByWorstFit);
 
   REQUIRE(fn(nullptr, 5) == std::nullopt);
-  REQUIRE(fn(TestFreeList::FromChunkSizes({3, 5, 3}).AsHeader(), 0) == std::nullopt);
+  REQUIRE(fn(TestFreeList::FromChunkSizes({3, 5, 3}).AsHeader(), 0) ==
+          std::nullopt);
 }
 
 TEST_CASE("Find Chunk returns std::nullopt if no minimun size found",

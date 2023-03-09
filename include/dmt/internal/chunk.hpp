@@ -120,7 +120,8 @@ FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
     return std::nullopt;
 
   std::optional<HeaderPair> target = std::nullopt;
-  for (ChunkHeader* itr = head, *prev = nullptr; itr != nullptr; prev = itr, itr = itr->next) {
+  for (ChunkHeader *itr = head, *prev = nullptr; itr != nullptr;
+       prev = itr, itr = itr->next) {
     if (ChunkSize(itr) < minimum_size)
       continue;
 
@@ -128,7 +129,6 @@ FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
       target = HeaderPair(itr, prev);
     }
   }
-3
   return target;
 }
 
