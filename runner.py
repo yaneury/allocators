@@ -13,14 +13,18 @@ def gen(args, extra = []):
   if 'clean' in args and args.clean:
     clean(args).check_returncode()
 
-  flags = ""
+  flags = []
   if 'debug' in args and args.debug:
-    flags += "-D DMT_DEBUG=ON -D CMAKE_BUILD_TYPE=Debug"
+    flags += ["-D", "CMAKE_BUILD_TYPE=Debug"]
 
-  if flags:
-    print (f"Generating with flags: '{flags}'")
-  cmd = "cmake -S . -B build/ -D DMT_BUILD_TESTS=ON"
-  cmd += " " + flags
+  if 'log' in args and args.log:
+    flags += ["-D", "DMT_DEBUG=ON"]
+
+  cmd = ["cmake", "-S", ".", "-B", "build/", "-D", "DMT_BUILD_TESTS=ON"]
+  cmd += flags
+
+  cmd = " ".join(cmd)
+  print (f"Generating: '{cmd}'")
   return subprocess.run(cmd, shell=True)
 
 def build(args, extra = []):
@@ -49,6 +53,7 @@ def main():
   gen_parser = subparsers.add_parser('gen', help="Generate Makefiles into build/")
   gen_parser.add_argument('--clean', default=False, action=argparse.BooleanOptionalAction, help="Clean directory before generating")
   gen_parser.add_argument('--debug', default=False, action=argparse.BooleanOptionalAction, help="Generate debug mode files")
+  gen_parser.add_argument('--log', default=False, action=argparse.BooleanOptionalAction, help="Output debug log statements")
 
   build_parser = subparsers.add_parser('build', help="Build the project into build/")
   build_parser.add_argument('--clean', default=False, action=argparse.BooleanOptionalAction, help="Clean directory before building")

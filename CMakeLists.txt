@@ -33,6 +33,15 @@ FetchContent_MakeAvailable(named-template-parameters)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE ntp)
 
+FetchContent_Declare(
+  Result
+  GIT_REPOSITORY https://github.com/bitwizeshift/result.git
+  GIT_TAG master)
+
+FetchContent_MakeAvailable(Result)
+
+target_link_libraries(${PROJECT_NAME} INTERFACE Result)
+
 # Enable incomplete features for Ranges support in clang@15
 add_definitions(-DLIBCXX_ENABLE_INCOMPLETE_FEATURES=ON)
 

@@ -21,6 +21,10 @@ static constexpr size_t kMinimumAlignment = sizeof(void*);
   return n && !(n & (n - 1));
 }
 
+[[gnu::const]] inline constexpr bool IsValidAlignment(std::size_t alignment) {
+  return alignment >= kMinimumAlignment && IsPowerOfTwo(alignment);
+}
+
 [[gnu::const]] inline constexpr std::size_t AlignUp(std::size_t n,
                                                     std::size_t alignment) {
   if (!n || !alignment)
@@ -31,8 +35,7 @@ static constexpr size_t kMinimumAlignment = sizeof(void*);
 
 [[gnu::const]] inline bool IsValidRequest(std::size_t size,
                                           std::size_t alignment) {
-  return size > 0 && alignment >= internal::kMinimumAlignment &&
-         internal::IsPowerOfTwo(alignment);
+  return size > 0 && IsValidAlignment(alignment);
 }
 
 } // namespace dmt::internal

@@ -190,6 +190,51 @@ TEST_CASE("FindChunkByWorstFit selects header furthest away from size",
   REQUIRE(actual.value().header == free_list.GetHeader(2));
 }
 
-TEST_CASE("SplitChunk", "[internal/chunk]") {}
+TEST_CASE("SplitChunk returns error on bad input", "[internal/chunk]") {
+  REQUIRE(SplitChunk(nullptr, 5, kMinimumAlignment) ==
+          cpp::fail(Error::HeaderIsNullptr));
+
+  // Allocate singleton free list with large size to ensure no error related
+  // to insufficient size is returned.
+  auto free_list = TestFreeList::FromChunkSizes({100});
+
+  REQUIRE(SplitChunk(free_list.AsHeader(), 0, kMinimumAlignment) ==
+          cpp::fail(Error::InvalidSize));
+  REQUIRE(SplitChunk(free_list.AsHeader(), 1, 0) ==
+          cpp::fail(Error::InvalidAlignment));
+}
+
+TEST_CASE("SplitChunk returns error if chunk too small", "[internal/chunk]") {
+  std::size_t kAlignment = 8;
+
+  auto free_list = TestFreeList::FromChunkSizes({8});
+
+  REQUIRE(SplitChunk(free_list.AsHeader(), 1, kAlignment) ==
+          cpp::fail(Error::ChunkTooSmall));
+  REQUIRE(SplitChunk(free_list.AsHeader(), 8, kAlignment) ==
+          cpp::fail(Error::ChunkTooSmall));
+}
+
+TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
+  std::size_t kAlignment = 8;
+  std::size_t kChunkSize = kAlignment;
+
+  // Make free list that is able to accomodate two 8-byte chunks after
+  // splitting.
+  auto free_list =
+      TestFreeList::FromChunkSizes({kChunkSize * 2 + GetChunkHeaderSize()});
+
+  ChunkHeader* header = free_list.AsHeader();
+  auto actual = SplitChunk(header, kChunkSize, kAlignment);
+
+  REQUIRE(header->size == GetChunkHeaderSize() + kChunkSize);
+  REQUIRE(header->next == nullptr);
+
+  auto expected = reinterpret_cast<ChunkHeader*>(
+      BytePtr(header) + GetChunkHeaderSize() + kChunkSize);
+  REQUIRE(actual == expected);
+  REQUIRE((*actual)->size == GetChunkHeaderSize() + kChunkSize);
+  REQUIRE((*actual)->next == nullptr);
+}
 
 TEST_CASE("CoalesceChunk", "[internal/chunk]") {}

@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <result.hpp>
 
 #include <dmt/internal/platform.hpp>
 
@@ -146,22 +147,41 @@ inline std::optional<HeaderPair> FindChunkByWorstFit(ChunkHeader* head,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a > b; });
 }
 
+enum class Error {
+  HeaderIsNullptr,
+  InvalidSize,
+  InvalidAlignment,
+  ChunkTooSmall
+};
+
 // Split chunk and return new |ChunkHeader*|.
-// TODO: Use cpp::result instead.
-inline std::optional<ChunkHeader*> SplitChunk(ChunkHeader* chunk,
-                                              std::size_t bytes_needed) {
-  // TODO: We should distinguish error cases here.
-  if (!chunk || bytes_needed == 0 || chunk->size < bytes_needed)
-    return std::nullopt;
+inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
+                                                   std::size_t bytes_needed,
+                                                   std::size_t alignment) {
+  if (!chunk)
+    return cpp::fail(Error::HeaderIsNullptr);
+  if (!bytes_needed)
+    return cpp::fail(Error::InvalidSize);
+  if (!IsValidAlignment(alignment))
+    return cpp::fail(Error::InvalidAlignment);
+
+  // Minimum size for a new chunk.
+  std::size_t minimum_chunk_size =
+      AlignUp(dmt::internal::GetChunkHeaderSize() + 1, alignment);
+  std::size_t total_bytes_needed =
+      AlignUp(GetChunkHeaderSize() + bytes_needed, alignment);
+  std::size_t new_chunk_size = chunk->size - total_bytes_needed;
+
+  if (new_chunk_size < minimum_chunk_size)
+    return cpp::fail(Error::ChunkTooSmall);
 
   ZeroChunk(chunk);
-  std::size_t new_chunk_size = chunk->size - bytes_needed;
-  std::byte* new_chunk_addr = BytePtr(chunk) + bytes_needed;
+  std::byte* new_chunk_addr = BytePtr(chunk) + total_bytes_needed;
   auto* new_header = reinterpret_cast<ChunkHeader*>(new_chunk_addr);
   new_header->next = chunk->next;
   new_header->size = new_chunk_size;
 
-  chunk->size = bytes_needed;
+  chunk->size = total_bytes_needed;
   chunk->next = nullptr;
 
   return new_header;
