@@ -237,4 +237,33 @@ TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
   REQUIRE((*actual)->next == nullptr);
 }
 
-TEST_CASE("CoalesceChunk", "[internal/chunk]") {}
+TEST_CASE("CoalesceChunk returns Error on bad input", "[internal/chunk]") {
+  REQUIRE(CoalesceChunk(nullptr) == cpp::fail(Error::HeaderIsNullptr));
+}
+
+TEST_CASE("CoalesceChunk merges all free adjacent chunks", "[internal/chunk]") {
+  std::size_t kChunkSize = 8;
+  auto free_list =
+      TestFreeList::FromChunkSizes({kChunkSize, kChunkSize, kChunkSize});
+
+  CHECK(CoalesceChunk(free_list.AsHeader()).has_value());
+
+  ChunkHeader* header = free_list.AsHeader();
+  REQUIRE(header->next == nullptr);
+  REQUIRE(header->size == 3 * kChunkSize + 3 * GetChunkHeaderSize());
+}
+
+TEST_CASE("CoalesceChunk doesn't merge if free chunks are not adjacent",
+          "[internal/chunk]") {
+  std::size_t kChunkSize = 8;
+  auto free_list_a = TestFreeList::FromChunkSizes({kChunkSize});
+  auto header_a = free_list_a.AsHeader();
+  auto free_list_b = TestFreeList::FromChunkSizes({kChunkSize});
+  auto header_b = free_list_b.AsHeader();
+  header_a->next = header_b;
+
+  CHECK(CoalesceChunk(header_a).has_value());
+
+  REQUIRE(header_a->next == header_b);
+  REQUIRE(header_a->size == kChunkSize + GetChunkHeaderSize());
+}
