@@ -191,7 +191,10 @@ inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
 // succeeding chunk when using offset of |chunk|.
 // TODO: This chunk can use a |next| == |nullptr| to check for occupied status.
 // However, the freelist would have to be recalibrated from the beginning.
-inline void CoalesceChunk(ChunkHeader* chunk) {
+inline cpp::result<void, Error> CoalesceChunk(ChunkHeader* chunk) {
+  if (!chunk)
+    return cpp::fail(Error::HeaderIsNullptr);
+
   while (BytePtr(chunk->next) == BytePtr(chunk) + chunk->size) {
     ChunkHeader* next = chunk->next;
     chunk->size += next->size;
@@ -199,6 +202,8 @@ inline void CoalesceChunk(ChunkHeader* chunk) {
   }
 
   ZeroChunk(chunk);
+
+  return {};
 }
 
 } // namespace dmt::internal
