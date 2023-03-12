@@ -64,6 +64,12 @@ inline std::byte* GetChunk(ChunkHeader* header) {
   return BytePtr(header) + GetChunkHeaderSize();
 }
 
+// Get header from chunk referenced by |ptr|.
+// TODO: Add magic number for validation.
+inline ChunkHeader* GetHeader(std::byte* ptr) {
+  return reinterpret_cast<ChunkHeader*>(ptr - GetChunkHeaderSize());
+}
+
 // Zero out the contents of the chunk referenced by |header|.
 inline void ZeroChunk(ChunkHeader* header) {
   if (!header)
@@ -155,7 +161,7 @@ enum class Error {
 };
 
 template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
-  return static_cast<std::uintptr_t>(p);
+  return reinterpret_cast<std::uintptr_t>(p);
 }
 
 inline cpp::result<ChunkHeader*, Error> FindPriorChunk(ChunkHeader* head,

@@ -5,7 +5,6 @@
 #include <dmt/allocator/freelist.hpp>
 
 using namespace dmt::allocator;
-using namespace dmt::internal;
 
 TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
   using T = long;
@@ -15,16 +14,19 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     using Allocator = FreeList<>;
 
     Allocator allocator;
-    T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+    auto p_or = allocator.AllocateUnaligned(SizeOfT);
+    REQUIRE(p_or.has_value());
+
+    T* p = reinterpret_cast<T*>(p_or.value());
     REQUIRE(p != nullptr);
     *p = 100;
-    allocator.Release(reinterpret_cast<std::byte*>(p));
+    REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(p)).has_value());
   }
 
   SECTION("PSA", "Page-sized allocator (PSA) can fit N objects") {
     static constexpr std::size_t kPageSize = 4096;
     static constexpr std::size_t kNumAllocs =
-        kPageSize / (SizeOfT + GetChunkHeaderSize());
+        kPageSize / (SizeOfT + dmt::internal::GetChunkHeaderSize());
     using Allocator = FreeList<SizeT<kPageSize>, GrowT<WhenFull::ReturnNull>,
                                LimitT<ChunksMust::HaveAtLeastSizeBytes>>;
 
@@ -33,38 +35,50 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     std::array<T*, kNumAllocs> allocs = {nullptr};
 
     for (size_t i = 0; i < kNumAllocs; ++i) {
-      T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+      auto p_or = allocator.AllocateUnaligned(SizeOfT);
+      REQUIRE(p_or.has_value());
+
+      T* p = reinterpret_cast<T*>(p_or.value());
       REQUIRE(p != nullptr);
       allocs[i] = p;
     }
 
     // Should be out of space now.
-    REQUIRE(allocator.AllocateUnaligned(1) == nullptr);
+    REQUIRE(allocator.AllocateUnaligned(1) ==
+            cpp::fail(Error::ReachedMemoryLimit));
 
     for (size_t i = 0; i < kNumAllocs; ++i) {
-      allocator.Release(reinterpret_cast<std::byte*>(allocs[i]));
+      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[i]))
+                  .has_value());
       allocs[i] = nullptr;
     }
 
     SECTION("PSAR", "Can reallocate objects using freed space") {
       for (size_t i = 0; i < kNumAllocs; ++i) {
-        T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+        auto p_or = allocator.AllocateUnaligned(SizeOfT);
+        REQUIRE(p_or.has_value());
+
+        T* p = reinterpret_cast<T*>(p_or.value());
         INFO("I: " << i);
         REQUIRE(p != nullptr);
         allocs[i] = p;
       }
 
       for (size_t i = 0; i < kNumAllocs; ++i) {
-        allocator.Release(reinterpret_cast<std::byte*>(allocs[i]));
+        REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[i]))
+                    .has_value());
         allocs[i] = nullptr;
       }
     }
 
     SECTION("PSAC", "Coalesces free block such that page-sized object fits") {
-      T* p = reinterpret_cast<T*>(
-          allocator.AllocateUnaligned(kPageSize - GetChunkHeaderSize()));
+      auto p_or = allocator.AllocateUnaligned(
+          kPageSize - dmt::internal::GetChunkHeaderSize());
+      REQUIRE(p_or.has_value());
+
+      T* p = reinterpret_cast<T*>(p_or.value());
       REQUIRE(p != nullptr);
-      allocator.Release(reinterpret_cast<std::byte*>(p));
+      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(p)).has_value());
     }
   }
 }

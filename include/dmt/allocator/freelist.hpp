@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <dmt/allocator/chunk.hpp>
+#include <dmt/allocator/error.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/util.hpp>
 
@@ -12,33 +13,32 @@ public:
   FreeList() = default;
   ~FreeList() = default;
 
-  std::byte* AllocateUnaligned(std::size_t size) {
+  Result<std::byte*> AllocateUnaligned(std::size_t size) noexcept {
     return Allocate(
         Layout{.size = size, .alignment = internal::kMinimumAlignment});
   }
 
-  std::byte* Allocate(Layout layout) noexcept {
+  Result<std::byte*> Allocate(Layout layout) noexcept {
     if (!IsValid(layout))
-      return nullptr;
+      return cpp::fail(Error::InvalidInput);
 
     std::size_t request_size = internal::AlignUp(
         layout.size + internal::GetChunkHeaderSize(), layout.alignment);
 
     if (request_size > Parent::kMaxRequestSize_)
-      return nullptr;
+      return cpp::fail(Error::SizeRequestTooLarge);
 
     // TODO: Add sync primitives
     if (!chunk_) {
-      if (chunk_ = Parent::AllocateNewChunk(); !chunk_) {
-        return nullptr;
-      }
+      if (chunk_ = Parent::AllocateNewChunk(); !chunk_)
+        return cpp::fail(Error::OutOfMemory);
 
       free_list_ = chunk_;
     }
 
     auto first_fit_or = internal::FindChunkByFirstFit(free_list_, request_size);
     if (!first_fit_or.has_value())
-      return nullptr;
+      return cpp::fail(Error::NoFreeChunk);
 
     auto first_fit = first_fit_or.value();
     auto new_header_or =
@@ -59,21 +59,32 @@ public:
       return internal::BytePtr(first_fit.header) +
              internal::GetChunkHeaderSize();
     } else {
-      return nullptr;
+      return cpp::fail(Error::NoFreeChunk);
     }
   }
 
-  void Release(std::byte* ptr) {
+  Result<void> Release(std::byte* ptr) {
     if (!ptr)
-      return;
+      return {};
 
-    internal::ChunkHeader* chunk = reinterpret_cast<internal::ChunkHeader*>(
-        ptr - internal::GetChunkHeaderSize());
-    // Zero out content
-    ZeroChunk(chunk);
-    chunk->next = nullptr;
-    SetHeadTo(chunk);
-    auto _ = dmt::internal::CoalesceChunk(chunk);
+    internal::ChunkHeader* chunk = internal::GetHeader(ptr);
+    auto prior_or = internal::FindPriorChunk(free_list_, chunk);
+    if (prior_or.has_error())
+      return {};
+
+    internal::ChunkHeader* prior = prior_or.value();
+    if (prior == nullptr) {
+      chunk->next = free_list_;
+      free_list_ = chunk;
+    } else {
+      internal::ChunkHeader* next = prior->next;
+      prior->next = chunk;
+      chunk->next = next;
+    }
+
+    auto _ = internal::CoalesceChunk(chunk);
+
+    return {};
   }
 
 private:
@@ -81,21 +92,6 @@ private:
   // nondepedent name. For more information, see:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
   using Parent = Chunk<Args...>;
-
-  void SetHeadTo(internal::ChunkHeader* chunk) {
-    chunk_->next = free_list_;
-    free_list_ = chunk;
-  }
-
-  void ExtractChunk(internal::HeaderPair header) {
-    if (header.header == free_list_) {
-      free_list_ = free_list_->next;
-      return;
-    }
-
-    header.prev->next = header.header->next;
-    header.header->next = nullptr;
-  }
 
   // Pointer to entire chunk of memory.
   internal::ChunkHeader* chunk_ = nullptr;

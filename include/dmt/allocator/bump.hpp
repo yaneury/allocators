@@ -32,7 +32,7 @@ public:
 
   ~Bump() { Reset(); }
 
-  std::byte* AllocateUnaligned(std::size_t size) {
+  std::byte* AllocateUnaligned(std::size_t size) noexcept {
     return Allocate(
         Layout{.size = size, .alignment = internal::kMinimumAlignment});
   }
