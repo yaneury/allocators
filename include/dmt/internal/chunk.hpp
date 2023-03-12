@@ -14,6 +14,7 @@
 #include <functional>
 #include <result.hpp>
 
+#include <dmt/internal/failure.hpp>
 #include <dmt/internal/platform.hpp>
 
 namespace dmt::internal {
@@ -153,21 +154,14 @@ inline std::optional<HeaderPair> FindChunkByWorstFit(ChunkHeader* head,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a > b; });
 }
 
-enum class Error {
-  HeaderIsNullptr,
-  InvalidSize,
-  InvalidAlignment,
-  ChunkTooSmall
-};
-
 template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
   return reinterpret_cast<std::uintptr_t>(p);
 }
 
-inline cpp::result<ChunkHeader*, Error> FindPriorChunk(ChunkHeader* head,
-                                                       ChunkHeader* chunk) {
+inline Failable<ChunkHeader*> FindPriorChunk(ChunkHeader* head,
+                                             ChunkHeader* chunk) {
   if (!chunk || !head)
-    return cpp::fail(Error::HeaderIsNullptr);
+    return cpp::fail(Failure::HeaderIsNullptr);
 
   if (AsUint(head) > AsUint(chunk))
     return nullptr;
@@ -180,15 +174,15 @@ inline cpp::result<ChunkHeader*, Error> FindPriorChunk(ChunkHeader* head,
 }
 
 // Split chunk and return new |ChunkHeader*|.
-inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
-                                                   std::size_t bytes_needed,
-                                                   std::size_t alignment) {
+inline Failable<ChunkHeader*> SplitChunk(ChunkHeader* chunk,
+                                         std::size_t bytes_needed,
+                                         std::size_t alignment) {
   if (!chunk)
-    return cpp::fail(Error::HeaderIsNullptr);
+    return cpp::fail(Failure::HeaderIsNullptr);
   if (!bytes_needed)
-    return cpp::fail(Error::InvalidSize);
+    return cpp::fail(Failure::InvalidSize);
   if (!IsValidAlignment(alignment))
-    return cpp::fail(Error::InvalidAlignment);
+    return cpp::fail(Failure::InvalidAlignment);
 
   // Minimum size for a new chunk.
   std::size_t minimum_chunk_size =
@@ -197,7 +191,7 @@ inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
   std::size_t new_chunk_size = chunk->size - total_bytes_needed;
 
   if (new_chunk_size < minimum_chunk_size)
-    return cpp::fail(Error::ChunkTooSmall);
+    return cpp::fail(Failure::ChunkTooSmall);
 
   ZeroChunk(chunk);
   std::byte* new_chunk_addr = BytePtr(chunk) + total_bytes_needed;
@@ -215,9 +209,9 @@ inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
 // succeeding chunk when using offset of |chunk|.
 // TODO: This chunk can use a |next| == |nullptr| to check for occupied status.
 // However, the freelist would have to be recalibrated from the beginning.
-inline cpp::result<void, Error> CoalesceChunk(ChunkHeader* chunk) {
+inline Failable<void> CoalesceChunk(ChunkHeader* chunk) {
   if (!chunk)
-    return cpp::fail(Error::HeaderIsNullptr);
+    return cpp::fail(Failure::HeaderIsNullptr);
 
   while (BytePtr(chunk->next) == BytePtr(chunk) + chunk->size) {
     ChunkHeader* next = chunk->next;

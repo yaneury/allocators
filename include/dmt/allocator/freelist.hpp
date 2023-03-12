@@ -53,7 +53,7 @@ public:
 
       return internal::BytePtr(first_fit.header) +
              internal::GetChunkHeaderSize();
-    } else if (new_header_or == cpp::fail(internal::Error::ChunkTooSmall)) {
+    } else if (new_header_or == cpp::fail(internal::Failure::ChunkTooSmall)) {
       if (first_fit.header == free_list_)
         free_list_ = first_fit.header->next;
       return internal::BytePtr(first_fit.header) +
@@ -65,7 +65,7 @@ public:
 
   Result<void> Release(std::byte* ptr) {
     if (!ptr)
-      return {};
+      return cpp::fail(Error::InvalidInput);
 
     internal::ChunkHeader* chunk = internal::GetHeader(ptr);
     auto prior_or = internal::FindPriorChunk(free_list_, chunk);

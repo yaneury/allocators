@@ -192,16 +192,16 @@ TEST_CASE("FindChunkByWorstFit selects header furthest away from size",
 
 TEST_CASE("SplitChunk returns error on bad input", "[internal/chunk]") {
   REQUIRE(SplitChunk(nullptr, 5, kMinimumAlignment) ==
-          cpp::fail(Error::HeaderIsNullptr));
+          cpp::fail(Failure::HeaderIsNullptr));
 
   // Allocate singleton free list with large size to ensure no error related
   // to insufficient size is returned.
   auto free_list = TestFreeList::FromChunkSizes({100});
 
   REQUIRE(SplitChunk(free_list.AsHeader(), 0, kMinimumAlignment) ==
-          cpp::fail(Error::InvalidSize));
+          cpp::fail(Failure::InvalidSize));
   REQUIRE(SplitChunk(free_list.AsHeader(), 1, 0) ==
-          cpp::fail(Error::InvalidAlignment));
+          cpp::fail(Failure::InvalidAlignment));
 }
 
 TEST_CASE("SplitChunk returns error if chunk too small", "[internal/chunk]") {
@@ -210,9 +210,9 @@ TEST_CASE("SplitChunk returns error if chunk too small", "[internal/chunk]") {
   auto free_list = TestFreeList::FromChunkSizes({8});
 
   REQUIRE(SplitChunk(free_list.AsHeader(), 1 + GetChunkHeaderSize(),
-                     kAlignment) == cpp::fail(Error::ChunkTooSmall));
+                     kAlignment) == cpp::fail(Failure::ChunkTooSmall));
   REQUIRE(SplitChunk(free_list.AsHeader(), 8 + GetChunkHeaderSize(),
-                     kAlignment) == cpp::fail(Error::ChunkTooSmall));
+                     kAlignment) == cpp::fail(Failure::ChunkTooSmall));
 }
 
 TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
@@ -239,7 +239,7 @@ TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
 }
 
 TEST_CASE("CoalesceChunk returns Error on bad input", "[internal/chunk]") {
-  REQUIRE(CoalesceChunk(nullptr) == cpp::fail(Error::HeaderIsNullptr));
+  REQUIRE(CoalesceChunk(nullptr) == cpp::fail(Failure::HeaderIsNullptr));
 }
 
 TEST_CASE("CoalesceChunk merges all free adjacent chunks", "[internal/chunk]") {
