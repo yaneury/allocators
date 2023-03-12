@@ -36,9 +36,31 @@ public:
       free_list_ = chunk_;
     }
 
-    internal::ChunkHeader* first_fit = FindFirstFit(request_size);
-    std::byte* ptr = reinterpret_cast<std::byte*>(first_fit);
-    return ptr + internal::GetChunkHeaderSize();
+    auto first_fit_or = internal::FindChunkByFirstFit(free_list_, request_size);
+    if (!first_fit_or.has_value())
+      return nullptr;
+
+    auto first_fit = first_fit_or.value();
+    auto new_header_or =
+        internal::SplitChunk(first_fit.header, request_size, layout.alignment);
+
+    if (new_header_or.has_value()) {
+      if (first_fit.prev)
+        first_fit.prev->next = new_header_or.value();
+
+      if (first_fit.header == free_list_)
+        free_list_ = new_header_or.value();
+
+      return internal::BytePtr(first_fit.header) +
+             internal::GetChunkHeaderSize();
+    } else if (new_header_or == cpp::fail(internal::Error::ChunkTooSmall)) {
+      if (first_fit.header == free_list_)
+        free_list_ = first_fit.header->next;
+      return internal::BytePtr(first_fit.header) +
+             internal::GetChunkHeaderSize();
+    } else {
+      return nullptr;
+    }
   }
 
   void Release(std::byte* ptr) {
@@ -48,11 +70,10 @@ public:
     internal::ChunkHeader* chunk = reinterpret_cast<internal::ChunkHeader*>(
         ptr - internal::GetChunkHeaderSize());
     // Zero out content
-    memset(reinterpret_cast<std::byte*>(chunk) + internal::GetChunkHeaderSize(),
-           0, chunk->size - internal::GetChunkHeaderSize());
+    ZeroChunk(chunk);
     chunk->next = nullptr;
     SetHeadTo(chunk);
-    Coalesce(chunk);
+    auto _ = dmt::internal::CoalesceChunk(chunk);
   }
 
 private:
@@ -61,65 +82,19 @@ private:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
   using Parent = Chunk<Args...>;
 
-  internal::ChunkHeader* FindFirstFit(std::size_t size) {
-    internal::ChunkHeader* itr = free_list_;
-
-    internal::ChunkHeader* prev = nullptr;
-    while (itr) {
-      if (itr->size < size) {
-        prev = itr;
-        itr = itr->next;
-        continue;
-      }
-
-      internal::ChunkHeader* new_header = Split(itr, size);
-      if (prev) {
-        prev->next = new_header->next;
-      }
-
-      if (free_list_ == itr) {
-        free_list_ = new_header;
-      }
-
-      itr->next = nullptr;
-      return itr;
-    }
-
-    return nullptr;
-  }
-
-  internal::ChunkHeader* Split(internal::ChunkHeader* chunk, std::size_t size) {
-    assert(chunk != nullptr && size > 0);
-
-    std::size_t new_chunk_size = chunk->size - size;
-    std::byte* new_chunk_addr = reinterpret_cast<std::byte*>(chunk) + size;
-    memset(new_chunk_addr, 0, new_chunk_size);
-    internal::ChunkHeader* new_header =
-        reinterpret_cast<internal::ChunkHeader*>(new_chunk_addr);
-
-    chunk->size = size;
-    new_header->next = chunk->next;
-    new_header->size = new_chunk_size;
-
-    return new_header;
-  }
-
-  void Coalesce(internal::ChunkHeader* chunk) {
-    while (chunk->next &&
-           reinterpret_cast<std::byte*>(chunk->next) ==
-               reinterpret_cast<std::byte*>(chunk) + chunk->size) {
-      internal::ChunkHeader* next = chunk->next;
-      chunk->size += next->size;
-      chunk->next = next->next;
-      memset(reinterpret_cast<std::byte*>(chunk) +
-                 internal::GetChunkHeaderSize(),
-             0, chunk->size - internal::GetChunkHeaderSize());
-    }
-  }
-
   void SetHeadTo(internal::ChunkHeader* chunk) {
     chunk_->next = free_list_;
     free_list_ = chunk;
+  }
+
+  void ExtractChunk(internal::HeaderPair header) {
+    if (header.header == free_list_) {
+      free_list_ = free_list_->next;
+      return;
+    }
+
+    header.prev->next = header.header->next;
+    header.header->next = nullptr;
   }
 
   // Pointer to entire chunk of memory.

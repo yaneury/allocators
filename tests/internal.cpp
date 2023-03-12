@@ -209,10 +209,10 @@ TEST_CASE("SplitChunk returns error if chunk too small", "[internal/chunk]") {
 
   auto free_list = TestFreeList::FromChunkSizes({8});
 
-  REQUIRE(SplitChunk(free_list.AsHeader(), 1, kAlignment) ==
-          cpp::fail(Error::ChunkTooSmall));
-  REQUIRE(SplitChunk(free_list.AsHeader(), 8, kAlignment) ==
-          cpp::fail(Error::ChunkTooSmall));
+  REQUIRE(SplitChunk(free_list.AsHeader(), 1 + GetChunkHeaderSize(),
+                     kAlignment) == cpp::fail(Error::ChunkTooSmall));
+  REQUIRE(SplitChunk(free_list.AsHeader(), 8 + GetChunkHeaderSize(),
+                     kAlignment) == cpp::fail(Error::ChunkTooSmall));
 }
 
 TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
@@ -225,7 +225,8 @@ TEST_CASE("SplitChunk splits chunks using alignment", "[internal/chunk]") {
       TestFreeList::FromChunkSizes({kChunkSize * 2 + GetChunkHeaderSize()});
 
   ChunkHeader* header = free_list.AsHeader();
-  auto actual = SplitChunk(header, kChunkSize, kAlignment);
+  auto actual =
+      SplitChunk(header, kChunkSize + GetChunkHeaderSize(), kAlignment);
 
   REQUIRE(header->size == GetChunkHeaderSize() + kChunkSize);
   REQUIRE(header->next == nullptr);

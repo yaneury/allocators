@@ -154,6 +154,25 @@ enum class Error {
   ChunkTooSmall
 };
 
+template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
+  return static_cast<std::uintptr_t>(p);
+}
+
+inline cpp::result<ChunkHeader*, Error> FindPriorChunk(ChunkHeader* head,
+                                                       ChunkHeader* chunk) {
+  if (!chunk || !head)
+    return cpp::fail(Error::HeaderIsNullptr);
+
+  if (AsUint(head) > AsUint(chunk))
+    return nullptr;
+
+  ChunkHeader* itr = head;
+  while (itr->next && AsUint(itr->next) < AsUint(chunk))
+    itr = itr->next;
+
+  return itr;
+}
+
 // Split chunk and return new |ChunkHeader*|.
 inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
                                                    std::size_t bytes_needed,
@@ -168,8 +187,7 @@ inline cpp::result<ChunkHeader*, Error> SplitChunk(ChunkHeader* chunk,
   // Minimum size for a new chunk.
   std::size_t minimum_chunk_size =
       AlignUp(dmt::internal::GetChunkHeaderSize() + 1, alignment);
-  std::size_t total_bytes_needed =
-      AlignUp(GetChunkHeaderSize() + bytes_needed, alignment);
+  std::size_t total_bytes_needed = AlignUp(bytes_needed, alignment);
   std::size_t new_chunk_size = chunk->size - total_bytes_needed;
 
   if (new_chunk_size < minimum_chunk_size)

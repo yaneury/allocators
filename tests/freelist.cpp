@@ -5,6 +5,7 @@
 #include <dmt/allocator/freelist.hpp>
 
 using namespace dmt::allocator;
+using namespace dmt::internal;
 
 TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
   using T = long;
@@ -22,7 +23,8 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
 
   SECTION("PSA", "Page-sized allocator (PSA) can fit N objects") {
     static constexpr std::size_t kPageSize = 4096;
-    static constexpr std::size_t kNumAllocs = kPageSize / SizeOfT;
+    static constexpr std::size_t kNumAllocs =
+        kPageSize / (SizeOfT + GetChunkHeaderSize());
     using Allocator = FreeList<SizeT<kPageSize>, GrowT<WhenFull::ReturnNull>,
                                LimitT<ChunksMust::HaveAtLeastSizeBytes>>;
 
@@ -36,14 +38,18 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
       allocs[i] = p;
     }
 
+    // Should be out of space now.
+    REQUIRE(allocator.AllocateUnaligned(1) == nullptr);
+
     for (size_t i = 0; i < kNumAllocs; ++i) {
       allocator.Release(reinterpret_cast<std::byte*>(allocs[i]));
       allocs[i] = nullptr;
     }
 
-    SECTION("Can reallocate objects using freed space") {
+    SECTION("PSAR", "Can reallocate objects using freed space") {
       for (size_t i = 0; i < kNumAllocs; ++i) {
         T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+        INFO("I: " << i);
         REQUIRE(p != nullptr);
         allocs[i] = p;
       }
@@ -55,7 +61,8 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     }
 
     SECTION("PSAC", "Coalesces free block such that page-sized object fits") {
-      T* p = reinterpret_cast<T*>(allocator.AllocateUnaligned(kPageSize));
+      T* p = reinterpret_cast<T*>(
+          allocator.AllocateUnaligned(kPageSize - GetChunkHeaderSize()));
       REQUIRE(p != nullptr);
       allocator.Release(reinterpret_cast<std::byte*>(p));
     }
