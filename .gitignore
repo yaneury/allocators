@@ -1,5 +1,6 @@
 # CMake
 build/
+compile_commands.json
 
 # MacOS
 .DS_Store
@@ -8,3 +9,6 @@ build/
 
 # IDEs
 .vscode/
+
+# Clangd
+.cache/
