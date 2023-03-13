@@ -33,6 +33,14 @@ static constexpr size_t kMinimumAlignment = sizeof(void*);
   return (n + alignment - 1) & ~(alignment - 1);
 }
 
+[[gnu::const]] inline constexpr std::size_t AlignDown(std::size_t n,
+                                                      std::size_t alignment) {
+  if (!n || !alignment)
+    return 0;
+
+  return (n & ~(alignment - 1));
+}
+
 [[gnu::const]] inline bool IsValidRequest(std::size_t size,
                                           std::size_t alignment) {
   return size > 0 && IsValidAlignment(alignment);

@@ -113,7 +113,7 @@ inline std::optional<HeaderPair> FindChunkByFirstFit(ChunkHeader* head,
 
   for (ChunkHeader *itr = head, *prev = nullptr; itr != nullptr;
        prev = itr, itr = itr->next)
-    if (ChunkSize(itr) >= minimum_size)
+    if (itr->size >= minimum_size)
       return HeaderPair(itr, prev);
 
   return std::nullopt;
@@ -130,10 +130,10 @@ FindChunkByFit(ChunkHeader* head, std::size_t minimum_size,
   std::optional<HeaderPair> target = std::nullopt;
   for (ChunkHeader *itr = head, *prev = nullptr; itr != nullptr;
        prev = itr, itr = itr->next) {
-    if (ChunkSize(itr) < minimum_size)
+    if (itr->size < minimum_size)
       continue;
 
-    if (!target.has_value() || cmp(ChunkSize(itr), ChunkSize(target->header))) {
+    if (!target.has_value() || cmp(itr->size, target->header->size)) {
       target = HeaderPair(itr, prev);
     }
   }

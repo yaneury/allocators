@@ -42,6 +42,15 @@ FetchContent_MakeAvailable(Result)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE Result)
 
+FetchContent_Declare(
+  magic_enum
+  GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+  GIT_TAG v0.8.2)
+
+FetchContent_MakeAvailable(magic_enum)
+
+target_link_libraries(${PROJECT_NAME} INTERFACE magic_enum)
+
 # Enable incomplete features for Ranges support in clang@15
 add_definitions(-DLIBCXX_ENABLE_INCOMPLETE_FEATURES=ON)
 

@@ -25,7 +25,7 @@ public:
     std::size_t request_size = internal::AlignUp(
         layout.size + internal::GetChunkHeaderSize(), layout.alignment);
 
-    if (request_size > Parent::kMaxRequestSize_)
+    if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // TODO: Add sync primitives
@@ -68,7 +68,13 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     internal::ChunkHeader* chunk = internal::GetHeader(ptr);
+    if (!free_list_) {
+      free_list_ = chunk;
+      return {};
+    }
+
     auto prior_or = internal::FindPriorChunk(free_list_, chunk);
+    // TODO: Add better error here. When will this happen?
     if (prior_or.has_error())
       return {};
 
@@ -82,7 +88,7 @@ public:
       chunk->next = next;
     }
 
-    auto _ = internal::CoalesceChunk(chunk);
+    auto _ = internal::CoalesceChunk(prior);
 
     return {};
   }
@@ -92,6 +98,9 @@ private:
   // nondepedent name. For more information, see:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
   using Parent = Chunk<Args...>;
+
+  // Max size allowed per request.
+  static constexpr std::size_t kMaxRequestSize_ = Parent::kAlignedSize_;
 
   // Pointer to entire chunk of memory.
   internal::ChunkHeader* chunk_ = nullptr;

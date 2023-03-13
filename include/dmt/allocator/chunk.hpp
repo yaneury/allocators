@@ -56,13 +56,7 @@ protected:
       kMustContainSizeBytesInSpace
           ? internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
                               kAlignment)
-          : internal::AlignUp(kSize - internal::GetChunkHeaderSize(),
-                              kAlignment);
-
-  // Max size allowed per request when accounting for aligned size and chunk
-  // header.
-  static constexpr std::size_t kMaxRequestSize_ =
-      kAlignedSize_ - internal::GetChunkHeaderSize();
+          : internal::AlignDown(kSize, kAlignment);
 
   static internal::Allocation CreateAllocation(std::byte* base) {
     std::size_t size = IsPageMultiple()

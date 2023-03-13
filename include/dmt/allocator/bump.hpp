@@ -44,7 +44,7 @@ public:
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
     DINFO("Request Size: " << request_size);
 
-    if (request_size > Parent::kMaxRequestSize_)
+    if (request_size > kMaxRequestSize_)
       return nullptr;
 
     // This class uses a very coarse-grained mutex for allocation.
@@ -100,6 +100,11 @@ private:
   // nondepedent name. For more information, see:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
   using Parent = Chunk<Args...>;
+
+  // Max size allowed per request when accounting for aligned size and chunk
+  // header.
+  static constexpr std::size_t kMaxRequestSize_ =
+      Parent::kAlignedSize_ - internal::GetChunkHeaderSize();
 
   // List of all allocated chunks.
   internal::ChunkHeader* chunks_ = nullptr;
