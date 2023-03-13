@@ -20,7 +20,8 @@ def gen(args, extra=[]):
     if 'log' in args and args.log:
         flags += ["-D", "DMT_DEBUG=ON"]
 
-    cmd = ["cmake", "-S", ".", "-B", "build/", "-D", "DMT_BUILD_TESTS=ON"]
+    cmd = ["cmake", "-S", ".", "-B", "build/", "-D", "DMT_BUILD_TESTS=ON",
+           "-D", "CMAKE_EXPORT_COMPILE_COMMANDS=1"]
     cmd += flags
 
     cmd = " ".join(cmd)
