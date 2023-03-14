@@ -9,7 +9,7 @@ enum class Failure {
   HeaderIsNullptr,
   InvalidSize,
   InvalidAlignment,
-  ChunkTooSmall
+  BlockTooSmall
 };
 
 template <class T> using Failable = cpp::result<T, Failure>;

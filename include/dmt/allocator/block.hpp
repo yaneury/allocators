@@ -2,15 +2,15 @@
 
 #include <dmt/allocator/parameters.hpp>
 #include <dmt/allocator/trait.hpp>
-#include <dmt/internal/chunk.hpp>
+#include <dmt/internal/block.hpp>
 #include <dmt/internal/util.hpp>
 #include <template/parameters.hpp>
 
 namespace dmt::allocator {
 
-template <class... Args> class Chunk {
+template <class... Args> class Block {
 public:
-  // Alignment used for the chunks requested. N.b. this is *not* the alignment
+  // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment
   // requirements.
   //
@@ -19,10 +19,10 @@ public:
   static constexpr std::size_t kAlignment =
       std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
 
-  // Size of the chunks. This allocator doesn't support variable-sized chunks.
-  // All chunks allocated are of the same size. N.b. that the size here will
-  // *not* be the size of memory ultimately requested for chunks. This is so
-  // because supplemental memory is needed for chunk headers and to ensure
+  // Size of the blocks. This allocator doesn't support variable-sized blocks.
+  // All blocks allocated are of the same size. N.b. that the size here will
+  // *not* be the size of memory ultimately requested for blocks. This is so
+  // because supplemental memory is needed for block headers and to ensure
   // alignment as specified with |kAlignment|.
   //
   // This field is optional. If not provided, will default to the common page
@@ -31,30 +31,30 @@ public:
       ntp::optional<SizeT<4096>, Args...>::value;
 
   // Sizing limits placed on |kSize|.
-  // If |HaveAtLeastSizeBytes| is provided, then chunk must have |kSize| bytes
+  // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
   // available not including header size and alignment.
-  // If |NoMoreThanSizeBytes| is provided, then chunk must not exceed |kSize|
+  // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
   // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<ChunksMust::HaveAtLeastSizeBytes>, Args...>::value ==
-      ChunksMust::HaveAtLeastSizeBytes;
+      ntp::optional<LimitT<BlocksMust::HaveAtLeastSizeBytes>, Args...>::value ==
+      BlocksMust::HaveAtLeastSizeBytes;
 
-  // Policy employed when chunk has no more space for pending request.
-  // If |GrowStorage| is provided, then a new chunk will be requested;
+  // Policy employed when block has no more space for pending request.
+  // If |GrowStorage| is provided, then a new block will be requested;
   // if |ReturnNull| is provided, then nullptr is returned on the allocation
   // request. This does not mean that it's impossible to request more memory
-  // though. It only means that the chunk has no more space for the requested
+  // though. It only means that the block has no more space for the requested
   // size. If a smaller size request comes along, it may be possible that the
-  // chunk has sufficient storage for it.
+  // block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
       ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
       WhenFull::GrowStorage;
 
 protected:
-  // Ultimate size of the chunks after accounting for header and alignment.
+  // Ultimate size of the blocks after accounting for header and alignment.
   static constexpr std::size_t kAlignedSize_ =
       kMustContainSizeBytesInSpace
-          ? internal::AlignUp(kSize + internal::GetChunkHeaderSize(),
+          ? internal::AlignUp(kSize + internal::GetBlockHeaderSize(),
                               kAlignment)
           : internal::AlignDown(kSize, kAlignment);
 
@@ -71,7 +71,7 @@ protected:
     return kAlignedSize_ >= page_size && kAlignedSize_ % page_size == 0;
   }
 
-  static dmt::internal::ChunkHeader* AllocateNewChunk() {
+  static dmt::internal::BlockHeader* AllocateNewBlock() {
     auto allocation =
         IsPageMultiple()
             ? internal::AllocatePages(kAlignedSize_ / internal::GetPageSize())
@@ -80,13 +80,13 @@ protected:
     if (!allocation.has_value())
       return nullptr;
 
-    return dmt::internal::CreateChunkHeaderFromAllocation(allocation.value());
+    return dmt::internal::CreateBlockHeaderFromAllocation(allocation.value());
   }
 
-  static void ReleaseChunks(dmt::internal::ChunkHeader* chunk) {
+  static void ReleaseBlocks(dmt::internal::BlockHeader* block) {
     auto release =
         IsPageMultiple() ? internal::ReleasePages : internal::ReleaseBytes;
-    dmt::internal::ReleaseChunks(chunk, std::move(release));
+    dmt::internal::ReleaseBlocks(block, std::move(release));
   }
 
   // Various assertions hidden from user API but added here to ensure invariants

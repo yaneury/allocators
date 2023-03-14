@@ -26,12 +26,12 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
 
   SECTION("PSA", "Page-sized allocator (PSA) can fit N objects") {
     static constexpr std::size_t kChunkSize =
-        SizeOfT + dmt::internal::GetChunkHeaderSize();
+        SizeOfT + dmt::internal::GetBlockHeaderSize();
     static constexpr std::size_t kNumAllocs = 2;
     static constexpr std::size_t kBlockSize = kChunkSize * kNumAllocs;
 
     using Allocator = FreeList<SizeT<kBlockSize>, GrowT<WhenFull::ReturnNull>,
-                               LimitT<ChunksMust::NoMoreThanSizeBytes>>;
+                               LimitT<BlocksMust::NoMoreThanSizeBytes>>;
 
     Allocator allocator;
 
@@ -49,7 +49,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     }
 
     // Should be out of space now.
-    REQUIRE(allocator.AllocateUnaligned(1) == cpp::fail(Error::NoFreeChunk));
+    REQUIRE(allocator.AllocateUnaligned(1) == cpp::fail(Error::NoFreeBlock));
 
     for (size_t i = 0; i < kNumAllocs; ++i) {
       REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[i]))
@@ -78,7 +78,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
 
     SECTION("PSAC", "Coalesces free block such that block-sized object fits") {
       auto p_or = allocator.AllocateUnaligned(
-          kBlockSize - dmt::internal::GetChunkHeaderSize());
+          kBlockSize - dmt::internal::GetBlockHeaderSize());
       REQUIRE(p_or.has_value());
 
       T* p = reinterpret_cast<T*>(p_or.value());

@@ -16,8 +16,8 @@ enum class Error {
   // where an call to request memory from the operating system fails. In this
   // case, the user-defined capacity was reached.
   ReachedMemoryLimit,
-  // Couldn't locate a free chunk in which to place the requested memory.
-  NoFreeChunk,
+  // Couldn't locate a free block in which to place the requested memory.
+  NoFreeBlock,
   // Memory allocation request failed. This means that the underlying system
   // call failed due to the system running out of memory.
   OutOfMemory,

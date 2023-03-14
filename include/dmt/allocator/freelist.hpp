@@ -1,16 +1,16 @@
 #pragma once
 
-#include "dmt/internal/chunk.hpp"
+#include "dmt/internal/block.hpp"
 #include "template/optional.hpp"
 #include <cstddef>
-#include <dmt/allocator/chunk.hpp>
+#include <dmt/allocator/block.hpp>
 #include <dmt/allocator/error.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/util.hpp>
 
 namespace dmt::allocator {
 
-template <class... Args> class FreeList : public Chunk<Args...> {
+template <class... Args> class FreeList : public Block<Args...> {
 public:
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
@@ -28,26 +28,26 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     std::size_t request_size = internal::AlignUp(
-        layout.size + internal::GetChunkHeaderSize(), layout.alignment);
+        layout.size + internal::GetBlockHeaderSize(), layout.alignment);
 
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // TODO: Add sync primitives
-    if (!chunk_) {
-      if (chunk_ = Parent::AllocateNewChunk(); !chunk_)
+    if (!block_) {
+      if (block_ = Parent::AllocateNewBlock(); !block_)
         return cpp::fail(Error::OutOfMemory);
 
-      free_list_ = chunk_;
+      free_list_ = block_;
     }
 
-    auto first_fit_or = FindChunk(free_list_, request_size);
+    auto first_fit_or = FindBlock(free_list_, request_size);
     if (!first_fit_or.has_value())
-      return cpp::fail(Error::NoFreeChunk);
+      return cpp::fail(Error::NoFreeBlock);
 
     auto first_fit = first_fit_or.value();
     auto new_header_or =
-        internal::SplitChunk(first_fit.header, request_size, layout.alignment);
+        internal::SplitBlock(first_fit.header, request_size, layout.alignment);
 
     if (new_header_or.has_value()) {
       if (first_fit.prev)
@@ -57,14 +57,14 @@ public:
         free_list_ = new_header_or.value();
 
       return internal::BytePtr(first_fit.header) +
-             internal::GetChunkHeaderSize();
-    } else if (new_header_or == cpp::fail(internal::Failure::ChunkTooSmall)) {
+             internal::GetBlockHeaderSize();
+    } else if (new_header_or == cpp::fail(internal::Failure::BlockTooSmall)) {
       if (first_fit.header == free_list_)
         free_list_ = first_fit.header->next;
       return internal::BytePtr(first_fit.header) +
-             internal::GetChunkHeaderSize();
+             internal::GetBlockHeaderSize();
     } else {
-      return cpp::fail(Error::NoFreeChunk);
+      return cpp::fail(Error::NoFreeBlock);
     }
   }
 
@@ -72,28 +72,28 @@ public:
     if (!ptr)
       return cpp::fail(Error::InvalidInput);
 
-    internal::ChunkHeader* chunk = internal::GetHeader(ptr);
+    internal::BlockHeader* block = internal::GetHeader(ptr);
     if (!free_list_) {
-      free_list_ = chunk;
+      free_list_ = block;
       return {};
     }
 
-    auto prior_or = internal::FindPriorChunk(free_list_, chunk);
+    auto prior_or = internal::FindPriorBlock(free_list_, block);
     // TODO: Add better error here. When will this happen?
     if (prior_or.has_error())
       return {};
 
-    internal::ChunkHeader* prior = prior_or.value();
+    internal::BlockHeader* prior = prior_or.value();
     if (prior == nullptr) {
-      chunk->next = free_list_;
-      free_list_ = chunk;
+      block->next = free_list_;
+      free_list_ = block;
     } else {
-      internal::ChunkHeader* next = prior->next;
-      prior->next = chunk;
-      chunk->next = next;
+      internal::BlockHeader* next = prior->next;
+      prior->next = block;
+      block->next = next;
     }
 
-    auto _ = internal::CoalesceChunk(prior);
+    auto _ = internal::CoalesceBlock(prior);
 
     return {};
   }
@@ -102,20 +102,20 @@ private:
   // We have to explicitly provide the parent class in contexts with a
   // nondepedent name. For more information, see:
   // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
-  using Parent = Chunk<Args...>;
+  using Parent = Block<Args...>;
 
   // Max size allowed per request.
   static constexpr std::size_t kMaxRequestSize_ = Parent::kAlignedSize_;
 
-  static constexpr auto FindChunk =
-      kSearchStrategy == FindBy::FirstFit  ? internal::FindChunkByFirstFit
-      : kSearchStrategy == FindBy::BestFit ? internal::FindChunkByBestFit
-                                           : internal::FindChunkByWorstFit;
+  static constexpr auto FindBlock =
+      kSearchStrategy == FindBy::FirstFit  ? internal::FindBlockByFirstFit
+      : kSearchStrategy == FindBy::BestFit ? internal::FindBlockByBestFit
+                                           : internal::FindBlockByWorstFit;
 
-  // Pointer to entire chunk of memory.
-  internal::ChunkHeader* chunk_ = nullptr;
+  // Pointer to entire block of memory.
+  internal::BlockHeader* block_ = nullptr;
 
-  internal::ChunkHeader* free_list_ = nullptr;
+  internal::BlockHeader* free_list_ = nullptr;
 };
 
 } // namespace dmt::allocator

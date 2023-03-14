@@ -7,8 +7,8 @@
 
 namespace dmt::allocator {
 
-// Size (in bytes) for allocator's chunks. Usually, an allocator uses fixed-size
-// chunks to allocate memory. Within a chunk, several objects of varying length
+// Size (in bytes) for allocator's blocks. Usually, an allocator uses fixed-size
+// blocks to allocate memory. Within a block, several objects of varying length
 // can be "allocated", so long as they fit within the amount of memory already
 // acquired. Currently, this field is used by the Bump allocator.
 template <std::size_t Size>
@@ -20,7 +20,7 @@ struct SizeT : std::integral_constant<std::size_t, Size> {};
 template <std::size_t Alignment>
 struct AlignmentT : std::integral_constant<std::size_t, Alignment> {};
 
-// Policy to employ when Bump allocator's chunk is out of space and
+// Policy to employ when Bump allocator's block is out of space and
 // can't fullfill an allocation request.
 enum WhenFull {
   // Return |nullptr|, signalling that no more allocations can be made on the
@@ -28,35 +28,35 @@ enum WhenFull {
   // is made.
   ReturnNull = 0,
 
-  // Grow storage by requesting a new chunk to allocate the request and
+  // Grow storage by requesting a new block to allocate the request and
   // subsequent requests in.
   GrowStorage = 1
 };
 
 template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {};
 
-// Policy used to determine sizing constraint for chunks.
-enum ChunksMust {
-  // Chunk must have enough space to fulfill requested size in |SizeT|
+// Policy used to determine sizing constraint for blocks.
+enum BlocksMust {
+  // Block must have enough space to fulfill requested size in |SizeT|
   // parameter.
   HaveAtLeastSizeBytes = 0,
 
-  // Chunk can not be larger than requested size in |SizeT| parameter.
+  // Block can not be larger than requested size in |SizeT| parameter.
   NoMoreThanSizeBytes = 1,
 };
 
-template <ChunksMust CM>
-struct LimitT : std::integral_constant<ChunksMust, CM> {};
+template <BlocksMust CM>
+struct LimitT : std::integral_constant<BlocksMust, CM> {};
 
-// Policy to employ when looking for free chunk in free list.
+// Policy to employ when looking for free block in free list.
 enum FindBy {
-  // Use first chunk that contains the minimum sizes of bytes.
+  // Use first block that contains the minimum sizes of bytes.
   FirstFit,
 
-  // Use the *smallest* chunk that contains the minimum sizes of bytes.
+  // Use the *smallest* block that contains the minimum sizes of bytes.
   BestFit,
   //
-  // Use the *largest* chunk that contains the minimum sizes of bytes.
+  // Use the *largest* block that contains the minimum sizes of bytes.
   WorstFit
 };
 
