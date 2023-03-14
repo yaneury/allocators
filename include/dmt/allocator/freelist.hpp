@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dmt/internal/chunk.hpp"
+#include "template/optional.hpp"
 #include <cstddef>
 #include <dmt/allocator/chunk.hpp>
 #include <dmt/allocator/error.hpp>
@@ -10,6 +12,9 @@ namespace dmt::allocator {
 
 template <class... Args> class FreeList : public Chunk<Args...> {
 public:
+  static constexpr FindBy kSearchStrategy =
+      ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
+
   FreeList() = default;
   ~FreeList() = default;
 
@@ -36,7 +41,7 @@ public:
       free_list_ = chunk_;
     }
 
-    auto first_fit_or = internal::FindChunkByFirstFit(free_list_, request_size);
+    auto first_fit_or = FindChunk(free_list_, request_size);
     if (!first_fit_or.has_value())
       return cpp::fail(Error::NoFreeChunk);
 
@@ -101,6 +106,11 @@ private:
 
   // Max size allowed per request.
   static constexpr std::size_t kMaxRequestSize_ = Parent::kAlignedSize_;
+
+  static constexpr auto FindChunk =
+      kSearchStrategy == FindBy::FirstFit  ? internal::FindChunkByFirstFit
+      : kSearchStrategy == FindBy::BestFit ? internal::FindChunkByBestFit
+                                           : internal::FindChunkByWorstFit;
 
   // Pointer to entire chunk of memory.
   internal::ChunkHeader* chunk_ = nullptr;

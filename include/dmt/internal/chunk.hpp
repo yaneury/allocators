@@ -12,6 +12,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <optional>
+#include <strings.h>
+
 #include <result.hpp>
 
 #include <dmt/internal/failure.hpp>

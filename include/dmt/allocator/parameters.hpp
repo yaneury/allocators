@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 
 namespace dmt::allocator {
 
@@ -46,5 +47,19 @@ enum ChunksMust {
 
 template <ChunksMust CM>
 struct LimitT : std::integral_constant<ChunksMust, CM> {};
+
+// Policy to employ when looking for free chunk in free list.
+enum FindBy {
+  // Use first chunk that contains the minimum sizes of bytes.
+  FirstFit,
+
+  // Use the *smallest* chunk that contains the minimum sizes of bytes.
+  BestFit,
+  //
+  // Use the *largest* chunk that contains the minimum sizes of bytes.
+  WorstFit
+};
+
+template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 
 } // namespace dmt::allocator
