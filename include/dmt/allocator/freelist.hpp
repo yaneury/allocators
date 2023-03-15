@@ -24,6 +24,9 @@ public:
   }
 
   Result<std::byte*> Allocate(Layout layout) noexcept {
+    if (auto init = InitBlockIfUnset(); init.has_error())
+      return cpp::fail(init.error());
+
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
@@ -32,14 +35,6 @@ public:
 
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
-
-    // TODO: Make this thread safe.
-    if (!block_) {
-      if (auto new_block = Parent::AllocateNewBlock(); !new_block)
-        return cpp::fail(Error::OutOfMemory);
-      else
-        free_list_ = block_ = new_block;
-    }
 
     auto first_fit_or = FindBlock(free_list_, request_size);
     if (!first_fit_or.has_value())
@@ -116,6 +111,19 @@ private:
       kSearchStrategy == FindBy::FirstFit  ? internal::FindBlockByFirstFit
       : kSearchStrategy == FindBy::BestFit ? internal::FindBlockByBestFit
                                            : internal::FindBlockByWorstFit;
+
+  // TODO: Make this thread safe.
+  Result<void> InitBlockIfUnset() {
+    if (block_)
+      return {};
+
+    auto new_block = Parent::AllocateNewBlock();
+    if (!new_block)
+      return cpp::fail(Error::OutOfMemory);
+
+    free_list_ = block_ = new_block;
+    return {};
+  }
 
   // Pointer to entire block of memory.
   internal::BlockHeader* block_ = nullptr;
