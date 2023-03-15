@@ -1,11 +1,14 @@
 #pragma once
 
-#include "dmt/internal/block.hpp"
-#include "template/optional.hpp"
+#include <cassert>
 #include <cstddef>
+
+#include <template/optional.hpp>
+
 #include <dmt/allocator/block.hpp>
 #include <dmt/allocator/error.hpp>
 #include <dmt/allocator/trait.hpp>
+#include <dmt/internal/block.hpp>
 #include <dmt/internal/util.hpp>
 
 namespace dmt::allocator {
@@ -44,23 +47,18 @@ public:
     auto new_header_or =
         internal::SplitBlock(first_fit.header, request_size, layout.alignment);
 
-    if (new_header_or.has_value()) {
-      if (first_fit.prev)
-        first_fit.prev->next = new_header_or.value();
+    // TODO: This should never occur. Also, if it is in fact possible,
+    // we should log the error before dropping it on the ground.
+    if (new_header_or.has_error())
+      return cpp::fail(Error::Internal);
 
-      if (first_fit.header == free_list_)
-        free_list_ = new_header_or.value();
+    auto new_header = new_header_or.value();
+    if (first_fit.header == free_list_)
+      free_list_ = new_header;
+    else if (first_fit.prev)
+      first_fit.prev->next = new_header;
 
-      return internal::BytePtr(first_fit.header) +
-             internal::GetBlockHeaderSize();
-    } else if (new_header_or == cpp::fail(internal::Failure::BlockTooSmall)) {
-      if (first_fit.header == free_list_)
-        free_list_ = first_fit.header->next;
-      return internal::BytePtr(first_fit.header) +
-             internal::GetBlockHeaderSize();
-    } else {
-      return cpp::fail(Error::NoFreeBlock);
-    }
+    return internal::BytePtr(first_fit.header) + internal::GetBlockHeaderSize();
   }
 
   Result<void> Release(std::byte* ptr) {

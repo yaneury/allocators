@@ -21,6 +21,8 @@ enum class Error {
   // Memory allocation request failed. This means that the underlying system
   // call failed due to the system running out of memory.
   OutOfMemory,
+  // Unexpected internal error
+  Internal,
 };
 
 template <class T> using Result = cpp::result<T, Error>;

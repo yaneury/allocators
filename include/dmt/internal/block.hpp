@@ -194,7 +194,7 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
   std::size_t new_block_size = block->size - total_bytes_needed;
 
   if (new_block_size < minimum_block_size)
-    return cpp::fail(Failure::BlockTooSmall);
+    return nullptr;
 
   ZeroBlock(block);
   std::byte* new_block_addr = BytePtr(block) + total_bytes_needed;
@@ -203,7 +203,7 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
   new_header->size = new_block_size;
 
   block->size = total_bytes_needed;
-  block->next = nullptr;
+  block->next = new_header;
 
   return new_header;
 }
