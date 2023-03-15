@@ -65,7 +65,7 @@ public:
     if (!ptr)
       return cpp::fail(Error::InvalidInput);
 
-    internal::BlockHeader* block = internal::GetHeader(ptr);
+    auto block = internal::GetHeader(ptr);
     if (!free_list_) {
       free_list_ = block;
       return {};
@@ -76,17 +76,20 @@ public:
     if (prior_or.has_error())
       return {};
 
-    internal::BlockHeader* prior = prior_or.value();
-    if (prior == nullptr) {
-      block->next = free_list_;
-      free_list_ = block;
-    } else {
-      internal::BlockHeader* next = prior->next;
+    auto prior = prior_or.value();
+    if (prior) {
+      auto next = prior->next;
       prior->next = block;
       block->next = next;
+    } else {
+      block->next = free_list_;
+      free_list_ = block;
     }
 
-    auto _ = internal::CoalesceBlock(prior);
+    // TODO: This should never happen. Establish better pattern for unreachable
+    // errors.
+    if (auto result = internal::CoalesceBlock(prior); result.has_error())
+      return cpp::fail(Error::Internal);
 
     if (free_list_->size == Parent::kAlignedSize_) {
       Parent::ReleaseBlocks(block_);
