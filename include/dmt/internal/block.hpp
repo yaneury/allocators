@@ -46,9 +46,13 @@ struct HeaderPair {
       : header(header), prev(prev) {}
 };
 
-// Convenience cast function
+// Convenience cast functions
 template <class T> inline std::byte* BytePtr(T* ptr) {
   return reinterpret_cast<std::byte*>(ptr);
+}
+
+template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
+  return reinterpret_cast<std::uintptr_t>(p);
 }
 
 // Fixed sized of Block header.
@@ -155,10 +159,6 @@ inline std::optional<HeaderPair> FindBlockByWorstFit(BlockHeader* head,
   return FindBlockByFit(
       head, minimum_size,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a > b; });
-}
-
-template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
-  return reinterpret_cast<std::uintptr_t>(p);
 }
 
 inline Failable<BlockHeader*> FindPriorBlock(BlockHeader* head,

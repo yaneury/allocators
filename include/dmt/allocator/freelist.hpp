@@ -33,12 +33,12 @@ public:
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
 
-    // TODO: Add sync primitives
+    // TODO: Make this thread safe.
     if (!block_) {
-      if (block_ = Parent::AllocateNewBlock(); !block_)
+      if (auto new_block = Parent::AllocateNewBlock(); !new_block)
         return cpp::fail(Error::OutOfMemory);
-
-      free_list_ = block_;
+      else
+        free_list_ = block_ = new_block;
     }
 
     auto first_fit_or = FindBlock(free_list_, request_size);
@@ -94,6 +94,11 @@ public:
     }
 
     auto _ = internal::CoalesceBlock(prior);
+
+    if (free_list_->size == Parent::kAlignedSize_) {
+      Parent::ReleaseBlocks(block_);
+      free_list_ = block_ = nullptr;
+    }
 
     return {};
   }
