@@ -9,6 +9,7 @@
 #include <dmt/allocator/error.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/block.hpp>
+#include <dmt/internal/freelist.hpp>
 #include <dmt/internal/util.hpp>
 
 namespace dmt::allocator {
@@ -126,9 +127,7 @@ private:
     return {};
   }
 
-  // Pointer to entire block of memory.
   internal::BlockHeader* block_ = nullptr;
-
   internal::BlockHeader* free_list_ = nullptr;
 };
 
