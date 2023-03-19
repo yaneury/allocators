@@ -209,15 +209,15 @@ TEST_CASE("SplitBlock returns error on bad input", "[internal/block]") {
           cpp::fail(Failure::InvalidAlignment));
 }
 
-TEST_CASE("SplitBlock returns error if block too small", "[internal/block]") {
+TEST_CASE("SplitBlock returns nullptr if block too small", "[internal/block]") {
   std::size_t kAlignment = 8;
 
   auto free_list = TestFreeList::FromBlockSizes({8});
 
   REQUIRE(SplitBlock(free_list.AsHeader(), 1 + GetBlockHeaderSize(),
-                     kAlignment) == cpp::fail(Failure::BlockTooSmall));
+                     kAlignment) == nullptr);
   REQUIRE(SplitBlock(free_list.AsHeader(), 8 + GetBlockHeaderSize(),
-                     kAlignment) == cpp::fail(Failure::BlockTooSmall));
+                     kAlignment) == nullptr);
 }
 
 TEST_CASE("SplitBlock splits blocks using alignment", "[internal/block]") {
@@ -234,7 +234,7 @@ TEST_CASE("SplitBlock splits blocks using alignment", "[internal/block]") {
       SplitBlock(header, kBlockSize + GetBlockHeaderSize(), kAlignment);
 
   REQUIRE(header->size == GetBlockHeaderSize() + kBlockSize);
-  REQUIRE(header->next == nullptr);
+  REQUIRE(header->next == actual);
 
   auto expected = reinterpret_cast<BlockHeader*>(
       BytePtr(header) + GetBlockHeaderSize() + kBlockSize);

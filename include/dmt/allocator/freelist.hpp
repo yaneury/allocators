@@ -9,7 +9,6 @@
 #include <dmt/allocator/error.hpp>
 #include <dmt/allocator/trait.hpp>
 #include <dmt/internal/block.hpp>
-#include <dmt/internal/freelist.hpp>
 #include <dmt/internal/util.hpp>
 
 namespace dmt::allocator {
@@ -59,6 +58,7 @@ public:
     else if (first_fit.prev)
       first_fit.prev->next = new_header;
 
+    first_fit.header->next = nullptr;
     return internal::BytePtr(first_fit.header) + internal::GetBlockHeaderSize();
   }
 
@@ -82,15 +82,14 @@ public:
       auto next = prior->next;
       prior->next = block;
       block->next = next;
+      if (auto result = internal::CoalesceBlock(prior); result.has_error())
+        return cpp::fail(Error::Internal);
     } else {
       block->next = free_list_;
       free_list_ = block;
+      if (auto result = internal::CoalesceBlock(free_list_); result.has_error())
+        return cpp::fail(Error::Internal);
     }
-
-    // TODO: This should never happen. Establish better pattern for unreachable
-    // errors.
-    if (auto result = internal::CoalesceBlock(prior); result.has_error())
-      return cpp::fail(Error::Internal);
 
     if (free_list_->size == Parent::kAlignedSize_) {
       Parent::ReleaseBlocks(block_);
