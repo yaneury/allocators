@@ -55,11 +55,12 @@ template <class T> [[gnu::const]] inline constexpr std::uintptr_t AsUint(T* p) {
   return reinterpret_cast<std::uintptr_t>(p);
 }
 
-// Fixed sized of Block header.
+// Fixed size of Block header.
 inline constexpr std::size_t GetBlockHeaderSize() {
   return sizeof(BlockHeader);
 }
 
+// Size of block when not account for header.
 inline std::size_t BlockSize(BlockHeader* header) {
   if (!header)
     return 0;
@@ -73,7 +74,6 @@ inline std::byte* GetBlock(BlockHeader* header) {
 }
 
 // Get header from block referenced by |ptr|.
-// TODO: Add magic number for validation.
 inline BlockHeader* GetHeader(std::byte* ptr) {
   return reinterpret_cast<BlockHeader*>(ptr - GetBlockHeaderSize());
 }
@@ -166,7 +166,7 @@ inline Failable<BlockHeader*> FindPriorBlock(BlockHeader* head,
   if (!block || !head)
     return cpp::fail(Failure::HeaderIsNullptr);
 
-  if (AsUint(head) > AsUint(block))
+  if (AsUint(head) >= AsUint(block))
     return nullptr;
 
   BlockHeader* itr = head;
@@ -210,8 +210,6 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
 
 // Coalesces free block so long as the |next| ptr is equivalent to actual
 // succeeding block when using offset of |block|.
-// TODO: This block can use a |next| == |nullptr| to check for occupied status.
-// However, the freelist would have to be recalibrated from the beginning.
 inline Failable<void> CoalesceBlock(BlockHeader* block) {
   if (!block)
     return cpp::fail(Failure::HeaderIsNullptr);

@@ -1,3 +1,4 @@
+#include "catch2/catch_test_macros.hpp"
 #include <algorithm>
 #include <catch2/catch_all.hpp>
 #include <dmt/internal/block.hpp>
@@ -193,6 +194,34 @@ TEST_CASE("FindBlockByWorstFit selects header furthest away from size",
   REQUIRE(actual.has_value());
   REQUIRE(actual.value().prev == free_list.GetHeader(1));
   REQUIRE(actual.value().header == free_list.GetHeader(2));
+}
+
+TEST_CASE("FindPriorBlock returns Failable on bad input", "[internal/block]") {
+  auto free_list = TestFreeList::FromBlockSizes({3, 4, 5});
+
+  REQUIRE(FindPriorBlock(nullptr, free_list.AsHeader()) ==
+          cpp::fail(Failure::HeaderIsNullptr));
+  REQUIRE(FindPriorBlock(free_list.AsHeader(), nullptr) ==
+          cpp::fail(Failure::HeaderIsNullptr));
+}
+
+TEST_CASE("FindPriorBlock returns nullptr if |block| past or equal to |head|",
+          "[internal/block]") {
+  auto free_list = TestFreeList::FromBlockSizes({3, 4, 5});
+
+  REQUIRE(FindPriorBlock(free_list.GetHeader(1), free_list.GetHeader(0)) ==
+          nullptr);
+  REQUIRE(FindPriorBlock(free_list.GetHeader(0), free_list.GetHeader(0)) ==
+          nullptr);
+}
+
+TEST_CASE("FindPriorBlock returns block prior to |block|", "[internal/block]") {
+  auto free_list = TestFreeList::FromBlockSizes({3, 4, 5});
+
+  REQUIRE(FindPriorBlock(free_list.GetHeader(0), free_list.GetHeader(2)) ==
+          free_list.GetHeader(1));
+  REQUIRE(FindPriorBlock(free_list.GetHeader(1), free_list.GetHeader(2)) ==
+          free_list.GetHeader(1));
 }
 
 TEST_CASE("SplitBlock returns error on bad input", "[internal/block]") {
