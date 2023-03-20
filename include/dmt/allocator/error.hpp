@@ -13,7 +13,7 @@ enum class Error {
   // Size requested was too large.
   SizeRequestTooLarge,
   // Allocate reached its memory capacity. This is different than |OutOfMemory|
-  // where an call to request memory from the operating system fails. In this
+  // where a call to request memory from the operating system fails. In this
   // case, the user-defined capacity was reached.
   ReachedMemoryLimit,
   // Couldn't locate a free block in which to place the requested memory.
