@@ -54,10 +54,11 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     // Should be out of space now.
     REQUIRE(allocator.AllocateUnaligned(1) == cpp::fail(Error::NoFreeBlock));
 
-    for (size_t i = 0; i < N; ++i) {
-      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[i]))
+    for (size_t i = N; i == 0; --i) {
+      size_t index = i - 1;
+      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[index]))
                   .has_value());
-      allocs[i] = nullptr;
+      allocs[index] = nullptr;
     }
 
     SECTION("Reallocation of freed space",
