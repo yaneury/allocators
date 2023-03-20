@@ -11,8 +11,17 @@ namespace dmt::internal {
 std::size_t GetPageSize();
 
 struct Allocation {
-  std::byte* base;
-  std::size_t size;
+  std::byte* base = nullptr;
+  std::size_t size = 0;
+
+  void ZeroOut() {
+    this->base = nullptr;
+    this->size = 0;
+  }
+
+  constexpr bool IsZeroedOut() {
+    return this->base == nullptr && this->size == 0;
+  }
 };
 
 inline std::optional<Allocation> AllocateBytes(std::size_t size,
@@ -35,6 +44,7 @@ inline void ReleaseBytes(Allocation allocation) {
   std::free(ptr);
 }
 
+// TODO: Add error handling.
 std::optional<Allocation> AllocatePages(std::size_t pages);
 void ReleasePages(Allocation allocation);
 

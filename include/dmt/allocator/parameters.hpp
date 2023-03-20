@@ -62,4 +62,9 @@ enum FindBy {
 
 template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 
+// Max number of requests that an individual PageAllocator will keep track of.
+// This size is used for allocating memory for internal bookkeeping.
+template <std::size_t R>
+struct RequestT : std::integral_constant<std::size_t, R> {};
+
 } // namespace dmt::allocator
