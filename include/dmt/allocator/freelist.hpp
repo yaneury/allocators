@@ -5,11 +5,11 @@
 
 #include <template/optional.hpp>
 
-#include <dmt/allocator/block.hpp>
-#include <dmt/allocator/error.hpp>
-#include <dmt/allocator/trait.hpp>
-#include <dmt/internal/block.hpp>
-#include <dmt/internal/util.hpp>
+#include "block.hpp"
+#include "error.hpp"
+#include "internal/block.hpp"
+#include "internal/util.hpp"
+#include "trait.hpp"
 
 namespace dmt::allocator {
 

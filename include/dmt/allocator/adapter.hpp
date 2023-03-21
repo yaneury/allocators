@@ -6,8 +6,9 @@
 #pragma once
 
 #include <cstddef>
-#include <dmt/allocator/bump.hpp>
-#include <dmt/allocator/trait.hpp>
+
+#include "bump.hpp"
+#include "trait.hpp"
 
 namespace dmt::allocator {
 

@@ -17,8 +17,8 @@
 
 #include <result.hpp>
 
-#include <dmt/internal/failure.hpp>
-#include <dmt/internal/platform.hpp>
+#include "failure.hpp"
+#include "platform.hpp"
 
 namespace dmt::internal {
 

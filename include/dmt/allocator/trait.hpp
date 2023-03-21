@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include <dmt/internal/util.hpp>
+#include "internal/util.hpp"
 
 #if __cplusplus >= 202002L
 #include <concepts>

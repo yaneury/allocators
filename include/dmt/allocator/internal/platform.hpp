@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <optional>
 
-#include <dmt/internal/util.hpp>
+#include "util.hpp"
 
 namespace dmt::internal {
 
