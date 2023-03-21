@@ -72,7 +72,7 @@ protected:
     return kAlignedSize_ >= page_size && kAlignedSize_ % page_size == 0;
   }
 
-  static dmt::internal::BlockHeader* AllocateNewBlock() {
+  static internal::BlockHeader* AllocateNewBlock() {
     auto allocation =
         IsPageMultiple()
             ? internal::AllocatePages(kAlignedSize_ / internal::GetPageSize())
@@ -81,13 +81,13 @@ protected:
     if (!allocation.has_value())
       return nullptr;
 
-    return dmt::internal::CreateBlockHeaderFromAllocation(allocation.value());
+    return internal::CreateBlockHeaderFromAllocation(allocation.value());
   }
 
-  static void ReleaseBlocks(dmt::internal::BlockHeader* block) {
+  static void ReleaseBlocks(internal::BlockHeader* block) {
     auto release =
         IsPageMultiple() ? internal::ReleasePages : internal::ReleaseBytes;
-    dmt::internal::ReleaseBlocks(block, std::move(release));
+    internal::ReleaseBlocks(block, std::move(release));
   }
 
   // Various assertions hidden from user API but added here to ensure invariants

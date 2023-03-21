@@ -61,7 +61,7 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
   SECTION("pb", "a page-sized, page-aligned allocator with growth storage") {
     static constexpr std::size_t PageSize = 4096;
     using Allocator =
-        Bump<SizeT<PageSize - dmt::internal::GetBlockHeaderSize()>,
+        Bump<SizeT<PageSize - internal::GetBlockHeaderSize()>,
              AlignmentT<PageSize>, LimitT<BlocksMust::HaveAtLeastSizeBytes>,
              GrowT<WhenFull::GrowStorage>>;
     Allocator allocator;

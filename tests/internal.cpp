@@ -8,7 +8,7 @@
 #include <dmt/allocator/internal/block.hpp>
 #include <dmt/allocator/internal/util.hpp>
 
-using namespace dmt::internal;
+using namespace dmt::allocator::internal;
 
 TEST_CASE("IsPowerOfTwo", "[internal/util]") {
   size_t kMaxExp = 16;

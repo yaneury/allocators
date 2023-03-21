@@ -20,7 +20,7 @@
 #include "failure.hpp"
 #include "platform.hpp"
 
-namespace dmt::internal {
+namespace dmt::allocator::internal {
 
 // A BlockHeader contains the necessary metadata used to track
 // a block of memory. The block is the bytes starting from
@@ -188,8 +188,7 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
     return cpp::fail(Failure::InvalidAlignment);
 
   // Minimum size for a new block.
-  std::size_t minimum_block_size =
-      AlignUp(dmt::internal::GetBlockHeaderSize() + 1, alignment);
+  std::size_t minimum_block_size = AlignUp(GetBlockHeaderSize() + 1, alignment);
   std::size_t total_bytes_needed = AlignUp(bytes_needed, alignment);
   std::size_t new_block_size = block->size - total_bytes_needed;
 
@@ -225,4 +224,4 @@ inline Failable<void> CoalesceBlock(BlockHeader* block) {
   return {};
 }
 
-} // namespace dmt::internal
+} // namespace dmt::allocator::internal

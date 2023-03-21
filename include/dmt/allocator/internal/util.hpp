@@ -13,7 +13,7 @@
 
 #include <cstddef>
 
-namespace dmt::internal {
+namespace dmt::allocator::internal {
 
 static constexpr size_t kMinimumAlignment = sizeof(void*);
 
@@ -46,4 +46,4 @@ static constexpr size_t kMinimumAlignment = sizeof(void*);
   return size > 0 && IsValidAlignment(alignment);
 }
 
-} // namespace dmt::internal
+} // namespace dmt::allocator::internal

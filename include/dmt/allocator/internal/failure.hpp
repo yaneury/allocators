@@ -2,7 +2,7 @@
 
 #include <result.hpp>
 
-namespace dmt::internal {
+namespace dmt::allocator::internal {
 
 // Failures encountered during internal operations.
 enum class Failure {
@@ -15,4 +15,4 @@ enum class Failure {
 
 template <class T> using Failable = cpp::result<T, Failure>;
 
-} // namespace dmt::internal
+} // namespace dmt::allocator::internal

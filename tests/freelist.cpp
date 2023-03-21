@@ -31,7 +31,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
   SECTION("Page-sized block",
           "Allocator with page-sized block can fully use space") {
     static constexpr std::size_t kChunkSize =
-        SizeOfT + dmt::internal::GetBlockHeaderSize();
+        SizeOfT + internal::GetBlockHeaderSize();
     static constexpr std::size_t kPageSize = 4096;
     static constexpr std::size_t N = kPageSize / kChunkSize;
 
@@ -81,8 +81,8 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
 
     SECTION("Coalescion of freed chunks",
             "Coalesces free chunks such that page-sized object fits") {
-      auto p_or = allocator.AllocateUnaligned(
-          kPageSize - dmt::internal::GetBlockHeaderSize());
+      auto p_or = allocator.AllocateUnaligned(kPageSize -
+                                              internal::GetBlockHeaderSize());
       REQUIRE(p_or.has_value());
 
       T* p = reinterpret_cast<T*>(p_or.value());
