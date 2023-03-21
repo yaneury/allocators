@@ -1,10 +1,11 @@
 #pragma once
 
-#include <dmt/allocator/parameters.hpp>
-#include <dmt/allocator/trait.hpp>
-#include <dmt/internal/block.hpp>
-#include <dmt/internal/util.hpp>
 #include <template/parameters.hpp>
+
+#include "internal/block.hpp"
+#include "internal/util.hpp"
+#include "parameters.hpp"
+#include "trait.hpp"
 
 namespace dmt::allocator {
 

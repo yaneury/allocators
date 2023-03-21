@@ -2,10 +2,10 @@
 
 #include <array>
 
-#include <dmt/allocator/error.hpp>
-#include <dmt/allocator/parameters.hpp>
-#include <dmt/allocator/trait.hpp>
-#include <dmt/internal/platform.hpp>
+#include "error.hpp"
+#include "internal/platform.hpp"
+#include "parameters.hpp"
+#include "trait.hpp"
 
 namespace dmt::allocator {
 
