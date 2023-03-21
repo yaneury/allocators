@@ -10,6 +10,10 @@ namespace dmt::allocator::internal {
 // Gets the page size (in bytes) for the current platform.
 std::size_t GetPageSize();
 
+inline bool IsPageMultiple(std::size_t request) {
+  return request >= GetPageSize() && request % GetPageSize() == 0;
+}
+
 struct Allocation {
   std::byte* base = nullptr;
   std::size_t size = 0;

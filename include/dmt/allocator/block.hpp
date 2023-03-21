@@ -4,6 +4,7 @@
 
 #include "internal/block.hpp"
 #include "internal/util.hpp"
+#include "page.hpp"
 #include "parameters.hpp"
 #include "trait.hpp"
 
@@ -11,6 +12,9 @@ namespace dmt::allocator {
 
 template <class... Args> class Block {
 public:
+  // Allocator used to request memory defaults to unconfigured Page allocator.
+  using Allocator = ntp::type<AllocatorT<Page<>>, Args...>::value;
+
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment
   // requirements.
@@ -67,9 +71,8 @@ protected:
                                 .size = size};
   }
 
-  static bool IsPageMultiple() {
-    static const auto page_size = internal::GetPageSize();
-    return kAlignedSize_ >= page_size && kAlignedSize_ % page_size == 0;
+  [[gnu::const]] static constexpr bool IsPageMultiple() {
+    return internal::IsPageMultiple(kAlignedSize_);
   }
 
   static internal::BlockHeader* AllocateNewBlock() {

@@ -30,9 +30,9 @@ struct Layout {
 template <class T>
 concept Trait = requires(T allocator, std::size_t size, Layout layout,
                          std::byte* bytes) {
-  { allocator.AllocateUnaligned(size) } -> std::same_as<std::byte*>;
-  { allocator.Allocate(layout) } -> std::same_as<std::byte*>;
-  { allocator.Release(bytes) } -> std::same_as<void>;
+  { allocator.Allocate(layout) } -> std::same_as<Result<std::byte*>>;
+  { allocator.Allocate(size) } -> std::same_as<Result<std::byte*>>;
+  { allocator.Release(bytes) } -> std::same_as<Result<void>>;
 };
 
 #endif

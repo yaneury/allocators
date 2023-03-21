@@ -9,23 +9,18 @@
 
 namespace dmt::allocator {
 
-template <class... Args> class PageAllocator {
+template <class... Args> class Page {
 public:
   static constexpr std::size_t kMaxRequests =
       std::max(16, ntp::optional<RequestT<0>, Args...>::value);
 
-  PageAllocator() {
+  Page() {
     for (auto& r : requests_)
       r.ZeroOut();
   }
 
-  Result<std::byte*> AllocateUnaligned(std::size_t pages) noexcept {
-    return Allocate(
-        Layout{.size = pages, .alignment = internal::kMinimumAlignment});
-  }
-
   Result<std::byte*> Allocate(Layout layout) {
-    if (!IsValid(layout.alignment) || layout.size == 0)
+    if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
     std::size_t index = kMaxRequests;
@@ -47,6 +42,11 @@ public:
     requests_[index] = allocation;
 
     return allocation.base;
+  }
+
+  Result<std::byte*> Allocate(std::size_t pages) noexcept {
+    return Allocate(
+        Layout{.size = pages, .alignment = internal::kMinimumAlignment});
   }
 
   Result<void> Release(std::byte* ptr) {

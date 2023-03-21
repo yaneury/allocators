@@ -67,4 +67,8 @@ template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 template <std::size_t R>
 struct RequestT : std::integral_constant<std::size_t, R> {};
 
+// Allocator type used to fetch blocks of memory.
+template <typename Allocator>
+struct AllocatorT : ntp::integral_type<Allocator> {};
+
 } // namespace dmt::allocator
