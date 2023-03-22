@@ -9,6 +9,11 @@
 
 using namespace dmt::allocator;
 
+template <class T> T GetValueOrFail(Result<T> result) {
+  REQUIRE(result.has_value());
+  return result.value();
+}
+
 TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
@@ -18,7 +23,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     using Allocator = FreeList<>;
 
     Allocator allocator;
-    auto p_or = allocator.AllocateUnaligned(SizeOfT);
+    auto p_or = allocator.Allocate(SizeOfT);
     REQUIRE(p_or.has_value());
 
     T* p = reinterpret_cast<T*>(p_or.value());
@@ -43,7 +48,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     std::array<T*, N> allocs = {nullptr};
 
     for (size_t i = 0; i < N; ++i) {
-      auto p_or = allocator.AllocateUnaligned(SizeOfT);
+      auto p_or = allocator.Allocate(SizeOfT);
       REQUIRE(p_or.has_value());
 
       T* p = reinterpret_cast<T*>(p_or.value());
@@ -52,7 +57,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     }
 
     // Should be out of space now.
-    REQUIRE(allocator.AllocateUnaligned(1) == cpp::fail(Error::NoFreeBlock));
+    REQUIRE(allocator.Allocate(1) == cpp::fail(Error::NoFreeBlock));
 
     for (size_t i = N; i == 0; --i) {
       size_t index = i - 1;
@@ -64,7 +69,7 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
     SECTION("Reallocation of freed space",
             "Can reallocate objects using freed space") {
       for (size_t i = 0; i < N; ++i) {
-        auto p_or = allocator.AllocateUnaligned(SizeOfT);
+        auto p_or = allocator.Allocate(SizeOfT);
         REQUIRE(p_or.has_value());
 
         T* p = reinterpret_cast<T*>(p_or.value());
@@ -81,8 +86,8 @@ TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
 
     SECTION("Coalescion of freed chunks",
             "Coalesces free chunks such that page-sized object fits") {
-      auto p_or = allocator.AllocateUnaligned(kPageSize -
-                                              internal::GetBlockHeaderSize());
+      auto p_or =
+          allocator.Allocate(kPageSize - internal::GetBlockHeaderSize());
       REQUIRE(p_or.has_value());
 
       T* p = reinterpret_cast<T*>(p_or.value());

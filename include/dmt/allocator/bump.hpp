@@ -5,6 +5,7 @@
 #include <template/parameters.hpp>
 
 #include "block.hpp"
+#include "error.hpp"
 #include "internal/block.hpp"
 #include "internal/util.hpp"
 #include "trait.hpp"
@@ -29,36 +30,21 @@ namespace dmt::allocator {
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
 template <class... Args> class Bump : public Block<Args...> {
 public:
-  Bump() { DINFO("kAlignedSize: " << Parent::kAlignedSize_); }
+  // TODO: Don't ignore this error.
+  ~Bump() { (void)Reset(); }
 
-  ~Bump() { Reset(); }
+  Result<std::byte*> Allocate(Layout layout) noexcept {
+    if (auto init = InitBlockIfUnset(); init.has_error())
+      return cpp::fail(init.error());
 
-  std::byte* AllocateUnaligned(std::size_t size) noexcept {
-    return Allocate(
-        Layout{.size = size, .alignment = internal::kMinimumAlignment});
-  }
-
-  std::byte* Allocate(Layout layout) noexcept {
     if (!IsValid(layout))
-      return nullptr;
+      return cpp::fail(Error::InvalidInput);
 
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
     DINFO("Request Size: " << request_size);
 
     if (request_size > kMaxRequestSize_)
-      return nullptr;
-
-    // This class uses a very coarse-grained mutex for allocation.
-    std::lock_guard<std::mutex> lock(blocks_mutex_);
-
-    if (!blocks_) {
-      if (blocks_ = Parent::AllocateNewBlock(); !blocks_)
-        return nullptr;
-
-      // Set current block to header.
-      current_ = blocks_;
-      offset_ = 0;
-    }
+      return cpp::fail(Error::SizeRequestTooLarge);
 
     std::size_t remaining_size =
         Parent::kAlignedSize_ - internal::GetBlockHeaderSize() - offset_;
@@ -66,11 +52,11 @@ public:
 
     if (request_size > remaining_size) {
       if (!Parent::kGrowWhenFull)
-        return nullptr;
+        return cpp::fail(Error::ReachedMemoryLimit);
 
       auto* block = Parent::AllocateNewBlock();
       if (!block)
-        return nullptr;
+        return cpp::fail(Error::OutOfMemory);
 
       current_->next = block;
       current_ = block;
@@ -84,16 +70,22 @@ public:
     return result;
   }
 
-  void Release(std::byte*) {
-    // The bump allocator does not support per-object deallocation.
+  Result<std::byte*> Allocate(std::size_t size) noexcept {
+    return Allocate(Layout(size, internal::kMinimumAlignment));
   }
 
-  void Reset() {
+  Result<void> Release(std::byte*) {
+    // The bump allocator does not support per-object deallocation.
+    return {};
+  }
+
+  Result<void> Reset() {
     std::lock_guard<std::mutex> lock(blocks_mutex_);
     offset_ = 0;
     if (blocks_)
       (void)Parent::ReleaseAllBlocks(blocks_); // TODO: Add error handling.
     blocks_ = nullptr;
+    return {};
   }
 
 private:
@@ -106,6 +98,24 @@ private:
   // header.
   static constexpr std::size_t kMaxRequestSize_ =
       Parent::kAlignedSize_ - internal::GetBlockHeaderSize();
+
+  // TODO: Make this thread safe.
+  Result<void> InitBlockIfUnset() {
+    // This class uses a very coarse-grained mutex for allocation.
+    std::lock_guard<std::mutex> lock(blocks_mutex_);
+
+    if (blocks_)
+      return {};
+
+    auto new_block = Parent::AllocateNewBlock();
+    if (!new_block)
+      return cpp::fail(Error::OutOfMemory);
+
+    // Set current block to header.
+    current_ = blocks_;
+    offset_ = 0;
+    return {};
+  }
 
   // List of all allocated blocks.
   internal::BlockHeader* blocks_ = nullptr;

@@ -5,6 +5,11 @@
 
 using namespace dmt::allocator;
 
+template <class T> T GetValueOrFail(Result<T> result) {
+  REQUIRE(result.has_value());
+  return result.value();
+}
+
 TEST_CASE("Bump allocator", "[allocator::Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
@@ -16,12 +21,13 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
                            LimitT<BlocksMust::HaveAtLeastSizeBytes>>;
     Allocator allocator;
 
-    T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+    auto a_or = allocator.Allocate(SizeOfT);
+    T* a = reinterpret_cast<T*>(GetValueOrFail(allocator.Allocate(SizeOfT)));
     SECTION("an object (within size) is allocated") { REQUIRE(a != nullptr); }
 
     SECTION("another object is allocated") {
       REQUIRE(a != nullptr);
-      T* b = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+      T* b = reinterpret_cast<T*>(GetValueOrFail(allocator.Allocate(SizeOfT)));
       REQUIRE(b != nullptr);
 
       SECTION("it is set to the address next to the previously allocated one") {
@@ -33,15 +39,15 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
       REQUIRE(a != nullptr);
       SECTION("the allocated objects remain valid") {
         *a = 100;
-        allocator.Release(reinterpret_cast<std::byte*>(a));
+        REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(a)).has_value());
         REQUIRE(*a == 100);
       }
     }
     SECTION("allocate is invoked over capacity") {
-      REQUIRE(allocator.AllocateUnaligned(SizeOfT) != nullptr);
+      REQUIRE(allocator.Allocate(SizeOfT) != nullptr);
 
       SECTION("allocate returns nullptr") {
-        REQUIRE(allocator.AllocateUnaligned(SizeOfT) == nullptr);
+        REQUIRE(allocator.Allocate(SizeOfT) == nullptr);
       }
     }
   }
@@ -53,7 +59,7 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
     SECTION("making more allocation than can fit in one block") {
       SECTION("will grow until OOM") {
         for (size_t i = 0; i < 100; ++i)
-          REQUIRE(allocator.AllocateUnaligned(SizeOfT) != nullptr);
+          REQUIRE(allocator.Allocate(SizeOfT) != nullptr);
       }
     }
   }
@@ -68,7 +74,8 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
 
     SECTION("making an allocation within page") {
       SECTION("it allocates") {
-        T* a = reinterpret_cast<T*>(allocator.AllocateUnaligned(SizeOfT));
+        T* a =
+            reinterpret_cast<T*>(GetValueOrFail(allocator.Allocate(SizeOfT)));
         REQUIRE(a != nullptr);
       }
     }
@@ -77,7 +84,7 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
     // block.
     SECTION("making an allocation greater than block size") {
       SECTION("it returns nullptr") {
-        REQUIRE(allocator.AllocateUnaligned(PageSize) == nullptr);
+        REQUIRE(allocator.Allocate(PageSize) == nullptr);
       }
     }
   }

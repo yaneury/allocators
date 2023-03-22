@@ -19,6 +19,9 @@ struct Layout {
   // Value must be a power of two and greater than or equal to
   // the current running architecture's word size, i.e. `sizeof(void*)`.
   std::size_t alignment;
+
+  explicit Layout(std::size_t size, std::size_t alignment)
+      : size(size), alignment(alignment) {}
 };
 
 [[gnu::const]] inline bool IsValid(Layout layout) {

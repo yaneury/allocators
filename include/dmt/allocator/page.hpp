@@ -16,7 +16,7 @@ public:
 
   Page() {
     for (auto& r : requests_)
-      r.ZeroOut();
+      r.Unset();
   }
 
   Result<std::byte*> Allocate(Layout layout) {
@@ -25,7 +25,7 @@ public:
 
     std::size_t index = kMaxRequests;
     for (size_t i = 0; i < kMaxRequests; ++i) {
-      if (requests_[i].IsZeroedOut()) {
+      if (!requests_[i].IsSet()) {
         i = index;
         break;
       }
@@ -44,9 +44,8 @@ public:
     return allocation.base;
   }
 
-  Result<std::byte*> Allocate(std::size_t pages) noexcept {
-    return Allocate(
-        Layout{.size = pages, .alignment = internal::kMinimumAlignment});
+  Result<std::byte*> Allocate(std::size_t size) noexcept {
+    return Allocate(size, internal::kMinimumAlignment);
   }
 
   Result<void> Release(std::byte* ptr) {
@@ -61,7 +60,7 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     internal::ReleasePages(*itr);
-    itr->ZeroOut();
+    itr->Unset();
   }
 
 private:

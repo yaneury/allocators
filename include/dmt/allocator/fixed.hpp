@@ -23,11 +23,6 @@ public:
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<4096>, Args...>::value;
 
-  Result<std::byte*> AllocateUnaligned(std::size_t size) {
-    // This allocator does not enforce alignment.
-    return Allocate(Layout{.size = size, .alignment = 1});
-  }
-
   Result<std::byte*> Allocate(Layout layout) {
     if (layout.size == 0)
       return cpp::fail(Error::InvaldInput);
@@ -39,6 +34,11 @@ public:
     std::byte* ptr = buffer_[end_];
     end_ += layout.size;
     return ptr;
+  }
+
+  Result<std::byte*> Allocate(std::size_t size) {
+    // This allocator does not enforce alignment.
+    return Allocate(Layout(size, /*alignment=*/1));
   }
 
   Result<void> Release(std::byte* ptr) { return {}; }

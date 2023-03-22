@@ -18,14 +18,6 @@ public:
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
 
-  FreeList() = default;
-  ~FreeList() = default;
-
-  Result<std::byte*> AllocateUnaligned(std::size_t size) noexcept {
-    return Allocate(
-        Layout{.size = size, .alignment = internal::kMinimumAlignment});
-  }
-
   Result<std::byte*> Allocate(Layout layout) noexcept {
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
@@ -67,6 +59,10 @@ public:
     first_fit.header->next = nullptr;
     return internal::AsBytePtr(first_fit.header) +
            internal::GetBlockHeaderSize();
+  }
+
+  Result<std::byte*> Allocate(std::size_t size) noexcept {
+    return Allocate(Layout(size, internal::kMinimumAlignment));
   }
 
   Result<void> Release(std::byte* ptr) {
