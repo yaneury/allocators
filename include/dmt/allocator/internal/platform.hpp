@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdlib>
 #include <optional>
 
@@ -14,6 +15,11 @@ namespace dmt::allocator::internal {
 struct Allocation {
   std::byte* base = nullptr;
   std::size_t size = 0;
+
+  explicit Allocation(std::byte* base, std::size_t size)
+      : base(base), size(size) {
+    assert(base != nullptr && size != 0);
+  }
 
   void Unset() {
     base = nullptr;
@@ -59,7 +65,7 @@ inline Failable<Allocation> AllocatePages(std::size_t size) {
   if (ptr == MAP_FAILED)
     return cpp::fail(Failure::AllocationFailed);
 
-  return Allocation({.base = static_cast<std::byte*>(ptr), .size = size});
+  return Allocation(static_cast<std::byte*>(ptr), size);
 }
 
 inline Failable<void> ReleasePages(Allocation allocation) {

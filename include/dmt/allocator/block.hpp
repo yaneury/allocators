@@ -64,11 +64,7 @@ protected:
           : internal::AlignDown(kSize, kAlignment);
 
   static internal::Allocation CreateAllocation(std::byte* base) {
-    std::size_t size = IsPageMultiple()
-                           ? kAlignedSize_ / internal::GetPageSize()
-                           : kAlignedSize_;
-    return internal::Allocation{.base = static_cast<std::byte*>(base),
-                                .size = size};
+    return internal::Allocation(base, kAlignedSize_);
   }
 
   [[gnu::const]] static constexpr bool IsPageMultiple() {
@@ -84,8 +80,12 @@ protected:
     return internal::BlockHeader::Create(allocation.value());
   }
 
-  static void ReleaseBlocks(internal::BlockHeader* block) {
-    internal::ReleaseBlocks(block, std::move(internal::ReleasePages));
+  static Result<void> ReleaseBlocks(internal::BlockHeader* block) {
+    if (auto result = internal::ReleaseBlockList(block, internal::ReleasePages);
+        result.has_error())
+      return cpp::fail(Error::Internal);
+
+    return {};
   }
 
   // Various assertions hidden from user API but added here to ensure invariants

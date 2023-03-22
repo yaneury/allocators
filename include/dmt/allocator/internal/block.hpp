@@ -55,7 +55,9 @@ struct HeaderPair {
   BlockHeader* header = nullptr;
 
   explicit HeaderPair(BlockHeader* header, BlockHeader* prev = nullptr)
-      : header(header), prev(prev) {}
+      : header(header), prev(prev) {
+    assert(header != nullptr);
+  }
 };
 
 // Convenience cast functions
@@ -82,11 +84,15 @@ inline std::size_t BlockSize(BlockHeader* header) {
 
 // Get pointer to block referenced by |header|.
 inline std::byte* GetBlock(BlockHeader* header) {
+  assert(header != nullptr);
+
   return AsBytePtr(header) + GetBlockHeaderSize();
 }
 
 // Get header from block referenced by |ptr|.
 inline BlockHeader* GetHeader(std::byte* ptr) {
+  assert(ptr != nullptr);
+
   return reinterpret_cast<BlockHeader*>(ptr - GetBlockHeaderSize());
 }
 
@@ -102,22 +108,33 @@ inline void ZeroBlock(BlockHeader* header) {
 
 // Cast |BlockHeader*| pointed by head to |Allocation| objects and free their
 // associated memory using |release|.
-inline void ReleaseBlocks(BlockHeader* head,
-                          std::function<void(Allocation)> release) {
+inline Failable<void>
+ReleaseBlockList(BlockHeader* head,
+                 std::function<Failable<void>(Allocation)> release) {
+  if (head == nullptr)
+    return cpp::fail(Failure::HeaderIsNullptr);
+
   BlockHeader* itr = head;
   while (itr != nullptr) {
     BlockHeader* next = itr->next;
-    release(Allocation{.base = AsBytePtr(itr), .size = itr->size});
+    if (auto result = release(Allocation(AsBytePtr(itr), itr->size));
+        result.has_error())
+      return cpp::fail(result.error());
 
     itr = next;
   }
+
+  return {};
 }
 
 // Return first header that has at least |minimum_size| bytes available.
-inline std::optional<HeaderPair> FindBlockByFirstFit(BlockHeader* head,
-                                                     std::size_t minimum_size) {
-  if (!head || minimum_size == 0)
-    return std::nullopt;
+inline Failable<std::optional<HeaderPair>>
+FindBlockByFirstFit(BlockHeader* head, std::size_t minimum_size) {
+  if (head == nullptr)
+    return cpp::fail(Failure::HeaderIsNullptr);
+
+  if (minimum_size == 0)
+    return cpp::fail(Failure::InvalidSize);
 
   for (BlockHeader *itr = head, *prev = nullptr; itr != nullptr;
        prev = itr, itr = itr->next)
@@ -129,11 +146,14 @@ inline std::optional<HeaderPair> FindBlockByFirstFit(BlockHeader* head,
 
 // Return header that most closely fits |minimum_size| using |cmp| as the
 // criteria.
-inline std::optional<HeaderPair>
+inline Failable<std::optional<HeaderPair>>
 FindBlockByFit(BlockHeader* head, std::size_t minimum_size,
                std::function<bool(std::size_t, std::size_t)> cmp) {
-  if (!head || minimum_size == 0)
-    return std::nullopt;
+  if (head == nullptr)
+    return cpp::fail(Failure::HeaderIsNullptr);
+
+  if (minimum_size == 0)
+    return cpp::fail(Failure::InvalidSize);
 
   std::optional<HeaderPair> target = std::nullopt;
   for (BlockHeader *itr = head, *prev = nullptr; itr != nullptr;
@@ -148,15 +168,15 @@ FindBlockByFit(BlockHeader* head, std::size_t minimum_size,
   return target;
 }
 
-inline std::optional<HeaderPair> FindBlockByBestFit(BlockHeader* head,
-                                                    std::size_t minimum_size) {
+inline Failable<std::optional<HeaderPair>>
+FindBlockByBestFit(BlockHeader* head, std::size_t minimum_size) {
   return FindBlockByFit(
       head, minimum_size,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a < b; });
 }
 
-inline std::optional<HeaderPair> FindBlockByWorstFit(BlockHeader* head,
-                                                     std::size_t minimum_size) {
+inline Failable<std::optional<HeaderPair>>
+FindBlockByWorstFit(BlockHeader* head, std::size_t minimum_size) {
   return FindBlockByFit(
       head, minimum_size,
       /*cmp=*/[](std::size_t a, std::size_t b) { return a > b; });
@@ -164,7 +184,7 @@ inline std::optional<HeaderPair> FindBlockByWorstFit(BlockHeader* head,
 
 inline Failable<BlockHeader*> FindPriorBlock(BlockHeader* head,
                                              BlockHeader* block) {
-  if (!block || !head)
+  if (block == nullptr || head == nullptr)
     return cpp::fail(Failure::HeaderIsNullptr);
 
   if (AsUint(head) >= AsUint(block))

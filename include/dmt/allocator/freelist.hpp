@@ -39,7 +39,13 @@ public:
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
 
-    auto first_fit_or = FindBlock(free_list_, request_size);
+    internal::Failable<std::optional<internal::HeaderPair>> first_fit_or_error =
+        FindBlock(free_list_, request_size);
+    if (first_fit_or_error.has_error())
+      return cpp::fail(Error::Internal);
+
+    std::optional<internal::HeaderPair> first_fit_or =
+        first_fit_or_error.value();
     if (!first_fit_or.has_value())
       return cpp::fail(Error::NoFreeBlock);
 

@@ -153,7 +153,10 @@ TEST_CASE(
     "[internal/block]") {
   auto free_list = TestFreeList::FromBlockSizes({3, 5, 4});
 
-  auto actual = FindBlockByFirstFit(free_list.AsHeader(), SizeWithHeader(4));
+  auto actual_or_error =
+      FindBlockByFirstFit(free_list.AsHeader(), SizeWithHeader(4));
+  REQUIRE(actual_or_error.has_value());
+  auto actual = actual_or_error.value();
 
   REQUIRE(actual.has_value());
   REQUIRE(actual.value().prev == free_list.GetHeader(0));
@@ -164,12 +167,10 @@ TEST_CASE("FindBlockByBestFit selects header closest to size",
           "[internal/block]") {
   auto free_list = TestFreeList::FromBlockSizes({3, 5, 4});
 
-  auto actual = FindBlockByBestFit(free_list.AsHeader(), SizeWithHeader(4));
-
-  INFO("AsHeader: " << free_list.AsHeader());
-  INFO("GetHeader(0)" << free_list.GetHeader(0));
-  INFO("GetHeader(1)" << free_list.GetHeader(1));
-  INFO("GetHeader(2)" << free_list.GetHeader(2));
+  auto actual_or_error =
+      FindBlockByBestFit(free_list.AsHeader(), SizeWithHeader(4));
+  REQUIRE(actual_or_error->has_value());
+  auto actual = actual_or_error.value();
 
   REQUIRE(actual.has_value());
   REQUIRE(actual.value().prev == free_list.GetHeader(1));
@@ -180,7 +181,9 @@ TEST_CASE("FindBlockByWorstFit selects header furthest away from size",
           "[internal/block]") {
   auto free_list = TestFreeList::FromBlockSizes({3, 4, 5});
 
-  auto actual = FindBlockByWorstFit(free_list.AsHeader(), 4);
+  auto actual_or_error = FindBlockByWorstFit(free_list.AsHeader(), 4);
+  REQUIRE(actual_or_error.has_value());
+  auto actual = actual_or_error.value();
 
   REQUIRE(actual.has_value());
   REQUIRE(actual.value().prev == free_list.GetHeader(1));
