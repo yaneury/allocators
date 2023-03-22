@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -34,6 +35,17 @@ struct BlockHeader {
   // The next block in the list of blocks. Blocks are kept in a
   // standard singly-linked list.
   BlockHeader* next = nullptr;
+
+  // Cast |allocation| to |BlockHeader*|.
+  static inline BlockHeader* Create(Allocation allocation,
+                                    BlockHeader* next = nullptr) {
+    assert(allocation.base != nullptr && allocation.size != 0);
+
+    BlockHeader* header = reinterpret_cast<BlockHeader*>(allocation.base);
+    header->size = allocation.size;
+    header->next = next;
+    return header;
+  }
 };
 
 // A pair of BlockHeader* where the |prev| is guaranteed to have its |next|
@@ -47,7 +59,7 @@ struct HeaderPair {
 };
 
 // Convenience cast functions
-template <class T> inline std::byte* BytePtr(T* ptr) {
+template <class T> inline std::byte* AsBytePtr(T* ptr) {
   return reinterpret_cast<std::byte*>(ptr);
 }
 
@@ -60,7 +72,7 @@ inline constexpr std::size_t GetBlockHeaderSize() {
   return sizeof(BlockHeader);
 }
 
-// Size of block when not account for header.
+// Size of block when not accounting for header.
 inline std::size_t BlockSize(BlockHeader* header) {
   if (!header)
     return 0;
@@ -70,7 +82,7 @@ inline std::size_t BlockSize(BlockHeader* header) {
 
 // Get pointer to block referenced by |header|.
 inline std::byte* GetBlock(BlockHeader* header) {
-  return BytePtr(header) + GetBlockHeaderSize();
+  return AsBytePtr(header) + GetBlockHeaderSize();
 }
 
 // Get header from block referenced by |ptr|.
@@ -83,20 +95,9 @@ inline void ZeroBlock(BlockHeader* header) {
   if (!header)
     return;
 
-  std::byte* base = BytePtr(header) + GetBlockHeaderSize();
+  std::byte* base = AsBytePtr(header) + GetBlockHeaderSize();
   std::size_t size = header->size - GetBlockHeaderSize();
   bzero(base, size);
-}
-
-// Cast |allocation| to |BlockHeader*|.
-inline BlockHeader*
-CreateBlockHeaderFromAllocation(Allocation allocation,
-                                BlockHeader* next = nullptr) {
-  bzero(allocation.base, allocation.size);
-  BlockHeader* header = reinterpret_cast<BlockHeader*>(allocation.base);
-  header->size = allocation.size;
-  header->next = next;
-  return header;
 }
 
 // Cast |BlockHeader*| pointed by head to |Allocation| objects and free their
@@ -106,7 +107,7 @@ inline void ReleaseBlocks(BlockHeader* head,
   BlockHeader* itr = head;
   while (itr != nullptr) {
     BlockHeader* next = itr->next;
-    release(Allocation{.base = BytePtr(itr), .size = itr->size});
+    release(Allocation{.base = AsBytePtr(itr), .size = itr->size});
 
     itr = next;
   }
@@ -196,7 +197,7 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
     return nullptr;
 
   ZeroBlock(block);
-  std::byte* new_block_addr = BytePtr(block) + total_bytes_needed;
+  std::byte* new_block_addr = AsBytePtr(block) + total_bytes_needed;
   auto* new_header = reinterpret_cast<BlockHeader*>(new_block_addr);
   new_header->next = block->next;
   new_header->size = new_block_size;
@@ -213,7 +214,7 @@ inline Failable<void> CoalesceBlock(BlockHeader* block) {
   if (!block)
     return cpp::fail(Failure::HeaderIsNullptr);
 
-  while (BytePtr(block->next) == BytePtr(block) + block->size) {
+  while (AsBytePtr(block->next) == AsBytePtr(block) + block->size) {
     BlockHeader* next = block->next;
     block->size += next->size;
     block->next = next->next;

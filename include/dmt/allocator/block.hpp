@@ -76,13 +76,12 @@ protected:
   }
 
   static internal::BlockHeader* AllocateNewBlock() {
-    auto allocation =
-        internal::AllocatePages(kAlignedSize_ / internal::GetPageSize());
+    auto allocation = internal::AllocatePages(kAlignedSize_);
 
     if (!allocation.has_value())
       return nullptr;
 
-    return internal::CreateBlockHeaderFromAllocation(allocation.value());
+    return internal::BlockHeader::Create(allocation.value());
   }
 
   static void ReleaseBlocks(internal::BlockHeader* block) {

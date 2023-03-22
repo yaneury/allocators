@@ -257,7 +257,7 @@ TEST_CASE("SplitBlock splits blocks using alignment", "[internal/block]") {
   REQUIRE(header->next == actual);
 
   auto expected = reinterpret_cast<BlockHeader*>(
-      BytePtr(header) + GetBlockHeaderSize() + kBlockSize);
+      AsBytePtr(header) + GetBlockHeaderSize() + kBlockSize);
   REQUIRE(actual == expected);
   REQUIRE((*actual)->size == GetBlockHeaderSize() + kBlockSize);
   REQUIRE((*actual)->next == nullptr);

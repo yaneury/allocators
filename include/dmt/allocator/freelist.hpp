@@ -59,7 +59,8 @@ public:
       first_fit.prev->next = new_header;
 
     first_fit.header->next = nullptr;
-    return internal::BytePtr(first_fit.header) + internal::GetBlockHeaderSize();
+    return internal::AsBytePtr(first_fit.header) +
+           internal::GetBlockHeaderSize();
   }
 
   Result<void> Release(std::byte* ptr) {
