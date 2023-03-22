@@ -42,17 +42,6 @@ TEST_CASE("AlignUp", "[internal/util]") {
   REQUIRE(AlignUp(11, 8) == 16);
 }
 
-TEST_CASE("AllocateBytes", "[internal/platform]") {
-  REQUIRE(AllocateBytes(/*invalid size*/ 0,
-                        /*a valid alignment*/ sizeof(void*)) == std::nullopt);
-  REQUIRE(AllocateBytes(/*a valid size*/ 100, /*invalid alignment*/ 0) ==
-          std::nullopt);
-  REQUIRE(AllocateBytes(/*a valid size*/ 100,
-                        /*a non-power of two alignment*/ 3) == std::nullopt);
-  REQUIRE(AllocateBytes(/*a valid size*/ 100,
-                        /*an alignment less than minimum*/ 2) == std::nullopt);
-}
-
 TEST_CASE("AllocatePages", "[internal/platform]") {
   REQUIRE(AllocatePages(/*invalid size*/ 0) == std::nullopt);
 }

@@ -3,53 +3,35 @@
 #include <cstdlib>
 #include <optional>
 
+#include "failure.hpp"
 #include "util.hpp"
 
 namespace dmt::allocator::internal {
 
+// A successful allocation request. This POD
+// contains the returned pointer and provided size
+// for a request to allocate memory, e.g. through `std::malloc`.
+struct Allocation {
+  std::byte* base = nullptr;
+  std::size_t size = 0;
+
+  void Unset() {
+    base = nullptr;
+    size = 0;
+  }
+
+  constexpr bool IsSet() const { return base != nullptr && size != 0; }
+};
+
 // Gets the page size (in bytes) for the current platform.
-std::size_t GetPageSize();
+[[gnu::pure]] std::size_t GetPageSize();
 
 inline bool IsPageMultiple(std::size_t request) {
   return request >= GetPageSize() && request % GetPageSize() == 0;
 }
 
-struct Allocation {
-  std::byte* base = nullptr;
-  std::size_t size = 0;
-
-  void ZeroOut() {
-    this->base = nullptr;
-    this->size = 0;
-  }
-
-  constexpr bool IsZeroedOut() {
-    return this->base == nullptr && this->size == 0;
-  }
-};
-
-inline std::optional<Allocation> AllocateBytes(std::size_t size,
-                                               std::size_t alignment) {
-  if (!IsValidRequest(size, alignment))
-    return std::nullopt;
-
-  void* ptr = std::aligned_alloc(alignment, size);
-  if (!ptr)
-    return std::nullopt;
-
-  return Allocation({.base = static_cast<std::byte*>(ptr), .size = size});
-}
-
-inline void ReleaseBytes(Allocation allocation) {
-  if (!allocation.base)
-    return;
-
-  void* ptr = static_cast<void*>(allocation.base);
-  std::free(ptr);
-}
-
-// TODO: Add error handling.
 std::optional<Allocation> AllocatePages(std::size_t pages);
+
 void ReleasePages(Allocation allocation);
 
 } // namespace dmt::allocator::internal
@@ -61,7 +43,7 @@ void ReleasePages(Allocation allocation);
 
 namespace dmt::allocator::internal {
 
-inline std::size_t GetPageSize() {
+[[gnu::pure]] inline std::size_t GetPageSize() {
   return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
 }
 

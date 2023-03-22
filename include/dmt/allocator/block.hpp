@@ -77,9 +77,7 @@ protected:
 
   static internal::BlockHeader* AllocateNewBlock() {
     auto allocation =
-        IsPageMultiple()
-            ? internal::AllocatePages(kAlignedSize_ / internal::GetPageSize())
-            : internal::AllocateBytes(kAlignedSize_, kAlignment);
+        internal::AllocatePages(kAlignedSize_ / internal::GetPageSize());
 
     if (!allocation.has_value())
       return nullptr;
@@ -88,9 +86,7 @@ protected:
   }
 
   static void ReleaseBlocks(internal::BlockHeader* block) {
-    auto release =
-        IsPageMultiple() ? internal::ReleasePages : internal::ReleaseBytes;
-    internal::ReleaseBlocks(block, std::move(release));
+    internal::ReleaseBlocks(block, std::move(internal::ReleasePages));
   }
 
   // Various assertions hidden from user API but added here to ensure invariants

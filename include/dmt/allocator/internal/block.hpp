@@ -207,7 +207,7 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
   return new_header;
 }
 
-// Coalesces free block so long as the |next| ptr is equivalent to actual
+// Coalesces free block so long as the |next| ptr is equivalent to the
 // succeeding block when using offset of |block|.
 inline Failable<void> CoalesceBlock(BlockHeader* block) {
   if (!block)
