@@ -43,7 +43,7 @@ TEST_CASE("AlignUp", "[internal/util]") {
 }
 
 TEST_CASE("AllocatePages", "[internal/platform]") {
-  REQUIRE(AllocatePages(/*invalid size*/ 0) == std::nullopt);
+  REQUIRE(AllocatePages(/*invalid size*/ 0) == cpp::fail(Failure::InvalidSize));
 }
 
 TEST_CASE("ZeroBlock", "[internal/block]") {

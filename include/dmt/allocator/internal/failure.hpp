@@ -11,6 +11,7 @@ enum class Failure {
   InvalidAlignment,
   BlockTooSmall,
   AllocationFailed,
+  ReleaseFailed,
 };
 
 template <class T> using Failable = cpp::result<T, Failure>;
