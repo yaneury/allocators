@@ -99,7 +99,8 @@ public:
     }
 
     if (free_list_->size == Parent::kAlignedSize_) {
-      Parent::ReleaseBlocks(block_);
+      // TODO: Add error handling.
+      (void)Parent::ReleaseAllBlocks(block_);
       free_list_ = block_ = nullptr;
     }
 

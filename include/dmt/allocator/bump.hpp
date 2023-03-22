@@ -92,7 +92,7 @@ public:
     std::lock_guard<std::mutex> lock(blocks_mutex_);
     offset_ = 0;
     if (blocks_)
-      Parent::ReleaseBlocks(blocks_);
+      (void)Parent::ReleaseAllBlocks(blocks_); // TODO: Add error handling.
     blocks_ = nullptr;
   }
 

@@ -80,7 +80,7 @@ protected:
     return internal::BlockHeader::Create(allocation.value());
   }
 
-  static Result<void> ReleaseBlocks(internal::BlockHeader* block) {
+  static Result<void> ReleaseAllBlocks(internal::BlockHeader* block) {
     if (auto result = internal::ReleaseBlockList(block, internal::ReleasePages);
         result.has_error())
       return cpp::fail(Error::Internal);
