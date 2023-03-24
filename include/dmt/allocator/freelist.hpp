@@ -15,6 +15,19 @@ namespace dmt::allocator {
 
 template <class... Args> class FreeList : public Block<Args...> {
 public:
+  // We have to explicitly provide the parent class in contexts with a
+  // nondepedent name. For more information, see:
+  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
+  using Parent = Block<Args...>;
+
+  using Allocator = typename Parent::Allocator;
+
+  FreeList() : Parent(Allocator()) {}
+
+  FreeList(Allocator& allocator) : Parent(allocator) {}
+
+  FreeList(Allocator&& allocator) : Parent(std::move(allocator)) {}
+
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
 
@@ -104,11 +117,6 @@ public:
   }
 
 private:
-  // We have to explicitly provide the parent class in contexts with a
-  // nondepedent name. For more information, see:
-  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
-  using Parent = Block<Args...>;
-
   // Max size allowed per request.
   static constexpr std::size_t kMaxRequestSize_ = Parent::kAlignedSize_;
 
@@ -129,6 +137,8 @@ private:
     free_list_ = block_ = new_block;
     return {};
   }
+
+  Allocator allocator_;
 
   internal::BlockHeader* block_ = nullptr;
   internal::BlockHeader* free_list_ = nullptr;

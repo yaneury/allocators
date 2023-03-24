@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "trait.hpp"
+
 namespace dmt::allocator {
 
 // Size (in bytes) for allocator's blocks. Usually, an allocator uses fixed-size
@@ -68,7 +70,6 @@ template <std::size_t R>
 struct RequestT : std::integral_constant<std::size_t, R> {};
 
 // Allocator type used to fetch blocks of memory.
-template <typename Allocator>
-struct AllocatorT : ntp::integral_type<Allocator> {};
+template <Trait Allocator> struct AllocatorT : ntp::integral_type<Allocator> {};
 
 } // namespace dmt::allocator

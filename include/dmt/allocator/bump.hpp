@@ -30,6 +30,19 @@ namespace dmt::allocator {
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
 template <class... Args> class Bump : public Block<Args...> {
 public:
+  // We have to explicitly provide the parent class in contexts with a
+  // nondepedent name. For more information, see:
+  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
+  using Parent = Block<Args...>;
+
+  using Allocator = typename Parent::Allocator;
+
+  Bump() : Parent(Allocator()) {}
+
+  Bump(Allocator& allocator) : Parent(allocator) {}
+
+  Bump(Allocator&& allocator) : Parent(std::move(allocator)) {}
+
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }
 
@@ -89,11 +102,6 @@ public:
   }
 
 private:
-  // We have to explicitly provide the parent class in contexts with a
-  // nondepedent name. For more information, see:
-  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
-  using Parent = Block<Args...>;
-
   // Max size allowed per request when accounting for aligned size and block
   // header.
   static constexpr std::size_t kMaxRequestSize_ =
@@ -117,6 +125,8 @@ private:
     return {};
   }
 
+  Allocator allocator_;
+
   // List of all allocated blocks.
   internal::BlockHeader* blocks_ = nullptr;
 
@@ -131,8 +141,6 @@ private:
   // TODO: Look into fine-grained alternatives.
   // One option is to use atomic instructions, e.g. __sync_fetch_and_add.
   std::mutex blocks_mutex_;
-
-  Parent::Allocator allocator_;
 };
 
 } // namespace dmt::allocator

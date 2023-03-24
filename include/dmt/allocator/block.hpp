@@ -56,6 +56,12 @@ public:
       WhenFull::GrowStorage;
 
 protected:
+  Block() : allocator_(Allocator()) {}
+
+  Block(Allocator& allocator) : allocator_(allocator) {}
+
+  Block(Allocator&& allocator) : allocator_(std::move(allocator)) {}
+
   // Ultimate size of the blocks after accounting for header and alignment.
   static constexpr std::size_t kAlignedSize_ =
       kMustContainSizeBytesInSpace
@@ -73,6 +79,7 @@ protected:
 
   static internal::BlockHeader* AllocateNewBlock() {
     auto allocation = internal::AllocatePages(kAlignedSize_);
+    // auto allocation = allocator.Allocate(kAlignedSize_);
 
     if (!allocation.has_value())
       return nullptr;
@@ -80,7 +87,12 @@ protected:
     return internal::BlockHeader::Create(allocation.value());
   }
 
+  static Result<void> ReleaseBlock(internal::BlockHeader* block) { return {}; }
+
   static Result<void> ReleaseAllBlocks(internal::BlockHeader* block) {
+    // auto release = [&allocator](internal::Allocation allocation) {
+    //   return allocator.Release(allocation);
+    // };
     if (auto result = internal::ReleaseBlockList(block, internal::ReleasePages);
         result.has_error())
       return cpp::fail(Error::Internal);
@@ -92,6 +104,9 @@ protected:
   // are met at compile time.
   static_assert(internal::IsPowerOfTwo(kAlignment),
                 "kAlignment must be a power of 2.");
+
+private:
+  Allocator allocator_;
 };
 
 } // namespace dmt::allocator
