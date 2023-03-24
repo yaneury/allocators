@@ -12,7 +12,7 @@ namespace dmt::allocator {
 template <class... Args> class Page {
 public:
   static constexpr std::size_t kMaxRequests =
-      std::max(16, ntp::optional<RequestT<0>, Args...>::value);
+      std::max({16ul, ntp::optional<RequestT<0>, Args...>::value});
 
   Page() {
     for (auto& r : requests_)

@@ -131,6 +131,8 @@ private:
   // TODO: Look into fine-grained alternatives.
   // One option is to use atomic instructions, e.g. __sync_fetch_and_add.
   std::mutex blocks_mutex_;
+
+  Parent::Allocator allocator_;
 };
 
 } // namespace dmt::allocator

@@ -16,6 +16,8 @@ struct Allocation {
   std::byte* base = nullptr;
   std::size_t size = 0;
 
+  Allocation() : base(nullptr), size(0){};
+
   explicit Allocation(std::byte* base, std::size_t size)
       : base(base), size(size) {
     assert(base != nullptr && size != 0);
