@@ -130,10 +130,11 @@ private:
     if (block_)
       return {};
 
-    auto new_block = Parent::AllocateNewBlock();
-    if (!new_block)
-      return cpp::fail(Error::OutOfMemory);
+    auto new_block_or = Parent::AllocateNewBlock();
+    if (new_block_or.has_error())
+      return cpp::fail(new_block_or.error());
 
+    auto new_block = new_block_or.value();
     free_list_ = block_ = new_block;
     return {};
   }

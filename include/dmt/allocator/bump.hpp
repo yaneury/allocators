@@ -67,10 +67,11 @@ public:
       if (!Parent::kGrowWhenFull)
         return cpp::fail(Error::ReachedMemoryLimit);
 
-      auto* block = Parent::AllocateNewBlock();
-      if (!block)
-        return cpp::fail(Error::OutOfMemory);
+      auto block_or = Parent::AllocateNewBlock();
+      if (block_or.has_error())
+        return cpp::fail(block_or.error());
 
+      auto block = block_or.value();
       current_->next = block;
       current_ = block;
       offset_ = 0;

@@ -77,23 +77,24 @@ protected:
     return internal::IsPageMultiple(kAlignedSize_);
   }
 
-  static internal::BlockHeader* AllocateNewBlock() {
-    auto allocation = internal::AllocatePages(kAlignedSize_);
-    // auto allocation = allocator.Allocate(kAlignedSize_);
+  Result<internal::BlockHeader*> AllocateNewBlock() {
+    Result<std::byte*> base_or = allocator_.Allocate(kAlignedSize_);
 
-    if (!allocation.has_value())
-      return nullptr;
+    if (!base_or.has_error())
+      return cpp::fail(base_or.error());
 
-    return internal::BlockHeader::Create(allocation.value());
+    auto allocation = internal::Allocation(base_or.value(), kAlignedSize_);
+    return internal::BlockHeader::Create(allocation);
   }
 
-  static Result<void> ReleaseBlock(internal::BlockHeader* block) { return {}; }
+  Result<void> ReleaseBlock(internal::BlockHeader* block) { return {}; }
 
-  static Result<void> ReleaseAllBlocks(internal::BlockHeader* block) {
-    // auto release = [&allocator](internal::Allocation allocation) {
-    //   return allocator.Release(allocation);
-    // };
-    if (auto result = internal::ReleaseBlockList(block, internal::ReleasePages);
+  Result<void> ReleaseAllBlocks(internal::BlockHeader* block) {
+    auto release = [](std::byte* p) -> internal::Failable<void> {
+      return {};
+      // return allocator_.Release(p);
+    };
+    if (auto result = internal::ReleaseBlockList(block, std::move(release));
         result.has_error())
       return cpp::fail(Error::Internal);
 

@@ -45,7 +45,7 @@ public:
   }
 
   Result<std::byte*> Allocate(std::size_t size) noexcept {
-    return Allocate(size, internal::kMinimumAlignment);
+    return Allocate(Layout(size, internal::kMinimumAlignment));
   }
 
   Result<void> Release(std::byte* ptr) {
@@ -59,8 +59,13 @@ public:
     if (itr == std::end(requests_))
       return cpp::fail(Error::InvalidInput);
 
-    internal::ReleasePages(*itr);
+    auto result = internal::ReleasePages(*itr);
     itr->Unset();
+
+    if (result.has_error())
+      return cpp::fail(Error::Internal);
+
+    return {};
   }
 
 private:
