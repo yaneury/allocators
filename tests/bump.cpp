@@ -3,12 +3,9 @@
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
 
-using namespace dmt::allocator;
+#include "test_util.hpp"
 
-template <class T> T GetValueOrFail(Result<T> result) {
-  REQUIRE(result.has_value());
-  return result.value();
-}
+using namespace dmt::allocator;
 
 TEST_CASE("Bump allocator", "[allocator::Bump]") {
   using T = long;
@@ -21,13 +18,12 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
                            LimitT<BlocksMust::HaveAtLeastSizeBytes>>;
     Allocator allocator;
 
-    auto a_or = allocator.Allocate(SizeOfT);
-    T* a = reinterpret_cast<T*>(GetValueOrFail(allocator.Allocate(SizeOfT)));
+    T* a = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
     SECTION("an object (within size) is allocated") { REQUIRE(a != nullptr); }
 
     SECTION("another object is allocated") {
       REQUIRE(a != nullptr);
-      T* b = reinterpret_cast<T*>(GetValueOrFail(allocator.Allocate(SizeOfT)));
+      T* b = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
       REQUIRE(b != nullptr);
 
       SECTION("it is set to the address next to the previously allocated one") {

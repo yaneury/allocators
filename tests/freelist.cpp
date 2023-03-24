@@ -9,11 +9,6 @@
 
 using namespace dmt::allocator;
 
-template <class T> T GetValueOrFail(Result<T> result) {
-  REQUIRE(result.has_value());
-  return result.value();
-}
-
 TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
