@@ -3,7 +3,7 @@
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
 
-#include "test_util.hpp"
+#include "util.hpp"
 
 using namespace dmt::allocator;
 

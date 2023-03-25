@@ -4,12 +4,12 @@ project(dmt-tests LANGUAGES CXX)
 
 add_executable(
   ${PROJECT_NAME}
-  bump.cpp
-  freelist.cpp
-  internal.cpp
   test.cpp
-  fixed.cpp
-  page.cpp
+  allocator/bump.cpp
+  allocator/freelist.cpp
+  allocator/internal.cpp
+  allocator/fixed.cpp
+  allocator/page.cpp
   handle/owned.cpp)
 
 # Link to dmt library

@@ -8,7 +8,7 @@
 #include <dmt/allocator/internal/block.hpp>
 #include <dmt/allocator/internal/util.hpp>
 
-#include "test_util.hpp"
+#include "util.hpp"
 
 using namespace dmt::allocator::internal;
 
