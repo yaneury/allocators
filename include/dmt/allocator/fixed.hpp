@@ -25,7 +25,7 @@ public:
 
   Result<std::byte*> Allocate(Layout layout) {
     if (layout.size == 0)
-      return cpp::fail(Error::InvaldInput);
+      return cpp::fail(Error::InvalidInput);
 
     std::size_t space_remaining = kSize - end_;
     if (layout.size > space_remaining)

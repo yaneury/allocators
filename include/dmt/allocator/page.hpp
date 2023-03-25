@@ -2,6 +2,8 @@
 
 #include <array>
 
+#include <template/parameters.hpp>
+
 #include "error.hpp"
 #include "internal/platform.hpp"
 #include "parameters.hpp"

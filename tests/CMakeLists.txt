@@ -2,8 +2,15 @@ cmake_minimum_required(VERSION 3.15)
 
 project(dmt-tests LANGUAGES CXX)
 
-add_executable(${PROJECT_NAME} bump.cpp freelist.cpp internal.cpp test.cpp
-                               handle/owned.cpp)
+add_executable(
+  ${PROJECT_NAME}
+  bump.cpp
+  freelist.cpp
+  internal.cpp
+  test.cpp
+  fixed.cpp
+  page.cpp
+  handle/owned.cpp)
 
 # Link to dmt library
 target_link_libraries(${PROJECT_NAME} PRIVATE dmt)

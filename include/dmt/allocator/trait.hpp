@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "error.hpp"
 #include "internal/util.hpp"
 
 #if __cplusplus >= 202002L

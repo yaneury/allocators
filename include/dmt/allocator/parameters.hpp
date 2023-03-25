@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include <template/parameters.hpp>
+
 #include "trait.hpp"
 
 namespace dmt::allocator {
