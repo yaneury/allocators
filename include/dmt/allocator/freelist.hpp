@@ -32,9 +32,6 @@ public:
       ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
 
   Result<std::byte*> Allocate(Layout layout) noexcept {
-    if (auto init = InitBlockIfUnset(); init.has_error())
-      return cpp::fail(init.error());
-
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
@@ -43,6 +40,9 @@ public:
 
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
+
+    if (auto init = InitBlockIfUnset(); init.has_error())
+      return cpp::fail(init.error());
 
     internal::Failable<std::optional<internal::HeaderPair>> first_fit_or_error =
         FindBlock(free_list_, request_size);

@@ -32,7 +32,7 @@ public:
   Fixed(Buffer&& buffer) : buffer_(std::move(buffer)) {}
 
   Result<std::byte*> Allocate(Layout layout) {
-    if (layout.size == 0)
+    if (layout.size == 0 || layout.alignment == 0)
       return cpp::fail(Error::InvalidInput);
 
     std::size_t space_remaining = kSize - end_;
@@ -49,7 +49,12 @@ public:
     return Allocate(Layout(size, /*alignment=*/1));
   }
 
-  Result<void> Release(std::byte* ptr) { return {}; }
+  Result<void> Release(std::byte* ptr) {
+    if (!ptr)
+      return cpp::fail(Error::InvalidInput);
+
+    return {};
+  }
 
 private:
   Buffer buffer_;

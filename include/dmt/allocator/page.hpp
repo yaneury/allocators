@@ -28,7 +28,7 @@ public:
     std::size_t index = kMaxRequests;
     for (size_t i = 0; i < kMaxRequests; ++i) {
       if (!requests_[i].IsSet()) {
-        i = index;
+        index = i;
         break;
       }
     }
@@ -36,7 +36,9 @@ public:
     if (index == kMaxRequests)
       return cpp::fail(Error::ReachedMemoryLimit);
 
-    auto allocation_or = internal::AllocatePages(layout.size);
+    std::size_t page_aligned_size =
+        internal::AlignUp(layout.size, internal::GetPageSize());
+    auto allocation_or = internal::AllocatePages(page_aligned_size);
     if (!allocation_or.has_value())
       return cpp::fail(Error::OutOfMemory);
 

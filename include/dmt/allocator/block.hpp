@@ -73,14 +73,10 @@ protected:
     return internal::Allocation(base, kAlignedSize_);
   }
 
-  [[gnu::const]] static constexpr bool IsPageMultiple() {
-    return internal::IsPageMultiple(kAlignedSize_);
-  }
-
   Result<internal::BlockHeader*> AllocateNewBlock() {
     Result<std::byte*> base_or = allocator_.Allocate(kAlignedSize_);
 
-    if (!base_or.has_error())
+    if (base_or.has_error())
       return cpp::fail(base_or.error());
 
     auto allocation = internal::Allocation(base_or.value(), kAlignedSize_);

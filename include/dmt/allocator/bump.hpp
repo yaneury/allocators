@@ -47,9 +47,6 @@ public:
   ~Bump() { (void)Reset(); }
 
   Result<std::byte*> Allocate(Layout layout) noexcept {
-    if (auto init = InitBlockIfUnset(); init.has_error())
-      return cpp::fail(init.error());
-
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
@@ -58,6 +55,9 @@ public:
 
     if (request_size > kMaxRequestSize_)
       return cpp::fail(Error::SizeRequestTooLarge);
+
+    if (auto init = InitBlockIfUnset(); init.has_error())
+      return cpp::fail(init.error());
 
     std::size_t remaining_size =
         Parent::kAlignedSize_ - internal::GetBlockHeaderSize() - offset_;
@@ -88,9 +88,9 @@ public:
     return Allocate(Layout(size, internal::kMinimumAlignment));
   }
 
-  Result<void> Release(std::byte*) {
+  Result<void> Release(std::byte* ptr) {
     // The bump allocator does not support per-object deallocation.
-    return {};
+    return cpp::fail(Error::OperationNotSupported);
   }
 
   Result<void> Reset() {
@@ -117,11 +117,11 @@ private:
       return {};
 
     auto new_block = Parent::AllocateNewBlock();
-    if (!new_block)
+    if (new_block.has_error())
       return cpp::fail(Error::OutOfMemory);
 
     // Set current block to header.
-    current_ = blocks_;
+    current_ = blocks_ = new_block.value();
     offset_ = 0;
     return {};
   }

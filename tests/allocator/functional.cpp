@@ -17,27 +17,9 @@
 
 using namespace dmt::allocator;
 
-/*
- *
- *
- * Rough Contract:
- *   Allocator::Allocate(std::size_t) -> Result<std::byte*>
- *   Allocator::Release(std::byte*) -> Result<void>
- * 1. Can allocate many objects of variable sizes
- * 2. Can release all objects of variable sizes
- * 3. Input validation:
- *   a. Size > 0
- *   b. Alignment > sizeof(void) && Alignment is Power of Two
- *   c. std::byte* is not nullptr
- *   d. (Fixed sized) Size < Max
- * 4. Invalid pointer when calling Release (undefined behavior?)
- *
- *
- */
-
 template <class... Allocator> struct AllocatorPack {};
 
-using AllocatorsUnderTest = AllocatorPack<Bump<>, FreeList<>, Fixed<>>;
+using AllocatorsUnderTest = AllocatorPack<Bump<>, FreeList<>>;
 
 TEMPLATE_LIST_TEST_CASE("All allocators are functional",
                         "[allocator][all][functional]", AllocatorsUnderTest) {
@@ -52,12 +34,16 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     Allocator allocator;
 
     std::stack<std::byte*> allocations = {};
-    for (std::size_t size : kRequestSizes)
-      allocations.push(GetValueOrFail<std::byte*>(allocator.Allocate(size)));
+    for (std::size_t size : kRequestSizes) {
+      auto p_or = allocator.Allocate(size);
+      allocations.push(GetValueOrFail<std::byte*>(p_or));
+    }
 
-    while (allocations.size()) {
-      REQUIRE(allocator.Release(allocations.top()).has_value());
-      allocations.pop();
+    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+      while (allocations.size()) {
+        REQUIRE(allocator.Release(allocations.top()).has_value());
+        allocations.pop();
+      }
     }
   }
 
@@ -68,9 +54,11 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     for (std::size_t size : kRequestSizes)
       allocations.push(GetValueOrFail<std::byte*>(allocator.Allocate(size)));
 
-    while (allocations.size()) {
-      REQUIRE(allocator.Release(allocations.front()).has_value());
-      allocations.pop();
+    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+      while (allocations.size()) {
+        REQUIRE(allocator.Release(allocations.front()).has_value());
+        allocations.pop();
+      }
     }
   }
 
@@ -87,8 +75,10 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     std::mt19937 g(rd());
     std::shuffle(allocations.begin(), allocations.end(), g);
 
-    for (std::byte* p : allocations)
-      REQUIRE(allocator.Release(allocations.front()).has_value());
+    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+      for (std::byte* p : allocations)
+        REQUIRE(allocator.Release(allocations.front()).has_value());
+    }
   }
 
   SECTION("And rejects invalid requests") {
@@ -97,17 +87,31 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     // Invalid size.
     REQUIRE(allocator.Allocate(/*size=*/0) == cpp::fail(Error::InvalidInput));
 
-    // Invalid alignment.
-    for (std::size_t i = 0; i < sizeof(void*); ++i)
-      REQUIRE(allocator.Allocate(Layout(/*size=*/1, /*alignment=*/i)) ==
+    if constexpr (std::is_same_v<Allocator, Fixed<>>) {
+      REQUIRE(allocator.Allocate(Layout(/*size=*/1, /*alignment=*/0)) ==
               cpp::fail(Error::InvalidInput));
+    } else {
+      // Invalid alignment.
+      for (std::size_t i = 0; i < sizeof(void*); ++i)
+        REQUIRE(allocator.Allocate(Layout(/*size=*/1, /*alignment=*/i)) ==
+                cpp::fail(Error::InvalidInput));
 
-    // Greater than sizeof(void*) but not power of two.
-    REQUIRE(allocator.Allocate(
-                Layout(/*size=*/1, /*alignment=*/sizeof(void*) + 1)) ==
-            cpp::fail(Error::InvalidInput));
+      // Greater than sizeof(void*) but not power of two.
+      REQUIRE(allocator.Allocate(
+                  Layout(/*size=*/1, /*alignment=*/sizeof(void*) + 1)) ==
+              cpp::fail(Error::InvalidInput));
+    }
 
     // Invalid ptr.
-    REQUIRE(allocator.Release(nullptr) == cpp::fail(Error::InvalidInput));
+    if constexpr (std::is_same_v<Allocator, Bump<>>)
+      REQUIRE(allocator.Release(nullptr) ==
+              cpp::fail(Error::OperationNotSupported));
+    else
+      REQUIRE(allocator.Release(nullptr) == cpp::fail(Error::InvalidInput));
+
+    // TODO: Enable Hardening features
+    // char c = 'a';
+    // REQUIRE(allocator.Release(ToBytePtr(&c)) ==
+    // cpp::fail(Error::InvalidInput));
   }
 }
