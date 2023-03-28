@@ -11,7 +11,6 @@ add_executable(
   allocator/internal.cpp
   allocator/fixed.cpp
   allocator/page.cpp
-  allocator/stress.cpp
   handle/owned.cpp)
 
 # Link to dmt library

@@ -12,6 +12,7 @@
 #include <dmt/allocator/freelist.hpp>
 #include <dmt/allocator/page.hpp>
 
+#include "dmt/allocator/internal/util.hpp"
 #include "util.hpp"
 
 using namespace dmt::allocator;
@@ -88,5 +89,25 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
 
     for (std::byte* p : allocations)
       REQUIRE(allocator.Release(allocations.front()).has_value());
+  }
+
+  SECTION("And rejects invalid requests") {
+    Allocator allocator;
+
+    // Invalid size.
+    REQUIRE(allocator.Allocate(/*size=*/0) == cpp::fail(Error::InvalidInput));
+
+    // Invalid alignment.
+    for (std::size_t i = 0; i < sizeof(void*); ++i)
+      REQUIRE(allocator.Allocate(Layout(/*size=*/1, /*alignment=*/i)) ==
+              cpp::fail(Error::InvalidInput));
+
+    // Greater than sizeof(void*) but not power of two.
+    REQUIRE(allocator.Allocate(
+                Layout(/*size=*/1, /*alignment=*/sizeof(void*) + 1)) ==
+            cpp::fail(Error::InvalidInput));
+
+    // Invalid ptr.
+    REQUIRE(allocator.Release(nullptr) == cpp::fail(Error::InvalidInput));
   }
 }
