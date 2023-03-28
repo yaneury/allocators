@@ -81,9 +81,9 @@ TEST_CASE("Find Block returns std::nullopt on bad input", "[internal/block]") {
   auto fn =
       GENERATE(FindBlockByFirstFit, FindBlockByBestFit, FindBlockByWorstFit);
 
-  REQUIRE(fn(nullptr, 5) == std::nullopt);
+  REQUIRE(fn(nullptr, 5) == cpp::fail(Failure::HeaderIsNullptr));
   REQUIRE(fn(TestFreeList::FromBlockSizes({3, 5, 3}).AsHeader(), 0) ==
-          std::nullopt);
+          cpp::fail(Failure::InvalidSize));
 }
 
 TEST_CASE("Find Block returns std::nullopt if no minimun size found",
