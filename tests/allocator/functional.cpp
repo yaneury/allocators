@@ -39,7 +39,9 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
       allocations.push(GetValueOrFail<std::byte*>(p_or));
     }
 
-    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+    if constexpr (std::is_same_v<Allocator, Bump<>>) {
+      REQUIRE(allocator.Reset().has_value());
+    } else {
       while (allocations.size()) {
         REQUIRE(allocator.Release(allocations.top()).has_value());
         allocations.pop();
@@ -54,7 +56,9 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     for (std::size_t size : kRequestSizes)
       allocations.push(GetValueOrFail<std::byte*>(allocator.Allocate(size)));
 
-    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+    if constexpr (std::is_same_v<Allocator, Bump<>>) {
+      REQUIRE(allocator.Reset().has_value());
+    } else {
       while (allocations.size()) {
         REQUIRE(allocator.Release(allocations.front()).has_value());
         allocations.pop();
@@ -75,7 +79,9 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     std::mt19937 g(rd());
     std::shuffle(allocations.begin(), allocations.end(), g);
 
-    if constexpr (!std::is_same_v<Allocator, Bump<>>) {
+    if constexpr (std::is_same_v<Allocator, Bump<>>) {
+      REQUIRE(allocator.Reset().has_value());
+    } else {
       for (std::byte* p : allocations)
         REQUIRE(allocator.Release(allocations.front()).has_value());
     }
