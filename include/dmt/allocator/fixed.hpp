@@ -23,6 +23,14 @@ public:
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<4096>, Args...>::value;
 
+  using Buffer = std::array<std::byte, kSize>;
+
+  Fixed() = default;
+
+  Fixed(Buffer& buffer) : buffer_(buffer) {}
+
+  Fixed(Buffer&& buffer) : buffer_(std::move(buffer)) {}
+
   Result<std::byte*> Allocate(Layout layout) {
     if (layout.size == 0)
       return cpp::fail(Error::InvalidInput);
@@ -44,7 +52,7 @@ public:
   Result<void> Release(std::byte* ptr) { return {}; }
 
 private:
-  std::array<std::byte, kSize> buffer_;
+  Buffer buffer_;
   std::size_t end_ = 0;
 };
 
