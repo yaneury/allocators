@@ -23,7 +23,7 @@ public:
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<4096>, Args...>::value;
 
-  using Buffer = std::array<std::byte, kSize>;
+  using Buffer = std::array<std::byte*, kSize>;
 
   Fixed() = default;
 
