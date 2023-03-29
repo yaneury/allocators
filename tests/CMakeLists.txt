@@ -5,7 +5,7 @@ project(dmt-tests LANGUAGES CXX)
 add_executable(
   ${PROJECT_NAME}
   test.cpp
-  # allocator/bump.cpp
+  allocator/bump.cpp
   # allocator/freelist.cpp
   allocator/functional.cpp
   allocator/internal.cpp

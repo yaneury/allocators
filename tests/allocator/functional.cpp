@@ -30,7 +30,7 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
 
   using Allocator = TestType;
 
-  SECTION("And can allocate and release variable-sized objects on LIFO basis") {
+  SECTION("Can allocate and release variable-sized objects on LIFO basis") {
     Allocator allocator;
 
     std::stack<std::byte*> allocations = {};
@@ -49,7 +49,7 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     }
   }
 
-  SECTION("And can allocate and release variable-sized objects FIFO basis") {
+  SECTION("Can allocate and release variable-sized objects FIFO basis") {
     Allocator allocator;
 
     std::queue<std::byte*> allocations = {};
@@ -66,8 +66,7 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     }
   }
 
-  SECTION(
-      "And can allocate and release variable-sized objects on random basis") {
+  SECTION("Can allocate and release variable-sized objects on random basis") {
     Allocator allocator;
 
     std::vector<std::byte*> allocations = {};
@@ -87,7 +86,7 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     }
   }
 
-  SECTION("And rejects invalid requests") {
+  SECTION("Rejects invalid requests") {
     Allocator allocator;
 
     // Invalid size.

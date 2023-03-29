@@ -7,19 +7,17 @@
 
 using namespace dmt::allocator;
 
-TEST_CASE("Bump allocator", "[allocator::Bump]") {
+TEST_CASE("Bump allocator", "[allocator][Bump]") {
   using T = long;
   static constexpr std::size_t SizeOfT = sizeof(T);
 
-  INFO("SizeOfT: " << SizeOfT);
-
-  SECTION("fb2", "a fixed-sized allocator that can fit two objects") {
+  SECTION("Fixed-sized allocator that can fit two objects") {
     using Allocator = Bump<SizeT<SizeOfT * 2>, GrowT<WhenFull::ReturnNull>,
                            LimitT<BlocksMust::HaveAtLeastSizeBytes>>;
     Allocator allocator;
 
     T* a = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
-    SECTION("an object (within size) is allocated") { REQUIRE(a != nullptr); }
+    SECTION("Can allocate request within size") { REQUIRE(a != nullptr); }
 
     SECTION("another object is allocated") {
       REQUIRE(a != nullptr);
@@ -35,7 +33,8 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
       REQUIRE(a != nullptr);
       SECTION("the allocated objects remain valid") {
         *a = 100;
-        REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(a)).has_value());
+        REQUIRE(allocator.Release(ToBytePtr(a)) ==
+                cpp::fail(Error::OperationNotSupported));
         REQUIRE(*a == 100);
       }
     }
@@ -43,7 +42,8 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
       REQUIRE(allocator.Allocate(SizeOfT) != nullptr);
 
       SECTION("allocate returns nullptr") {
-        REQUIRE(allocator.Allocate(SizeOfT) == nullptr);
+        REQUIRE(allocator.Allocate(SizeOfT) ==
+                cpp::fail(Error::ReachedMemoryLimit));
       }
     }
   }
@@ -79,8 +79,9 @@ TEST_CASE("Bump allocator", "[allocator::Bump]") {
     // When accounting for header, page size should be larger than size of
     // block.
     SECTION("making an allocation greater than block size") {
-      SECTION("it returns nullptr") {
-        REQUIRE(allocator.Allocate(PageSize) == nullptr);
+      SECTION("it returns error") {
+        REQUIRE(allocator.Allocate(PageSize) ==
+                cpp::fail(Error::SizeRequestTooLarge));
       }
     }
   }
