@@ -19,10 +19,11 @@ public:
   // for individual allocation requests, of which may have different alignment
   // requirements.
   //
-  // This field is optional. If not provided, will default to |sizeof(void*)|.
-  // If provided, it must greater than |sizeof(void*)| and be a power of two.
-  static constexpr std::size_t kAlignment =
-      std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
+  // This field is optional. If not provided, will default to
+  // |DMT_ALLOCATOR_ALIGNMENT|. If provided, it must greater than
+  // |DMT_ALLOCATOR_ALIGNMENT| and be a power of two.
+  static constexpr std::size_t kAlignment = std::max(
+      {DMT_ALLOCATOR_ALIGNMENT, ntp::optional<AlignmentT<0>, Args...>::value});
 
   // Size of the blocks. This allocator doesn't support variable-sized blocks.
   // All blocks allocated are of the same size. N.b. that the size here will
@@ -30,10 +31,9 @@ public:
   // because supplemental memory is needed for block headers and to ensure
   // alignment as specified with |kAlignment|.
   //
-  // This field is optional. If not provided, will default to the common page
-  // size, 4096.
+  // This field is optional. If not provided, will default |DMT_ALLOCATOR_SIZE|.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<4096>, Args...>::value;
+      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
 
   // Sizing limits placed on |kSize|.
   // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
@@ -41,7 +41,7 @@ public:
   // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
   // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<BlocksMust::HaveAtLeastSizeBytes>, Args...>::value ==
+      ntp::optional<LimitT<DMT_ALLOCATOR_LIMIT>, Args...>::value ==
       BlocksMust::HaveAtLeastSizeBytes;
 
   // Policy employed when block has no more space for pending request.
@@ -52,7 +52,7 @@ public:
   // size. If a smaller size request comes along, it may be possible that the
   // block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
+      ntp::optional<GrowT<DMT_ALLOCATOR_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
 protected:

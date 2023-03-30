@@ -15,7 +15,7 @@ public:
   // Size of the memory block. This *must* match the size of the buffer passed
   // to the object constructor.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<4096>, Args...>::value;
+      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
 
   using Buffer = std::array<std::byte, kSize>;
 

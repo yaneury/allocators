@@ -55,13 +55,13 @@ struct LimitT : std::integral_constant<BlocksMust, CM> {};
 // Policy to employ when looking for free block in free list.
 enum FindBy {
   // Use first block that contains the minimum sizes of bytes.
-  FirstFit,
+  FirstFit = 0,
 
   // Use the *smallest* block that contains the minimum sizes of bytes.
-  BestFit,
+  BestFit = 1,
   //
   // Use the *largest* block that contains the minimum sizes of bytes.
-  WorstFit
+  WorstFit = 2
 };
 
 template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
@@ -75,3 +75,37 @@ struct RequestT : std::integral_constant<std::size_t, R> {};
 template <Trait Allocator> struct AllocatorT : ntp::integral_type<Allocator> {};
 
 } // namespace dmt::allocator
+
+// Macro-based defaults
+
+#ifndef DMT_ALLOCATOR_ALIGNMENT
+#define DMT_ALLOCATOR_ALIGNMENT sizeof(void*)
+#endif
+
+#ifndef DMT_ALLOCATOR_SIZE
+#define DMT_ALLOCATOR_SIZE 4096ul
+#endif
+
+#ifndef DMT_ALLOCATOR_BLOCKS_MUST
+#define DMT_ALLOCATOR_BLOCKS_MUST 0
+#endif
+
+#if DMT_ALLOCATOR_BLOCKS_MUST == 0
+#define DMT_ALLOCATOR_LIMIT BlocksMust::HaveAtLeastSizeBytes
+#elif DMT_ALLOCATOR_BLOCKS_MUST == 1
+#define DMT_ALLOCATOR_LIMIT BlocksMust::NoMoreThanSizeBytes
+#else
+#error "Only values 0 or 1 can be provided"
+#endif
+
+#ifndef DMT_ALLOCATOR_WHEN_FULL
+#define DMT_ALLOCATOR_WHEN_FULL 0
+#endif
+
+#if DMT_ALLOCATOR_WHEN_FULL == 0
+#define DMT_ALLOCATOR_GROW WhenFull::GrowStorage
+#elif DMT_ALLOCATOR_WHEN_FULL == 1
+#define DMT_ALLOCATOR_GROW WhenFull::ReturnNull
+#else
+#error "Only values 0 or 1 can be provided"
+#endif
