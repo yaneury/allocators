@@ -17,7 +17,7 @@ public:
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<4096>, Args...>::value;
 
-  using Buffer = std::array<std::byte*, kSize>;
+  using Buffer = std::array<std::byte, kSize>;
 
   Fixed() = default;
 
@@ -33,7 +33,7 @@ public:
     if (layout.size > space_remaining)
       return cpp::fail(Error::ReachedMemoryLimit);
 
-    std::byte* ptr = buffer_[end_];
+    std::byte* ptr = &buffer_[end_];
     end_ += layout.size;
     return ptr;
   }
@@ -51,7 +51,7 @@ public:
   }
 
 private:
-  Buffer buffer_;
+  Buffer& buffer_;
   std::size_t end_ = 0;
 };
 
