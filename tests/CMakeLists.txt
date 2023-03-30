@@ -6,7 +6,7 @@ add_executable(
   ${PROJECT_NAME}
   test.cpp
   allocator/bump.cpp
-  # allocator/freelist.cpp
+  allocator/freelist.cpp
   allocator/functional.cpp
   allocator/internal.cpp
   allocator/fixed.cpp

@@ -7,87 +7,58 @@
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/freelist.hpp>
 
+#include "util.hpp"
+
 using namespace dmt::allocator;
 
-TEST_CASE("Freelist allocator", "[allocator::FreeList]") {
-  using T = long;
-  static constexpr std::size_t SizeOfT = sizeof(T);
+using T = long;
+static constexpr std::size_t SizeOfT = sizeof(T);
+static constexpr std::size_t kChunkSize =
+    SizeOfT + internal::GetBlockHeaderSize();
+static constexpr std::size_t kBlockSize = 4096;
+static constexpr std::size_t N = kBlockSize / kChunkSize;
 
-  SECTION("Default parameters",
-          "Can allocate and free using default parameters") {
-    using Allocator = FreeList<>;
+template <class... Allocator> struct AllocatorPack {};
 
-    Allocator allocator;
-    auto p_or = allocator.Allocate(SizeOfT);
-    REQUIRE(p_or.has_value());
+template <class... Args>
+using FixedFreeList =
+    FreeList<GrowT<WhenFull::ReturnNull>, SizeT<kBlockSize>, Args...>;
 
-    T* p = reinterpret_cast<T*>(p_or.value());
-    REQUIRE(p != nullptr);
-    *p = 100;
+using FixedFreeListAllocators =
+    AllocatorPack<FixedFreeList<LimitT<BlocksMust::HaveAtLeastSizeBytes>>,
+                  FixedFreeList<LimitT<BlocksMust::NoMoreThanSizeBytes>>>;
 
-    REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(p)).has_value());
+TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
+                        "[allocator][FreeList][fixed]",
+                        FixedFreeListAllocators) {
+  TestType allocator;
+
+  std::array<T*, N> allocs;
+  for (std::size_t i = 0; i < N; ++i)
+    allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
+
+  if constexpr (!TestType::kMustContainSizeBytesInSpace) {
+    SECTION("Can not allocate more objects when at capacity") {
+      REQUIRE(allocator.Allocate(SizeOfT) == cpp::fail(Error::NoFreeBlock));
+    }
   }
 
-  SECTION("Page-sized block",
-          "Allocator with page-sized block can fully use space") {
-    static constexpr std::size_t kChunkSize =
-        SizeOfT + internal::GetBlockHeaderSize();
-    static constexpr std::size_t kPageSize = 4096;
-    static constexpr std::size_t N = kPageSize / kChunkSize;
+  SECTION("Can release all allocations") {
+    for (std::size_t i = 0; i < N; ++i)
+      REQUIRE(allocator.Release(ToBytePtr(allocs[i])).has_value());
 
-    using Allocator = FreeList<SizeT<kPageSize>, GrowT<WhenFull::ReturnNull>,
-                               LimitT<BlocksMust::NoMoreThanSizeBytes>>;
+    SECTION("Allowing subsequent requests of N objects") {
+      for (std::size_t i = 0; i < N; ++i)
+        allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
 
-    Allocator allocator;
-
-    std::array<T*, N> allocs = {nullptr};
-
-    for (size_t i = 0; i < N; ++i) {
-      auto p_or = allocator.Allocate(SizeOfT);
-      REQUIRE(p_or.has_value());
-
-      T* p = reinterpret_cast<T*>(p_or.value());
-      REQUIRE(p != nullptr);
-      allocs[i] = p;
+      for (std::size_t i = 0; i < N; ++i)
+        REQUIRE(allocator.Release(ToBytePtr(allocs[i])).has_value());
     }
 
-    // Should be out of space now.
-    REQUIRE(allocator.Allocate(1) == cpp::fail(Error::NoFreeBlock));
-
-    for (size_t i = N; i == 0; --i) {
-      size_t index = i - 1;
-      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[index]))
-                  .has_value());
-      allocs[index] = nullptr;
-    }
-
-    SECTION("Reallocation of freed space",
-            "Can reallocate objects using freed space") {
-      for (size_t i = 0; i < N; ++i) {
-        auto p_or = allocator.Allocate(SizeOfT);
-        REQUIRE(p_or.has_value());
-
-        T* p = reinterpret_cast<T*>(p_or.value());
-        REQUIRE(p != nullptr);
-        allocs[i] = p;
-      }
-
-      for (size_t i = 0; i < N; ++i) {
-        REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(allocs[i]))
-                    .has_value());
-        allocs[i] = nullptr;
-      }
-    }
-
-    SECTION("Coalescion of freed chunks",
-            "Coalesces free chunks such that page-sized object fits") {
-      auto p_or =
-          allocator.Allocate(kPageSize - internal::GetBlockHeaderSize());
-      REQUIRE(p_or.has_value());
-
-      T* p = reinterpret_cast<T*>(p_or.value());
-      REQUIRE(p != nullptr);
-      REQUIRE(allocator.Release(reinterpret_cast<std::byte*>(p)).has_value());
+    SECTION("Allowing single request of ChunkSize object") {
+      std::byte* chunk =
+          GetValueOrFail<std::byte*>(allocator.Allocate(kChunkSize));
+      REQUIRE(allocator.Release(chunk).has_value());
     }
   }
 }

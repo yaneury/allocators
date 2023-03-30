@@ -44,6 +44,10 @@ public:
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
 
+    if constexpr (Parent::kGrowWhenFull == WhenFull::ReturnNull)
+      if (free_list_ == nullptr)
+        return cpp::fail(Error::NoFreeBlock);
+
     internal::Failable<std::optional<internal::HeaderPair>> first_fit_or_error =
         FindBlock(free_list_, request_size);
     if (first_fit_or_error.has_error())

@@ -7,12 +7,12 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "dmt/allocator/internal/util.hpp"
 #include <dmt/allocator/bump.hpp>
 #include <dmt/allocator/fixed.hpp>
 #include <dmt/allocator/freelist.hpp>
 #include <dmt/allocator/page.hpp>
 
-#include "dmt/allocator/internal/util.hpp"
 #include "util.hpp"
 
 using namespace dmt::allocator;

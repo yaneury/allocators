@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
+#include <magic_enum.hpp>
 
 #include <dmt/allocator/error.hpp>
 #include <dmt/allocator/internal/block.hpp>
@@ -23,6 +24,10 @@ template <class T> inline std::byte* ToBytePtr(T* p) {
 }
 
 template <class T> inline T GetValueOrFail(Result<T> result) {
+  if (!result.has_value())
+    UNSCOPED_INFO(
+        "Result failed with: " << magic_enum::enum_name(result.error()));
+
   REQUIRE(result.has_value());
   return result.value();
 }
