@@ -5,6 +5,7 @@ project(dmt-tests LANGUAGES CXX)
 add_executable(
   ${PROJECT_NAME}
   test.cpp
+  allocator/benchmark.cpp
   allocator/bump.cpp
   allocator/freelist.cpp
   allocator/functional.cpp
@@ -34,7 +35,8 @@ catch_discover_tests(${PROJECT_NAME})
 
 enable_testing()
 
-add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>)
+add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>
+                                      --skip-benchmarks)
 
 if(DMT_DEBUG)
   add_definitions(-DDEBUG)
