@@ -37,11 +37,16 @@ public:
 
   using Allocator = typename Parent::Allocator;
 
-  Bump() : Parent(Allocator()) {}
+  using Options = typename Parent::Options;
 
-  Bump(Allocator& allocator) : Parent(allocator) {}
+  Bump(Options options = Parent::kDefaultOptions)
+      : Parent(Allocator(), std::move(options)) {}
 
-  Bump(Allocator&& allocator) : Parent(std::move(allocator)) {}
+  Bump(Allocator& allocator, Options options = Parent::kDefaultOptions)
+      : Parent(allocator, std::move(options)) {}
+
+  Bump(Allocator&& allocator, Options options)
+      : Parent(std::move(allocator), std::move(options)) {}
 
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }

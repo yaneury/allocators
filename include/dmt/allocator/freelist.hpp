@@ -22,14 +22,50 @@ public:
 
   using Allocator = typename Parent::Allocator;
 
-  FreeList() : Parent(Allocator()) {}
-
-  FreeList(Allocator& allocator) : Parent(allocator) {}
-
-  FreeList(Allocator&& allocator) : Parent(std::move(allocator)) {}
-
   static constexpr FindBy kSearchStrategy =
-      ntp::optional<SearchT<FindBy::FirstFit>, Args...>::value;
+      ntp::optional<SearchT<DMT_ALLOCATOR_SEARCH>, Args...>::value;
+
+  using BlockOptions = typename Parent::Options;
+
+  struct Options {
+    // Inherited from Block::Options. Consult |Block| for documentation.
+    std::size_t alignment;
+    std::size_t size;
+    bool must_contain_size_bytes_in_space;
+    bool grow_when_full;
+
+    FindBy search_strategy;
+  };
+
+  static BlockOptions ToBlockOptions(Options options) {
+    return BlockOptions{
+        .alignment = options.alignment,
+        .size = options.size,
+        .must_contain_size_bytes_in_space =
+            options.must_contain_size_bytes_in_space,
+        .grow_when_full = options.grow_when_full,
+    };
+  }
+
+  static constexpr Options kDefaultOptions = {
+      .alignment = Parent::kAlignment,
+      .size = Parent::kSize,
+      .must_contain_size_bytes_in_space = Parent::kMustContainSizeBytesInSpace,
+      .grow_when_full = Parent::kGrowWhenFull,
+      .search_strategy = kSearchStrategy,
+  };
+
+  FreeList(Options options = kDefaultOptions)
+      : Parent(Allocator(), ToBlockOptions(options)),
+        search_strategy_(options.search_strategy) {}
+
+  FreeList(Allocator& allocator, Options options = kDefaultOptions)
+      : Parent(allocator, ToBlockOptions(options)),
+        search_strategy_(options.search_strategy) {}
+
+  FreeList(Allocator&& allocator, Options options = kDefaultOptions)
+      : Parent(std::move(allocator), ToBlockOptions(options)),
+        search_strategy_(options.search_strategy) {}
 
   Result<std::byte*> Allocate(Layout layout) noexcept {
     if (!IsValid(layout))
@@ -49,7 +85,7 @@ public:
         return cpp::fail(Error::NoFreeBlock);
 
     internal::Failable<std::optional<internal::HeaderPair>> first_fit_or_error =
-        FindBlock(free_list_, request_size);
+        GetFindBlockFn()(free_list_, request_size);
     if (first_fit_or_error.has_error())
       return cpp::fail(Error::Internal);
 
@@ -124,10 +160,12 @@ private:
   // Max size allowed per request.
   constexpr std::size_t GetMaxRequestSize() { return Parent::GetAlignedSize(); }
 
-  static constexpr auto FindBlock =
-      kSearchStrategy == FindBy::FirstFit  ? internal::FindBlockByFirstFit
-      : kSearchStrategy == FindBy::BestFit ? internal::FindBlockByBestFit
-                                           : internal::FindBlockByWorstFit;
+  auto GetFindBlockFn() {
+    return search_strategy_ == FindBy::FirstFit ? internal::FindBlockByFirstFit
+           : search_strategy_ == FindBy::BestFit
+               ? internal::FindBlockByBestFit
+               : internal::FindBlockByWorstFit;
+  }
 
   // TODO: Make this thread safe.
   Result<void> InitBlockIfUnset() {
@@ -144,6 +182,7 @@ private:
   }
 
   Allocator allocator_;
+  FindBy search_strategy_;
 
   internal::BlockHeader* block_ = nullptr;
   internal::BlockHeader* free_list_ = nullptr;

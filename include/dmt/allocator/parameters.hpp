@@ -109,3 +109,13 @@ template <Trait Allocator> struct AllocatorT : ntp::integral_type<Allocator> {};
 #else
 #error "Only values 0 or 1 can be provided"
 #endif
+
+#if DMT_ALLOCATOR_FIND_BY == 0
+#define DMT_ALLOCATOR_SEARCH FindBy::FirstFit
+#elif DMT_ALLOCATOR_FIND_BY == 1
+#define DMT_ALLOCATOR_SEARCH FindBy::BestFit
+#elif DMT_ALLOCATOR_FIND_BY == 2
+#define DMT_ALLOCATOR_SEARCH FindBy::WorstFit
+#else
+#error "Only values 0, 1, or 2 can be provided"
+#endif
