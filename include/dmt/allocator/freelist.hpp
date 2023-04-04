@@ -38,7 +38,7 @@ public:
     std::size_t request_size = internal::AlignUp(
         layout.size + internal::GetBlockHeaderSize(), layout.alignment);
 
-    if (request_size > kMaxRequestSize_)
+    if (request_size > GetMaxRequestSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
     if (auto init = InitBlockIfUnset(); init.has_error())
@@ -111,7 +111,7 @@ public:
         return cpp::fail(Error::Internal);
     }
 
-    if (free_list_->size == Parent::kAlignedSize_) {
+    if (free_list_->size == Parent::GetAlignedSize()) {
       // TODO: Add error handling.
       (void)Parent::ReleaseAllBlocks(block_);
       free_list_ = block_ = nullptr;
@@ -122,7 +122,7 @@ public:
 
 private:
   // Max size allowed per request.
-  static constexpr std::size_t kMaxRequestSize_ = Parent::kAlignedSize_;
+  constexpr std::size_t GetMaxRequestSize() { return Parent::GetAlignedSize(); }
 
   static constexpr auto FindBlock =
       kSearchStrategy == FindBy::FirstFit  ? internal::FindBlockByFirstFit

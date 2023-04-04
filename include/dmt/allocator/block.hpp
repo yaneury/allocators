@@ -55,31 +55,40 @@ public:
       ntp::optional<GrowT<DMT_ALLOCATOR_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
+  struct Options {
+    std::size_t alignment = kAlignment;
+    std::size_t size = kSize;
+    bool must_contain_size_bytes_in_space = kMustContainSizeBytesInSpace;
+    bool grow_when_full = kGrowWhenFull;
+  };
+
 protected:
-  Block() : allocator_(Allocator()) {}
+  Block() : allocator_(Allocator()), options_() {}
 
-  Block(Allocator& allocator) : allocator_(allocator) {}
+  Block(Allocator& allocator) : allocator_(allocator), options_() {}
 
-  Block(Allocator&& allocator) : allocator_(std::move(allocator)) {}
+  Block(Allocator&& allocator) : allocator_(std::move(allocator)), options_() {}
 
   // Ultimate size of the blocks after accounting for header and alignment.
-  static constexpr std::size_t kAlignedSize_ =
-      kMustContainSizeBytesInSpace
-          ? internal::AlignUp(kSize + internal::GetBlockHeaderSize(),
-                              kAlignment)
-          : internal::AlignDown(kSize, kAlignment);
+  constexpr std::size_t GetAlignedSize() const {
+    return options_.must_contain_size_bytes_in_space
+               ? internal::AlignUp(options_.size +
+                                       internal::GetBlockHeaderSize(),
+                                   options_.alignment)
+               : internal::AlignDown(options_.size, options_.alignment);
+  }
 
-  static internal::Allocation CreateAllocation(std::byte* base) {
-    return internal::Allocation(base, kAlignedSize_);
+  internal::Allocation CreateAllocation(std::byte* base) {
+    return internal::Allocation(base, GetAlignedSize());
   }
 
   Result<internal::BlockHeader*> AllocateNewBlock() {
-    Result<std::byte*> base_or = allocator_.Allocate(kAlignedSize_);
+    Result<std::byte*> base_or = allocator_.Allocate(GetAlignedSize());
 
     if (base_or.has_error())
       return cpp::fail(base_or.error());
 
-    auto allocation = internal::Allocation(base_or.value(), kAlignedSize_);
+    auto allocation = internal::Allocation(base_or.value(), GetAlignedSize());
     return internal::BlockHeader::Create(allocation);
   }
 
@@ -104,6 +113,7 @@ protected:
 
 private:
   Allocator allocator_;
+  Options options_;
 };
 
 } // namespace dmt::allocator

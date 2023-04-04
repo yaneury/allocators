@@ -53,14 +53,14 @@ public:
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
     DINFO("Request Size: " << request_size);
 
-    if (request_size > kMaxRequestSize_)
+    if (request_size > GetMaxRequestSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
 
     std::size_t remaining_size =
-        Parent::kAlignedSize_ - internal::GetBlockHeaderSize() - offset_;
+        Parent::GetAlignedSize() - internal::GetBlockHeaderSize() - offset_;
     DINFO("Remaining Size: " << remaining_size);
 
     if (request_size > remaining_size) {
@@ -105,8 +105,9 @@ public:
 private:
   // Max size allowed per request when accounting for aligned size and block
   // header.
-  static constexpr std::size_t kMaxRequestSize_ =
-      Parent::kAlignedSize_ - internal::GetBlockHeaderSize();
+  constexpr std::size_t GetMaxRequestSize() {
+    return Parent::GetAlignedSize() - internal::GetBlockHeaderSize();
+  }
 
   // TODO: Make this thread safe.
   Result<void> InitBlockIfUnset() {
