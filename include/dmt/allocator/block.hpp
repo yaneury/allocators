@@ -56,18 +56,28 @@ public:
       WhenFull::GrowStorage;
 
   struct Options {
-    std::size_t alignment = kAlignment;
-    std::size_t size = kSize;
-    bool must_contain_size_bytes_in_space = kMustContainSizeBytesInSpace;
-    bool grow_when_full = kGrowWhenFull;
+    std::size_t alignment;
+    std::size_t size;
+    bool must_contain_size_bytes_in_space;
+    bool grow_when_full;
+  };
+
+  static constexpr Options kDefaultOptions = {
+      .alignment = kAlignment,
+      .size = kSize,
+      .must_contain_size_bytes_in_space = kMustContainSizeBytesInSpace,
+      .grow_when_full = kGrowWhenFull,
   };
 
 protected:
-  Block() : allocator_(Allocator()), options_() {}
+  Block(Options options = kDefaultOptions)
+      : allocator_(Allocator()), options_(std::move(options)) {}
 
-  Block(Allocator& allocator) : allocator_(allocator), options_() {}
+  Block(Allocator& allocator, Options options = kDefaultOptions)
+      : allocator_(allocator), options_(std::move(options)) {}
 
-  Block(Allocator&& allocator) : allocator_(std::move(allocator)), options_() {}
+  Block(Allocator&& allocator, Options options = kDefaultOptions)
+      : allocator_(std::move(allocator)), options_(std::move(options)) {}
 
   // Ultimate size of the blocks after accounting for header and alignment.
   constexpr std::size_t GetAlignedSize() const {
