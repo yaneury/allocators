@@ -31,7 +31,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain)
 include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})
+
 enable_testing()
+
+add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>)
 
 if(DMT_DEBUG)
   add_definitions(-DDEBUG)
