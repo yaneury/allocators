@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <catch2/catch_all.hpp>
 
 #include <dmt/allocator/fixed.hpp>
