@@ -16,5 +16,13 @@ int main(int argc, const char* argv[]) {
   std::cout << "X: " << pt->x << std::endl;
   std::cout << "Y: " << pt->y << std::endl;
 
+  pt->x = 100;
+  pt->y = 200;
+
+  provider.ForceRelocation();
+
+  std::cout << "X: " << pt->x << std::endl;
+  std::cout << "Y: " << pt->y << std::endl;
+
   return 0;
 }

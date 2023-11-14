@@ -7,6 +7,8 @@
 #include <random>
 #include <utility>
 
+#include "internal/fixed_map.hpp"
+
 namespace dmt::handle {
 
 class Compactor {
@@ -37,17 +39,39 @@ public:
     }
   }
 
-  Id Request(std::size_t size) { return 0; }
+  Id Request(std::size_t size) {
+    void* p = malloc(size);
+    if (!p)
+      return 0;
+
+    Id id = GetRandomId();
+    handle_table_[0] = std::make_pair(id, reinterpret_cast<std::byte*>(p));
+    return id;
+  }
 
   void Release(Id handle) {}
 
-  std::byte* GetCurrentAddress(Id handle) { return nullptr; }
+  void ForceRelocation() {
+    handle_table_[1] = handle_table_[0];
+    handle_table_[0].first = kUnsetHandle;
+    handle_table_[0].second = nullptr;
+  }
+
+  std::byte* GetCurrentAddress(Id handle) {
+    for (auto [id, ptr] : handle_table_)
+      if (id == handle)
+        return ptr;
+
+    return nullptr;
+  }
 
 private:
   Id GetRandomId() { return dist_(mt_); }
 
   // TODO: Create compile-time map structure, backed by std::array perhaps.
   std::array<std::pair<Id, std::byte*>, kHandleLimit> handle_table_;
+
+  internal::FixedMap<Id, std::byte*, kHandleLimit> handles_;
 
   std::random_device rd_;
   std::mt19937 mt_;
