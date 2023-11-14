@@ -1,6 +1,7 @@
 # CMake
 build/
 compile_commands.json
+Testing
 
 # MacOS
 .DS_Store

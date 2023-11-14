@@ -60,6 +60,7 @@ option(DMT_BUILD_EXAMPLES "Set to ON to build examples" OFF)
 option(DMT_DEBUG "Set to ON to enable debug messages" OFF)
 
 if(DMT_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(tests)
 endif()
 

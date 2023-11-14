@@ -1,11 +1,60 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 15,
-        "patch": 0
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 15,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "configure-base",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "DMT_BUILD_TESTS": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
+      }
     },
-    "configurePresets": [],
-    "buildPresets": [],
-    "testPresets": []
+    {
+      "name": "debug",
+      "inherits": "configure-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "configure-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-base",
+      "configurePreset": "debug",
+      "nativeToolOptions": [
+        "--no-print-directory"
+      ]
+    },
+    {
+      "name": "debug",
+      "inherits": "build-base",
+      "verbose": true
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    }
+  ]
 }
