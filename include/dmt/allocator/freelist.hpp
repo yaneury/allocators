@@ -13,6 +13,8 @@
 
 namespace dmt::allocator {
 
+// Freelist allocator with tunable parameters. For reference as
+// to how to configure, see "parameters.hpp".
 template <class... Args> class FreeList : public Block<Args...> {
 public:
   // We have to explicitly provide the parent class in contexts with a

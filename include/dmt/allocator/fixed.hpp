@@ -10,6 +10,12 @@
 
 namespace dmt::allocator {
 
+// An allocator that "allocates" bytes on a fixed buffer (i.e. array of bytes).
+// The use case for this is to allow pre-allocating chunks of memory and using
+// the standard allocation functions on the reserved memory. This is useful
+// if the max number of bytes to be used is known a priori, and the number of
+// requests to the heap want to be minimized. Of course note that what is
+// avoided in heap allocation is paid for in a larger stack.
 template <class... Args> class Fixed {
 public:
   // Size of the memory block. This *must* match the size of the buffer passed

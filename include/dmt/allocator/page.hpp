@@ -11,6 +11,10 @@
 
 namespace dmt::allocator {
 
+// Coarse-grained allocator that allocated multiples of system page size
+// on request. This is used internally by other allocators in this library
+// to fetch memory from the heap. However, it's available for general usage
+// in the public API.
 template <class... Args> class Page {
 public:
   static constexpr std::size_t kMaxRequests =

@@ -10,6 +10,10 @@
 
 namespace dmt::allocator {
 
+// Coarse-grained allocator that allocates fixed block sizes on request.
+// This is used internally by other allocators in this library to fetch
+// memory from the heap. However, it's available for general usage in the
+// public API.
 template <class... Args> class Block {
 public:
   // Allocator used to request memory defaults to unconfigured Page allocator.
