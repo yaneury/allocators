@@ -11,6 +11,8 @@
 #include "internal/util.hpp"
 #include "trait.hpp"
 
+#include <iostream>
+
 namespace dmt::allocator {
 
 // Freelist allocator with tunable parameters. For reference as
@@ -121,11 +123,20 @@ public:
   }
 
   Result<void> Release(std::byte* ptr) {
-    if (!ptr)
+    if (ptr == nullptr)
+      return cpp::fail(Error::InvalidInput);
+
+    std::cout << "Ptr: " << ptr << std::endl;
+    std::byte* low = reinterpret_cast<std::byte*>(block_);
+    std::byte* high = reinterpret_cast<std::byte*>(block_) + block_->size;
+    std::cout << "Low: " << low << std::endl;
+    std::cout << "High: " << high << std::endl;
+    if (ptr < low || ptr > high)
       return cpp::fail(Error::InvalidInput);
 
     auto block = internal::GetHeader(ptr);
     if (!free_list_) {
+      // TODO: Should we zero out the content here?
       free_list_ = block;
       return {};
     }
@@ -152,7 +163,7 @@ public:
     if (free_list_->size == Parent::GetAlignedSize()) {
       // TODO: Add error handling.
       (void)Parent::ReleaseAllBlocks(block_);
-      free_list_ = block_ = nullptr;
+      // free_list_ = block_ = nullptr;
     }
 
     return {};
@@ -178,8 +189,10 @@ private:
     if (new_block_or.has_error())
       return cpp::fail(new_block_or.error());
 
-    auto new_block = new_block_or.value();
-    free_list_ = block_ = new_block;
+    block_ = new_block_or.value();
+    free_list_ = block_ + internal::GetBlockHeaderSize();
+    free_list_->next = nullptr;
+    free_list_->size = block_->size - internal::GetBlockHeaderSize();
     return {};
   }
 

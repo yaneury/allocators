@@ -36,7 +36,10 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][benchmarks]",
       REQUIRE(allocator.Reset().has_value());
     } else {
       while (allocations.size()) {
-        REQUIRE(allocator.Release(allocations.top()).has_value());
+        INFO("Top: " << allocations.top());
+        auto result = allocator.Release(allocations.top());
+        INFO("Received error: " << (int)result.error());
+        REQUIRE(result.has_value());
         allocations.pop();
       }
     }

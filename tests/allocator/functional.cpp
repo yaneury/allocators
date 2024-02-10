@@ -19,7 +19,7 @@ using namespace dmt::allocator;
 
 template <class... Allocator> struct AllocatorPack {};
 
-using AllocatorsUnderTest = AllocatorPack<Bump<>, FreeList<>>;
+using AllocatorsUnderTest = AllocatorPack<FreeList<>>;
 
 TEMPLATE_LIST_TEST_CASE("All allocators are functional",
                         "[allocator][all][functional]", AllocatorsUnderTest) {
@@ -43,6 +43,13 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
       REQUIRE(allocator.Reset().has_value());
     } else {
       while (allocations.size()) {
+        // Here's the problem. The original block used for the freelist is
+        // being stolen by the first requested allocation by the user.
+        // So the size is being set to the size of the first allocation
+        // request, overwriting the block size.
+        // There should be some scratch space reserved for bookkeeping
+        // at the beginning of the block and the freelist should start
+        // *after* that.
         REQUIRE(allocator.Release(allocations.top()).has_value());
         allocations.pop();
       }
@@ -108,15 +115,14 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     }
 
     // Invalid ptr.
-    if constexpr (std::is_same_v<Allocator, Bump<>>)
+    if constexpr (std::is_same_v<Allocator, Bump<>>) {
       REQUIRE(allocator.Release(nullptr) ==
               cpp::fail(Error::OperationNotSupported));
-    else
+    } else {
       REQUIRE(allocator.Release(nullptr) == cpp::fail(Error::InvalidInput));
-
-    // TODO: Enable Hardening features
-    // char c = 'a';
-    // REQUIRE(allocator.Release(ToBytePtr(&c)) ==
-    // cpp::fail(Error::InvalidInput));
+      char c = 'a';
+      REQUIRE(allocator.Release(ToBytePtr(&c)) ==
+              cpp::fail(Error::InvalidInput));
+    }
   }
 }
