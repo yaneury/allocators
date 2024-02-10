@@ -59,6 +59,14 @@ public:
       .search_strategy = kSearchStrategy,
   };
 
+  // TODO: Add constructor (or factory method) that allows forwarding args
+  // and setting options.
+  template <class... AllocatorArgs>
+  FreeList(AllocatorArgs&&... args)
+      : Parent(Allocator(std::forward<AllocatorArgs>(args)...),
+               ToBlockOptions(kDefaultOptions)),
+        search_strategy_(kDefaultOptions.search_strategy) {}
+
   FreeList(Options options = kDefaultOptions)
       : Parent(Allocator(), ToBlockOptions(options)),
         search_strategy_(options.search_strategy) {}
@@ -168,6 +176,8 @@ public:
 
     return {};
   }
+
+  Allocator& GetAllocator() { return allocator_; }
 
 private:
   // Max size allowed per request.

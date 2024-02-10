@@ -18,18 +18,13 @@ namespace dmt::allocator {
 // avoided in heap allocation is paid for in a larger stack.
 template <class... Args> class Fixed {
 public:
-  // Size of the memory block. This *must* match the size of the buffer passed
-  // to the object constructor.
+  // Size of the memory block.
   static constexpr std::size_t kSize =
       ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
 
   using Buffer = std::array<std::byte, kSize>;
 
   Fixed() = default;
-
-  Fixed(Buffer& buffer) : buffer_(buffer) {}
-
-  Fixed(Buffer&& buffer) : buffer_(std::move(buffer)) {}
 
   Result<std::byte*> Allocate(Layout layout) {
     if (layout.size == 0 || layout.alignment == 0)
@@ -56,8 +51,10 @@ public:
     return {};
   }
 
+  Buffer& GetBuffer() { return buffer_; }
+
 private:
-  Buffer& buffer_;
+  Buffer buffer_;
   std::size_t end_ = 0;
 };
 

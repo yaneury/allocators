@@ -7,6 +7,7 @@
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/freelist.hpp>
 
+#include "dmt/allocator/fixed.hpp"
 #include "util.hpp"
 
 using namespace dmt::allocator;
@@ -61,4 +62,25 @@ TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
       REQUIRE(allocator.Release(chunk).has_value());
     }
   }
+}
+
+TEST_CASE("FreeList allocator reserves space for header",
+          "[allocator][FreeList]") {
+  using TestAllocator = Fixed<SizeT<kBlockSize>>;
+  using AllocatorUnderTest =
+      FixedFreeList<LimitT<BlocksMust::NoMoreThanSizeBytes>,
+                    AllocatorT<TestAllocator>>;
+
+  AllocatorUnderTest allocator;
+
+  auto pointer_or = allocator.Allocate(50);
+  if (pointer_or.has_error())
+    INFO("Pointer Error: " << (int)pointer_or.error());
+  REQUIRE(pointer_or.has_value());
+
+  std::byte* pointer = pointer_or.value();
+  std::byte* pointer_blocker_header = pointer - GetBlockHeaderSize();
+  std::byte* buffer = AsBytePtr(&allocator.GetAllocator().GetBuffer());
+
+  REQUIRE(pointer_blocker_header - GetBlockHeaderSize() == buffer);
 }

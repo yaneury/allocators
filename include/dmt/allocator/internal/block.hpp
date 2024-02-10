@@ -207,12 +207,11 @@ inline Failable<BlockHeader*> SplitBlock(BlockHeader* block,
   if (!IsValidAlignment(alignment))
     return cpp::fail(Failure::InvalidAlignment);
 
-  // Minimum size for a new block.
-  std::size_t minimum_block_size = AlignUp(GetBlockHeaderSize() + 1, alignment);
   std::size_t total_bytes_needed = AlignUp(bytes_needed, alignment);
   std::size_t new_block_size = block->size - total_bytes_needed;
 
-  if (new_block_size < minimum_block_size)
+  // Minimum size for a new block.
+  if (new_block_size < AlignUp(GetBlockHeaderSize() + 1, alignment))
     return nullptr;
 
   ZeroBlock(block);

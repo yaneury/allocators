@@ -1,5 +1,5 @@
-#include <cstdint>
 #include <catch2/catch_all.hpp>
+#include <cstdint>
 
 #include <dmt/allocator/fixed.hpp>
 #include <iterator>
@@ -16,8 +16,8 @@ static constexpr std::size_t kBlockSize = SizeOfT * N;
 TEST_CASE("Fixed allocator that can fit N objects", "[allocator][fixed]") {
   using Allocator = Fixed<SizeT<kBlockSize>>;
 
-  Allocator::Buffer buffer;
-  Allocator allocator(buffer);
+  Allocator allocator;
+  auto buffer = allocator.GetBuffer();
 
   for (std::size_t i = 0; i < kBlockSize; ++i)
     buffer[i] = std::byte(0);

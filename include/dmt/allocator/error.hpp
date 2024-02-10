@@ -6,6 +6,7 @@ namespace dmt::allocator {
 
 // Errors encountered during allocation or release requests on the allocators
 // supported by this library.
+// TODO: Add pretty string function
 enum class Error {
   // Input was malformed. The exact problem depends on the function and
   // provided input.
