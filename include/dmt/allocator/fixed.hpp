@@ -8,6 +8,8 @@
 #include "parameters.hpp"
 #include "trait.hpp"
 
+#include <iostream>
+
 namespace dmt::allocator {
 
 // An allocator that "allocates" bytes on a fixed buffer (i.e. array of bytes).
@@ -26,7 +28,12 @@ public:
 
   Fixed() = default;
 
+  std::string s_;
+
+  void SetDebug(std::string s) { s_ = s; }
+
   Result<std::byte*> Allocate(Layout layout) {
+    std::cout << "Calling Allocator on: " << s_ << std::endl;
     if (layout.size == 0 || layout.alignment == 0)
       return cpp::fail(Error::InvalidInput);
 
@@ -51,7 +58,7 @@ public:
     return {};
   }
 
-  Buffer& GetBuffer() { return buffer_; }
+  Buffer* GetBuffer() { return &buffer_; }
 
 private:
   Buffer buffer_;

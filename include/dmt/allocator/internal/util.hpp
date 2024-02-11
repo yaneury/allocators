@@ -46,4 +46,14 @@ static constexpr size_t kMinimumAlignment = sizeof(void*);
   return size && IsValidAlignment(alignment);
 }
 
+template <class T> T* PtrAdd(T* ptr, std::size_t offset) {
+  auto addr = reinterpret_cast<std::size_t>(ptr);
+  return reinterpret_cast<T*>(addr + offset);
+}
+
+template <class T> T* PtrSubtract(T* ptr, std::size_t offset) {
+  auto addr = reinterpret_cast<std::size_t>(ptr);
+  return reinterpret_cast<T*>(addr - offset);
+}
+
 } // namespace dmt::allocator::internal

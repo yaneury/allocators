@@ -75,9 +75,11 @@ public:
       : Parent(allocator, ToBlockOptions(options)),
         search_strategy_(options.search_strategy) {}
 
+  /*
   FreeList(Allocator&& allocator, Options options = kDefaultOptions)
       : Parent(std::move(allocator), ToBlockOptions(options)),
         search_strategy_(options.search_strategy) {}
+        */
 
   Result<std::byte*> Allocate(Layout layout) noexcept {
     if (!IsValid(layout))
@@ -177,7 +179,7 @@ public:
     return {};
   }
 
-  Allocator& GetAllocator() { return allocator_; }
+  Allocator& GetAllocator() { return Parent::allocator_; }
 
 private:
   // Max size allowed per request.
@@ -200,13 +202,12 @@ private:
       return cpp::fail(new_block_or.error());
 
     block_ = new_block_or.value();
-    free_list_ = block_ + internal::GetBlockHeaderSize();
+    free_list_ = internal::PtrAdd(block_, internal::GetBlockHeaderSize());
     free_list_->next = nullptr;
     free_list_->size = block_->size - internal::GetBlockHeaderSize();
     return {};
   }
 
-  Allocator allocator_;
   FindBy search_strategy_;
 
   internal::BlockHeader* block_ = nullptr;

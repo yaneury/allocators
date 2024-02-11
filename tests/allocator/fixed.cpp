@@ -17,7 +17,7 @@ TEST_CASE("Fixed allocator that can fit N objects", "[allocator][fixed]") {
   using Allocator = Fixed<SizeT<kBlockSize>>;
 
   Allocator allocator;
-  auto buffer = allocator.GetBuffer();
+  auto buffer = *allocator.GetBuffer();
 
   for (std::size_t i = 0; i < kBlockSize; ++i)
     buffer[i] = std::byte(0);
