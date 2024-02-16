@@ -5,6 +5,7 @@
 #include <template/parameters.hpp>
 
 #include "error.hpp"
+#include "internal/common.hpp"
 #include "internal/platform.hpp"
 #include "parameters.hpp"
 #include "trait.hpp"
@@ -15,16 +16,25 @@ namespace dmt::allocator {
 // on request. This is used internally by other allocators in this library
 // to fetch memory from the heap. However, it's available for general usage
 // in the public API.
+//
+// This is very limited in practice. Any non-trivial program will quickly exceed
+// the maximum number of pages configured. Also consider that certain objects
+// can exceed the size of a page. This structure doesn't accommodate those
+// requests at all.
+// TODO: Make this growable. TCMalloc uses a Span to contain a range of
+//  contiguous pages. That sounds like a promising approach.
 template <class... Args> class Page {
 public:
   static constexpr std::size_t kMaxRequests =
-      std::max({16ul, ntp::optional<RequestT<0>, Args...>::value});
+      std::max({1ul << internal::kSmallPageShift,
+                ntp::optional<RequestT<0>, Args...>::value});
 
-  Page() {
-    for (auto& r : requests_)
-      r.Unset();
-  }
+  Page() = default;
 
+  // This function will allocate contiguous page-sized blocks of memory.
+  // It accepts any size greater than 0, but note that the allocation request
+  // will be rounded up to the nearest page boundary. The alignment value
+  // is ignored and should not be provided.
   Result<std::byte*> Allocate(Layout layout) {
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
