@@ -13,4 +13,4 @@ static constexpr std::size_t kLargePageShift = 22;
 // 4GB Page Size (1 << 32)
 static constexpr std::size_t kHugePageShift = 32;
 
-}
+} // namespace dmt::allocator::internal

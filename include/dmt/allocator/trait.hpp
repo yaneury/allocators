@@ -31,6 +31,10 @@ struct Layout {
 
 #if __cplusplus >= 202002L
 
+// Returning std::byte* is odd because it implies the return value
+// is a pointer to a std::byte which is not true ever. Instead, it's
+// an address (8 bytes on x86_64).
+// TODO: Return void* or something that is more explicitly a word size addr.
 template <class T>
 concept Trait = requires(T allocator, std::size_t size, Layout layout,
                          std::byte* bytes) {

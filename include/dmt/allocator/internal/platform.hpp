@@ -23,12 +23,16 @@ struct Allocation {
     assert(base != nullptr && size != 0);
   }
 
+  // TODO: Using Unset() and IsSet() for presence checking
+  //  is odd. Consider moving to std::optional.
   void Unset() {
     base = nullptr;
     size = 0;
   }
 
-  constexpr bool IsSet() const { return base != nullptr && size != 0; }
+  [[nodiscard]] constexpr bool IsSet() const {
+    return base != nullptr && size != 0;
+  }
 };
 
 // Gets the page size (in bytes) for the current platform.
