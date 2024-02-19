@@ -40,6 +40,13 @@ inline constexpr std::size_t SizeWithHeader(std::size_t sz) {
   return sz + GetBlockHeaderSize();
 }
 
+template <class T> inline T GetRandomNumber(T low, T high) {
+  std::random_device random_device;
+  std::mt19937 engine(random_device());
+  std::uniform_int_distribution<> distribution(low, high);
+  return distribution(engine);
+}
+
 class TestFreeList {
 public:
   static TestFreeList FromBlockSizes(std::vector<std::size_t> block_sizes) {

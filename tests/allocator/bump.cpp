@@ -1,9 +1,12 @@
 #include <catch2/catch_all.hpp>
 
+#include <ranges>
+#include <thread>
+#include <vector>
+
 #include <dmt/allocator/adapter.hpp>
 #include <dmt/allocator/bump.hpp>
 
-#include "catch2/catch_test_macros.hpp"
 #include "util.hpp"
 
 using namespace dmt::allocator;
@@ -87,6 +90,38 @@ TEMPLATE_LIST_TEST_CASE(
               cpp::fail(Error::SizeRequestTooLarge));
     }
   }
+}
+
+TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
+          "[allocator][Bump][concurrent]") {
+  static constexpr std::size_t PageSize = 4096;
+  static constexpr std::size_t kNumThreads = 2;
+  using AllocatorUnderTest = Bump<GrowT<WhenFull::GrowStorage>>;
+
+  AllocatorUnderTest allocator;
+
+  std::unordered_map<std::size_t, std::vector<std::byte*>> storage;
+  auto chaos_allocate = [&](std::size_t id) {
+    std::size_t count = GetRandomNumber(1, 100);
+    INFO("Thread #" << id << " will create " << count << " allocations.");
+    for (auto i = 0ul; i < count; ++i) {
+      auto p_or = allocator.Allocate(SizeOfT);
+      REQUIRE(p_or.has_value());
+      storage[id].push_back(p_or.value());
+    }
+  };
+
+  std::vector<std::thread> threads;
+  threads.reserve(kNumThreads);
+  for (auto i = 0ul; i < kNumThreads; ++i) {
+    threads.emplace_back(chaos_allocate, i);
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
+
+  REQUIRE(true);
 }
 
 TEST_CASE("BumpAdapter allocator works with standard containers",
