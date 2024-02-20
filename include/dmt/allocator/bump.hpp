@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include <latch>
 
 #include <template/parameters.hpp>
 
@@ -61,32 +61,30 @@ public:
     if (request_size > GetMaxRequestSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
-    if (auto init = InitBlockIfUnset(); init.has_error())
-      return cpp::fail(init.error());
+    while (true) {
+      if (tail_.load() == nullptr) {
+        if (auto result = AllocateNewBlock(); result.has_error())
+          return cpp::fail(result.error());
 
-    std::size_t remaining_size =
-        Parent::GetAlignedSize() - internal::GetBlockHeaderSize() - offset_;
-    DINFO("Remaining Size: " << remaining_size);
+        continue;
+      }
 
-    if (request_size > remaining_size) {
-      if (!Parent::kGrowWhenFull)
-        return cpp::fail(Error::ReachedMemoryLimit);
+      std::byte* current_offset = offset_.load();
+      if (!WithinRange(current_offset, request_size)) {
+        if (!Parent::kGrowWhenFull)
+          return cpp::fail(Error::ReachedMemoryLimit);
 
-      auto block_or = Parent::AllocateNewBlock();
-      if (block_or.has_error())
-        return cpp::fail(block_or.error());
+        if (auto result = AllocateNewBlock(); result.has_error())
+          return cpp::fail(result.error());
 
-      auto block = block_or.value();
-      current_->next = block;
-      current_ = block;
-      offset_ = 0;
+        continue;
+      }
+
+      std::byte* new_offset = current_offset + request_size;
+      if (offset_.compare_exchange_weak(current_offset, new_offset)) {
+        return current_offset;
+      }
     }
-
-    std::byte* base = internal::GetBlock(current_);
-    std::byte* result = base + offset_;
-    offset_ += request_size;
-
-    return result;
   }
 
   Result<std::byte*> Allocate(std::size_t size) noexcept {
@@ -114,40 +112,43 @@ private:
     return Parent::GetAlignedSize() - internal::GetBlockHeaderSize();
   }
 
-  // TODO: Make this thread safe.
-  Result<void> InitBlockIfUnset() {
-    // This class uses a very coarse-grained mutex for allocation.
-    std::lock_guard<std::mutex> lock(blocks_mutex_);
+  Result<void> AllocateNewBlock() {
+    bool leader = am_block_allocation_leader_.load();
+    if (!leader && am_block_allocation_leader_.compare_exchange_weak(leader, true)) {
+      // This thread is the allocation leader
+      auto block_or = Parent::AllocateNewBlock();
+      if (block_or.has_error()) {
+        block_barrier_.count_down();
+        last_ = cpp::fail(Error::OutOfMemory);
+        return cpp::fail(Error::OutOfMemory);
+      }
 
-    if (blocks_)
-      return {};
+      auto block = block_or.value();
+      last_ = {};
+      if (tail_) {
+        block->next = tail_;
+      }
 
-    auto new_block = Parent::AllocateNewBlock();
-    if (new_block.has_error())
-      return cpp::fail(Error::OutOfMemory);
-
-    // Set current block to header.
-    current_ = blocks_ = new_block.value();
-    offset_ = 0;
+      tail_ = block;
+      block_barrier_.count_down();
+    } else {
+      block_barrier_.wait();
+      if (last_.has_error())
+        return last_;
+    }
     return {};
   }
 
-  Allocator allocator_;
+  bool WithinRange(std::byte* offset, std::size_t size) {
+    return (offset + size) < (offset + Parent::GetAlignedSize());
+  }
 
-  // List of all allocated blocks.
-  internal::BlockHeader* blocks_ = nullptr;
+  std::atomic<internal::BlockHeader*> tail_ = nullptr;
+  std::atomic<std::byte*> offset_ = nullptr;
 
-  // Current block in used.
-  internal::BlockHeader* current_ = nullptr;
-
-  // Offset for current block. This is reset everytime a new block is allocated.
-  // Offset starts past block header size.
-  size_t offset_ = internal::GetBlockHeaderSize();
-
-  // Coarse-grained mutex.
-  // TODO: Look into fine-grained alternatives.
-  // One option is to use atomic instructions, e.g. __sync_fetch_and_add.
-  std::mutex blocks_mutex_;
+  std::latch block_barrier_ = std::latch(1);
+  std::atomic<bool> am_block_allocation_leader_ = false;
+  Result<void> last_ = {};
 };
 
 } // namespace dmt::allocator
