@@ -95,7 +95,7 @@ TEMPLATE_LIST_TEST_CASE(
 TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
           "[allocator][Bump][concurrent]") {
   static constexpr std::size_t PageSize = 4096;
-  static constexpr std::size_t kNumThreads = 2;
+  static constexpr std::size_t kNumThreads = 4;
   using AllocatorUnderTest = Bump<GrowT<WhenFull::GrowStorage>>;
 
   AllocatorUnderTest allocator;
