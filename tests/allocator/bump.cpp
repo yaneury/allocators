@@ -95,19 +95,23 @@ TEMPLATE_LIST_TEST_CASE(
 TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
           "[allocator][Bump][concurrent]") {
   static constexpr std::size_t PageSize = 4096;
-  static constexpr std::size_t kNumThreads = 4;
+  static constexpr std::size_t kNumThreads = 32;
   using AllocatorUnderTest = Bump<GrowT<WhenFull::GrowStorage>>;
 
   AllocatorUnderTest allocator;
 
-  std::unordered_map<std::size_t, std::vector<std::byte*>> storage;
+  // TODO: Use thread-safe container for storage
+  // std::unordered_map<std::size_t, std::vector<std::byte*>> storage;
   auto chaos_allocate = [&](std::size_t id) {
     std::size_t count = GetRandomNumber(1, 100);
-    INFO("Thread #" << id << " will create " << count << " allocations.");
+    // TODO(https://github.com/catchorg/Catch2/issues/1043): Enable once thread
+    // safe INFO("Thread #" << id << " will create " << count << "
+    // allocations.");
     for (auto i = 0ul; i < count; ++i) {
       auto p_or = allocator.Allocate(SizeOfT);
       REQUIRE(p_or.has_value());
-      storage[id].push_back(p_or.value());
+      // TODO: Use thread-safe container for storage
+      // storage[id].push_back(p_or.value());
     }
   };
 
@@ -121,7 +125,7 @@ TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
     th.join();
   }
 
-  REQUIRE(true);
+  REQUIRE(allocator.Reset().has_value());
 }
 
 TEST_CASE("BumpAdapter allocator works with standard containers",
