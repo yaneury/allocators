@@ -110,12 +110,13 @@ inline void ZeroBlock(BlockHeader* header) {
 // associated memory using |release|.
 inline Failable<void>
 ReleaseBlockList(BlockHeader* head,
-                 std::function<Failable<void>(std::byte*)> release) {
+                 std::function<Failable<void>(std::byte*)> release,
+                 BlockHeader* sentinel = nullptr) {
   if (head == nullptr)
     return cpp::fail(Failure::HeaderIsNullptr);
 
   BlockHeader* itr = head;
-  while (itr != nullptr) {
+  while (itr != sentinel) {
     BlockHeader* next = itr->next;
     if (auto result = release(AsBytePtr(itr)); result.has_error())
       return cpp::fail(result.error());

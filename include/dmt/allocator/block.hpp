@@ -96,24 +96,32 @@ protected:
     return internal::Allocation(base, GetAlignedSize());
   }
 
-  Result<internal::BlockHeader*> AllocateNewBlock() {
+  Result<internal::BlockHeader*>
+  AllocateNewBlock(internal::BlockHeader* next = nullptr) {
     Result<std::byte*> base_or = allocator_.Allocate(GetAlignedSize());
 
     if (base_or.has_error())
       return cpp::fail(base_or.error());
 
     auto allocation = internal::Allocation(base_or.value(), GetAlignedSize());
-    return internal::BlockHeader::Create(allocation);
+    return internal::BlockHeader::Create(allocation, next);
   }
 
   Result<void> ReleaseBlock(internal::BlockHeader* block) { return {}; }
 
-  Result<void> ReleaseAllBlocks(internal::BlockHeader* block) {
-    auto release = [](std::byte* p) -> internal::Failable<void> {
+  Result<void> ReleaseAllBlocks(internal::BlockHeader* block,
+                                internal::BlockHeader* sentinel = nullptr) {
+    auto release = [&](std::byte* p) -> internal::Failable<void> {
+      auto result = allocator_.Release(p);
+      if (result.has_error()) {
+        DERROR("Block release failed: " << (int)result.error());
+        return cpp::fail(internal::Failure::ReleaseFailed);
+      }
+
       return {};
-      // return allocator_.Release(p);
     };
-    if (auto result = internal::ReleaseBlockList(block, std::move(release));
+    if (auto result =
+            internal::ReleaseBlockList(block, std::move(release), sentinel);
         result.has_error())
       return cpp::fail(Error::Internal);
 
