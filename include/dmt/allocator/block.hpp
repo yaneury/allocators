@@ -84,7 +84,7 @@ protected:
       : allocator_(std::move(allocator)), options_(std::move(options)) {}
 
   // Ultimate size of the blocks after accounting for header and alignment.
-  constexpr std::size_t GetAlignedSize() const {
+  [[nodiscard]] constexpr std::size_t GetAlignedSize() const {
     return options_.must_contain_size_bytes_in_space
                ? internal::AlignUp(options_.size +
                                        internal::GetBlockHeaderSize(),
