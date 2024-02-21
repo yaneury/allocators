@@ -95,23 +95,24 @@ TEMPLATE_LIST_TEST_CASE(
 TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
           "[allocator][Bump][concurrent]") {
   static constexpr std::size_t PageSize = 4096;
-  static constexpr std::size_t kNumThreads = 32;
+  static constexpr std::size_t kNumThreads = 64;
   using AllocatorUnderTest = Bump<GrowT<WhenFull::GrowStorage>>;
 
   AllocatorUnderTest allocator;
 
-  // TODO: Use thread-safe container for storage
-  // std::unordered_map<std::size_t, std::vector<std::byte*>> storage;
+  std::mutex msg_lock;
+
   auto chaos_allocate = [&](std::size_t id) {
     std::size_t count = GetRandomNumber(1, 100);
-    // TODO(https://github.com/catchorg/Catch2/issues/1043): Enable once thread
-    // safe INFO("Thread #" << id << " will create " << count << "
-    // allocations.");
+    {
+      // TODO(https://github.com/catchorg/Catch2/issues/1043): Remove lock once
+      // resolved.
+      std::lock_guard<std::mutex> guard(msg_lock);
+      INFO("Thread #" << id << " will create " << count << "allocations.");
+    }
     for (auto i = 0ul; i < count; ++i) {
       auto p_or = allocator.Allocate(SizeOfT);
       REQUIRE(p_or.has_value());
-      // TODO: Use thread-safe container for storage
-      // storage[id].push_back(p_or.value());
     }
   };
 
