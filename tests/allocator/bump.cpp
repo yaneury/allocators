@@ -92,6 +92,7 @@ TEMPLATE_LIST_TEST_CASE(
   }
 }
 
+// TODO: Fix flakes. Sometimes the Reset() call fails & test fails on CLion.
 TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
           "[allocator][Bump][concurrent]") {
   static constexpr std::size_t PageSize = 4096;
