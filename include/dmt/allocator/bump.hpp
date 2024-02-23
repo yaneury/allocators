@@ -42,16 +42,13 @@ public:
   using Options = typename Parent::Options;
 
   explicit Bump(Options options = Parent::kDefaultOptions)
-      : Parent(Allocator(), std::move(options)), tail_(GetSentinel()),
-        offset_(Parent::GetAlignedSize()) {}
+      : Parent(Allocator(), std::move(options)) {}
 
   explicit Bump(Allocator& allocator, Options options = Parent::kDefaultOptions)
-      : Parent(allocator, std::move(options)), tail_(GetSentinel()),
-        offset_(Parent::GetAlignedSize()) {}
+      : Parent(allocator, std::move(options)) {}
 
   Bump(Allocator&& allocator, Options options)
-      : Parent(std::move(allocator), std::move(options)), tail_(GetSentinel()),
-        offset_(Parent::GetAlignedSize()) {}
+      : Parent(std::move(allocator), std::move(options)) {}
 
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }
@@ -70,8 +67,15 @@ public:
     // loop endlessly. Instead, the loop aids the subsequent atomic operations.
     // In practice, no more than one iteration will be needed.
     while (true) {
-      std::size_t current_offset = offset_.load();
-      std::size_t headroom = Parent::GetAlignedSize() - current_offset;
+      BlockDescriptor old_active = active.load();
+      if (!old_active.initialized) {
+        if (auto result = AllocateNewBlock(); result.has_error())
+          return cpp::fail(result.error());
+
+        continue;
+      }
+
+      std::size_t headroom = Parent::GetAlignedSize() - old_active.size;
       if (headroom < request_size) {
         if (!Parent::kGrowWhenFull)
           return cpp::fail(Error::ReachedMemoryLimit);
@@ -79,14 +83,13 @@ public:
         if (auto result = AllocateNewBlock(); result.has_error())
           return cpp::fail(result.error());
 
-        // Re-enter this loop after initializing the block so that we can get
-        // the latest values of |offset_| and |tail_|.
         continue;
       }
 
-      std::size_t new_offset = current_offset + request_size;
-      if (offset_.compare_exchange_weak(current_offset, new_offset))
-        return reinterpret_cast<std::byte*>(tail_) + current_offset;
+      BlockDescriptor new_active = old_active;
+      new_active.offset = old_active.offset + request_size;
+      if (active.compare_exchange_weak(old_active, new_active))
+        return block_table[old_active.index] + old_active.offset;
     }
   }
 
@@ -100,33 +103,44 @@ public:
   }
 
   Result<void> Reset() {
-    std::lock_guard<std::mutex> guard(block_allocation_mutex);
-    auto result = Parent::ReleaseAllBlocks(tail_, GetSentinel());
+    auto old_active = active.load();
+    if (!old_active.initialized)
+      return {};
 
-    tail_ = GetSentinel();
-    // When |tail_| is set to the sentinel block, offset_ is placed right
-    // at the boundary of the block size. This ensures that no allocation
-    // request is attempted on the read-only sentinel block, and instead
-    // a new block is requested from the system.
-    offset_.store(Parent::GetAlignedSize());
+    for (auto i = 0u; i <= old_active.index; i++) {
+      if (auto result = Parent::allocator_.Release(block_table[i]);
+          result.has_error())
+        return cpp::fail(result.error());
 
-    return result;
+      block_table[i] = nullptr;
+    }
+
+    active.store(BlockDescriptor());
+
+    return {};
   }
 
 private:
-  // The sentinel block header is used for ergonomics. Given that the allocated
-  // blocks are stored in a singly-linked list, there's a need for checking if
-  // the first block is set, in other words, if it is not nullptr. Instead of
-  // requiring a nullptr check, the first block can be set to this dummy node
-  // which holds no space. Then, the logic for allocating the first "real" block
-  // and all subsequent ones remain the same, no need to check for nullptr.
-  // The values are not important here so the array is initialized to 0.
-  static constexpr std::byte kSentinel[internal::GetBlockHeaderSize()] = {};
+  static constexpr unsigned kTotalEntryInBits = 20;
 
-  static internal::BlockHeader* GetSentinel() {
-    return reinterpret_cast<internal::BlockHeader*>(
-        const_cast<std::byte*>(&kSentinel[0]));
-  }
+  struct BlockDescriptor {
+    // Whether the block was initialized.
+    std::uint64_t initialized : 1;
+
+    // Index in |block_table|.
+    std::uint64_t index : 20;
+
+    // Multiples of 4KB. Supports block size of ~262MB.
+    std::uint64_t size : 16;
+
+    // Current offset within block. Next allocation will return pointer
+    // based off this position.
+    // We need 25 bits below because size can scale up to ~262MB: log2(4KB * 16)
+    // = ~25
+    std::uint64_t offset : 25;
+
+    std::uint64_t _unused : 2;
+  };
 
   // Max size allowed per request when accounting for aligned size and block
   // header.
@@ -135,48 +149,30 @@ private:
   }
 
   Result<void> AllocateNewBlock() {
-    std::size_t current_block_count = block_count.load();
-    {
-      std::lock_guard<std::mutex> guard(block_allocation_mutex);
+    auto old_active = active.load();
+    auto new_active = old_active;
+    new_active.offset = 0;
+    if (old_active.initialized)
+      new_active.index = old_active.index + 1;
+    // We always set this to help with the init case where |active| is
+    // 0.
+    new_active.initialized = 1;
 
-      // Check if value changed. If so, then another thread beat this one to
-      // allocate new block. In that case, let's return early and this thread
-      // *should* now have enough headroom in the current |tail_| block to
-      // complete the allocation request.
-      if (!block_count.compare_exchange_weak(current_block_count,
-                                             current_block_count))
-        return {};
+    auto new_block_or = Parent::allocator_.Allocate(Parent::GetAlignedSize());
+    if (new_block_or.has_error())
+      return cpp::fail(Error::OutOfMemory);
 
-      // Otherwise, this thread is now the leader in charge of allocating a new
-      // block.
-      auto block_or = Parent::AllocateNewBlock(tail_);
-      if (block_or.has_error())
-        return cpp::fail(Error::OutOfMemory);
-
-      auto block = block_or.value();
-      tail_ = block;
-      // Always start offset at the boundary right past the BlockHeader size.
-      offset_.store(internal::GetBlockHeaderSize());
-      ++block_count;
+    if (active.compare_exchange_weak(old_active, new_active)) {
+      block_table[new_active.index] = new_block_or.value();
+    } else {
+      Parent::allocator_.Release(new_block_or.value());
     }
 
     return {};
   }
 
-  // Singly-linked list containing all allocated blocks. Note, that this
-  // class only tracks the *tail* of the list. When a new block is allocated,
-  // it's |next| pointer is set to the current tail, before |tail_| is set
-  // to the new block.
-  internal::BlockHeader* tail_;
-
-  // Offset tracking next available allocation in the current block (tail_).
-  std::atomic<std::size_t> offset_;
-
-  // Mutex used for allocating new block.
-  std::mutex block_allocation_mutex;
-
-  // Number of blocks allocated thus far.
-  std::atomic<std::size_t> block_count = 0;
+  std::atomic<BlockDescriptor> active = BlockDescriptor();
+  std::array<std::byte*, 1 << kTotalEntryInBits> block_table = {0};
 };
 
 } // namespace dmt::allocator

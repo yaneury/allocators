@@ -133,7 +133,7 @@ protected:
   static_assert(internal::IsPowerOfTwo(kAlignment),
                 "kAlignment must be a power of 2.");
 
-private:
+protected:
   Allocator allocator_;
   Options options_;
 };
