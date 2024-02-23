@@ -60,7 +60,7 @@ public:
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
     DINFO("Request Size: " << request_size);
 
-    if (request_size > GetMaxRequestSize())
+    if (request_size > Parent::GetAlignedSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // The loop here is a little deceiving. The intention here is not to
@@ -121,14 +121,21 @@ public:
   }
 
 private:
-  static constexpr unsigned kTotalEntryInBits = 20;
+  // This only allows ~1,000 entries which isn't a lot. Initially, this was set
+  // to 20 bits, but that blew the static data space, causing immediate
+  // segfaults.
+  // TODO: Figure out a way to improve block_table size without ballooning
+  // virtual
+  //  address space. Perhaps, we can model something like the page table
+  //  structures where multiple tables are used to determine the final address.
+  static constexpr unsigned kTotalEntryInBits = 10;
 
   struct BlockDescriptor {
     // Whether the block was initialized.
     std::uint64_t initialized : 1;
 
     // Index in |block_table|.
-    std::uint64_t index : 20;
+    std::uint64_t index : kTotalEntryInBits;
 
     // Multiples of 4KB. Supports block size of ~262MB.
     std::uint64_t size : 16;
@@ -141,12 +148,6 @@ private:
 
     std::uint64_t _unused : 2;
   };
-
-  // Max size allowed per request when accounting for aligned size and block
-  // header.
-  constexpr std::size_t GetMaxRequestSize() {
-    return Parent::GetAlignedSize() - internal::GetBlockHeaderSize();
-  }
 
   Result<void> AllocateNewBlock() {
     auto old_active = active.load();
@@ -164,8 +165,9 @@ private:
 
     if (active.compare_exchange_weak(old_active, new_active)) {
       block_table[new_active.index] = new_block_or.value();
-    } else {
-      Parent::allocator_.Release(new_block_or.value());
+    } else if (auto result = Parent::allocator_.Release(new_block_or.value());
+               result.has_error()) {
+      return cpp::fail(result.error());
     }
 
     return {};
