@@ -127,7 +127,13 @@ TEST_CASE("Variable-sized Bump allocator that allows concurrent access",
     th.join();
   }
 
-  REQUIRE(allocator.Reset().has_value());
+  auto result = allocator.Reset();
+  if (result.has_error()) {
+    INFO("Reset call failed with: " << ToString(result.error()));
+    FAIL();
+  } else {
+    SUCCEED();
+  }
 }
 
 TEST_CASE("BumpAdapter allocator works with standard containers",
