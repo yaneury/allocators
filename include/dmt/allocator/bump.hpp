@@ -72,6 +72,12 @@ public:
   Bump(Allocator&& allocator, Options options)
       : allocator_(std::move(allocator)), options_(std::move(options)) {}
 
+  // Allocator is neither copy-able nor move-able.
+  Bump(Bump&) = delete;
+  Bump(Bump&&) = delete;
+  Bump& operator=(Bump&) = delete;
+  Bump& operator=(Bump&&) = delete;
+
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }
 
