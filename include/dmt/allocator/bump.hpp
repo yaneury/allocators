@@ -1,15 +1,13 @@
 #pragma once
 
 #include <atomic>
-#include <memory>
-#include <mutex>
 
 #include <template/parameters.hpp>
 
-#include "block.hpp"
 #include "error.hpp"
-#include "internal/block.hpp"
 #include "internal/util.hpp"
+#include "page.hpp"
+#include "parameters.hpp"
 #include "trait.hpp"
 
 namespace dmt::allocator {
@@ -30,25 +28,49 @@ namespace dmt::allocator {
 //
 // For more information about this form of memory allocation, visit:
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
-template <class... Args> class Bump : public Block<Args...> {
+template <class... Args> class Bump {
 public:
-  // We have to explicitly provide the parent class in contexts with a
-  // nondepedent name. For more information, see:
-  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
-  using Parent = Block<Args...>;
+  // Allocator used to request memory from OS.
+  // Defaults to unconfigured Page allocator.
+  using Allocator = typename ntp::type<AllocatorT<Page<>>, Args...>::value;
 
-  using Allocator = typename Parent::Allocator;
+  // Size of the blocks. This allocator doesn't support variable-sized blocks.
+  // All blocks allocated are of the same size.
+  //
+  // This field is optional. If not provided, will default |DMT_ALLOCATOR_SIZE|.
+  // TODO: Remove this field and support variable-sized blocks.
+  static constexpr std::size_t kBlockSize =
+      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
 
-  using Options = typename Parent::Options;
+  // Policy employed when block has no more space for pending request.
+  // If |GrowStorage| is provided, then a new block will be requested;
+  // if |ReturnNull| is provided, then nullptr is returned on the allocation
+  // request. This does not mean that it's impossible to request more memory
+  // though. It only means that the block has no more space for the requested
+  // size. If a request with a smaller size comes along, it may be possible that
+  // the block has sufficient storage for it.
+  static constexpr bool kGrowWhenFull =
+      ntp::optional<GrowT<DMT_ALLOCATOR_GROW>, Args...>::value ==
+      WhenFull::GrowStorage;
 
-  explicit Bump(Options options = Parent::kDefaultOptions)
-      : Parent(Allocator(), std::move(options)) {}
+  struct Options {
+    std::size_t size;
+    bool grow_when_full;
+  };
 
-  explicit Bump(Allocator& allocator, Options options = Parent::kDefaultOptions)
-      : Parent(allocator, std::move(options)) {}
+  static constexpr Options kDefaultOptions = {
+      .size = kBlockSize,
+      .grow_when_full = kGrowWhenFull,
+  };
+
+  explicit Bump(Options options = kDefaultOptions)
+      : allocator_(Allocator()), options_(std::move(options)) {}
+
+  explicit Bump(Allocator& allocator, Options options = kDefaultOptions)
+      : allocator_(allocator), options_(std::move(options)) {}
 
   Bump(Allocator&& allocator, Options options)
-      : Parent(std::move(allocator), std::move(options)) {}
+      : allocator_(std::move(allocator)), options_(std::move(options)) {}
 
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }
@@ -60,14 +82,14 @@ public:
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
     DINFO("Request Size: " << request_size);
 
-    if (request_size > Parent::GetAlignedSize())
+    if (request_size > kBlockSize)
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // The loop here is a little deceiving. The intention here is not to
     // loop endlessly. Instead, the loop aids the subsequent atomic operations.
     // In practice, no more than one iteration will be needed.
     while (true) {
-      BlockDescriptor old_active = active.load();
+      BlockDescriptor old_active = active_.load();
       if (!old_active.initialized) {
         if (auto result = AllocateNewBlock(); result.has_error())
           return cpp::fail(result.error());
@@ -75,9 +97,9 @@ public:
         continue;
       }
 
-      std::size_t headroom = Parent::GetAlignedSize() - old_active.size;
+      std::size_t headroom = kBlockSize - old_active.size;
       if (headroom < request_size) {
-        if (!Parent::kGrowWhenFull)
+        if (!kGrowWhenFull)
           return cpp::fail(Error::ReachedMemoryLimit);
 
         if (auto result = AllocateNewBlock(); result.has_error())
@@ -88,8 +110,8 @@ public:
 
       BlockDescriptor new_active = old_active;
       new_active.offset = old_active.offset + request_size;
-      if (active.compare_exchange_weak(old_active, new_active))
-        return block_table[old_active.index] + old_active.offset;
+      if (active_.compare_exchange_weak(old_active, new_active))
+        return block_table_[old_active.index] + old_active.offset;
     }
   }
 
@@ -103,19 +125,18 @@ public:
   }
 
   Result<void> Reset() {
-    auto old_active = active.load();
+    auto old_active = active_.load();
     if (!old_active.initialized)
       return {};
 
     for (auto i = 0u; i <= old_active.index; i++) {
-      if (auto result = Parent::allocator_.Release(block_table[i]);
-          result.has_error())
+      if (auto result = allocator_.Release(block_table_[i]); result.has_error())
         return cpp::fail(result.error());
 
-      block_table[i] = nullptr;
+      block_table_[i] = nullptr;
     }
 
-    active.store(BlockDescriptor());
+    active_.store(BlockDescriptor());
 
     return {};
   }
@@ -124,7 +145,7 @@ private:
   // This only allows ~1,000 entries which isn't a lot. Initially, this was set
   // to 20 bits, but that blew the static data space, causing immediate
   // segfaults.
-  // TODO: Figure out a way to improve block_table size without ballooning
+  // TODO: Figure out a way to improve block_table_ size without ballooning
   // virtual
   //  address space. Perhaps, we can model something like the page table
   //  structures where multiple tables are used to determine the final address.
@@ -134,7 +155,7 @@ private:
     // Whether the block was initialized.
     std::uint64_t initialized : 1;
 
-    // Index in |block_table|.
+    // Index in |block_table_|.
     std::uint64_t index : kTotalEntryInBits;
 
     // Multiples of 4KB. Supports block size of ~262MB.
@@ -150,22 +171,22 @@ private:
   };
 
   Result<void> AllocateNewBlock() {
-    auto old_active = active.load();
+    auto old_active = active_.load();
     auto new_active = old_active;
     new_active.offset = 0;
     if (old_active.initialized)
       new_active.index = old_active.index + 1;
-    // We always set this to help with the init case where |active| is
+    // We always set this to help with the init case where |active_| is
     // 0.
     new_active.initialized = 1;
 
-    auto new_block_or = Parent::allocator_.Allocate(Parent::GetAlignedSize());
+    auto new_block_or = allocator_.Allocate(kBlockSize);
     if (new_block_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
-    if (active.compare_exchange_weak(old_active, new_active)) {
-      block_table[new_active.index] = new_block_or.value();
-    } else if (auto result = Parent::allocator_.Release(new_block_or.value());
+    if (active_.compare_exchange_weak(old_active, new_active)) {
+      block_table_[new_active.index] = new_block_or.value();
+    } else if (auto result = allocator_.Release(new_block_or.value());
                result.has_error()) {
       return cpp::fail(result.error());
     }
@@ -173,8 +194,17 @@ private:
     return {};
   }
 
-  std::atomic<BlockDescriptor> active = BlockDescriptor();
-  std::array<std::byte*, 1 << kTotalEntryInBits> block_table = {0};
+  // Backing allocator to used to acquire and release blocks.
+  Allocator allocator_;
+
+  // Override options for allocator.
+  Options options_;
+
+  // Tracking descriptor for currently active_ block.
+  std::atomic<BlockDescriptor> active_ = BlockDescriptor();
+
+  // Table of all allocated blocks.
+  std::array<std::byte*, 1 << kTotalEntryInBits> block_table_ = {0};
 };
 
 } // namespace dmt::allocator
