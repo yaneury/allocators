@@ -1,12 +1,15 @@
 #pragma once
 
+#include "magic_enum.hpp"
+
+#include <string>
+
 #include <result.hpp>
 
 namespace dmt::allocator {
 
 // Errors encountered during allocation or release requests on the allocators
 // supported by this library.
-// TODO: Add pretty string function
 enum class Error {
   // Input was malformed. The exact problem depends on the function and
   // provided input.
@@ -27,6 +30,10 @@ enum class Error {
   // Unexpected internal error
   Internal,
 };
+
+inline std::string_view ToString(Error error) {
+  return magic_enum::enum_name(error);
+}
 
 template <class T> using Result = cpp::result<T, Error>;
 

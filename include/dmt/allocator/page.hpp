@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <mutex>
 
 #include <template/parameters.hpp>
 
@@ -29,7 +30,7 @@ public:
       std::max({1ul << internal::kSmallPageShift,
                 ntp::optional<RequestT<0>, Args...>::value});
 
-  Page() = default;
+  Page() : lock(std::make_unique<std::mutex>()) {}
 
   // This function will allocate contiguous page-sized blocks of memory.
   // It accepts any size greater than 0, but note that the allocation request
@@ -39,6 +40,7 @@ public:
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
+    std::lock_guard<std::mutex> guard(*lock);
     std::size_t index = kMaxRequests;
     for (size_t i = 0; i < kMaxRequests; ++i) {
       if (!requests_[i].IsSet()) {
@@ -70,6 +72,9 @@ public:
     if (!ptr)
       return cpp::fail(Error::InvalidInput);
 
+    // TODO: Change to lock-free algorithm
+    std::lock_guard<std::mutex> guard(*lock);
+
     auto itr =
         std::find_if(std::begin(requests_), std::end(requests_),
                      [=](auto& allocation) { return allocation.base == ptr; });
@@ -88,6 +93,11 @@ public:
 
 private:
   std::array<internal::Allocation, kMaxRequests> requests_;
+
+  // Mutex is wrapped inside a std::unique_ptr in order to allow move
+  // construction. However, I'm probably going to delete once I refactor
+  // Block / Freelist.
+  std::unique_ptr<std::mutex> lock;
 };
 
 } // namespace dmt::allocator
