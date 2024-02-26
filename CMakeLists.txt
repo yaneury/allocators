@@ -56,17 +56,12 @@ target_link_libraries(${PROJECT_NAME} INTERFACE magic_enum)
 add_definitions(-DLIBCXX_ENABLE_INCOMPLETE_FEATURES=ON)
 
 option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
-option(DMT_BUILD_EXAMPLES "Set to ON to build examples" OFF)
 option(DMT_BUILD_SANDBOX "Set to ON to build sandbox" OFF)
 option(DMT_DEBUG "Set to ON to enable debug messages" OFF)
 
 if(DMT_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
-endif()
-
-if(DMT_BUILD_EXAMPLES)
-  add_subdirectory(examples)
 endif()
 
 if(DMT_BUILD_SANDBOX)
