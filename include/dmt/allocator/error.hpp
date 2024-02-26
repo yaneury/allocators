@@ -1,8 +1,8 @@
 #pragma once
 
-#include "magic_enum.hpp"
-
 #include <string>
+
+#include "magic_enum.hpp"
 
 #include <result.hpp>
 
