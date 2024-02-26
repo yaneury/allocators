@@ -152,8 +152,7 @@ private:
   // to 20 bits, but that blew the static data space, causing immediate
   // segfaults.
   // TODO: Figure out a way to improve block_table_ size without ballooning
-  // virtual
-  //  address space. Perhaps, we can model something like the page table
+  //  virtual address space. Perhaps, we can model something like the page table
   //  structures where multiple tables are used to determine the final address.
   static constexpr unsigned kTotalEntryInBits = 10;
 
