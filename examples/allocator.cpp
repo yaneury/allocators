@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include <dmt/handle/owned.hpp>
-#include <dmt/handle/provider.hpp>
+#include <dmt/allocator/page.hpp>
 
 int main(int argc, const char* argv[]) { return 0; }

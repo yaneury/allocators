@@ -12,6 +12,7 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "DMT_BUILD_TESTS": "ON",
+        "DMT_BUILD_EXAMPLES": "ON",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
       }
     },
