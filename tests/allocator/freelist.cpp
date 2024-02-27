@@ -69,7 +69,7 @@ TEST_CASE("FreeList allocator reserves space for header",
   using MockAllocator = Fixed<SizeT<kBlockSize>>;
   using AllocatorUnderTest =
       FixedFreeList<LimitT<BlocksMust::NoMoreThanSizeBytes>,
-                    AllocatorT<MockAllocator>>;
+                    BlockAllocatorT<MockAllocator>>;
 
   MockAllocator mock;
   mock.SetDebug("mock");

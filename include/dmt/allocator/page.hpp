@@ -22,22 +22,33 @@ namespace dmt::allocator {
 // the maximum number of pages configured. Also consider that certain objects
 // can exceed the size of a page. This structure doesn't accommodate those
 // requests at all.
-// TODO: Make this growable. TCMalloc uses a Span to contain a range of
-//  contiguous pages. That sounds like a promising approach.
 template <class... Args> class Page {
 public:
+  static constexpr std::size_t k4KBPageSize = 1 << 12;
+
+  // Page size. This field determines the page size when requesting memory
+  // from OS.
+  // This field is optional. If not provided, will default to
+  // |DMT_ALLOCATOR_PAGE_SIZE|. If provided, the value must be greater
+  // than and a multiple of 4KB.
+  static constexpr std::size_t kPageSize =
+      ntp::optional<SizeT<DMT_ALLOCATOR_PAGE_SIZE>, Args...>::value;
+
+  static_assert(kPageSize >= k4KBPageSize,
+                "Provided page size is not greater than or equal to 4KB");
+  static_assert(kPageSize % k4KBPageSize == 0,
+                "Provided page size is not multiple of 4KB");
+
+  // TODO: Make this growable. TCMalloc uses a Span to contain a range of
+  //  contiguous pages. That sounds like a promising approach.
   static constexpr std::size_t kMaxRequests =
       std::max({1ul << internal::kSmallPageShift,
                 ntp::optional<RequestT<0>, Args...>::value});
 
   Page() : lock(std::make_unique<std::mutex>()) {}
 
-  // This function will allocate contiguous page-sized blocks of memory.
-  // It accepts any size greater than 0, but note that the allocation request
-  // will be rounded up to the nearest page boundary. The alignment value
-  // is ignored and should not be provided.
-  Result<std::byte*> Allocate(Layout layout) {
-    if (!IsValid(layout))
+  Result<std::byte*> Allocate(std::size_t count) {
+    if (count == 0)
       return cpp::fail(Error::InvalidInput);
 
     std::lock_guard<std::mutex> guard(*lock);
@@ -52,9 +63,7 @@ public:
     if (index == kMaxRequests)
       return cpp::fail(Error::ReachedMemoryLimit);
 
-    std::size_t page_aligned_size =
-        internal::AlignUp(layout.size, internal::GetPageSize());
-    auto allocation_or = internal::AllocatePages(page_aligned_size);
+    auto allocation_or = internal::AllocatePages(count);
     if (!allocation_or.has_value())
       return cpp::fail(Error::OutOfMemory);
 
@@ -62,10 +71,6 @@ public:
     requests_[index] = allocation;
 
     return allocation.base;
-  }
-
-  Result<std::byte*> Allocate(std::size_t size) noexcept {
-    return Allocate(Layout(size, internal::kMinimumAlignment));
   }
 
   Result<void> Release(std::byte* ptr) {

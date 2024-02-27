@@ -60,9 +60,11 @@ namespace dmt::allocator::internal {
   return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
 }
 
-inline Failable<Allocation> AllocatePages(std::size_t size) {
-  if (!IsPageMultiple(size))
+inline Failable<Allocation> AllocatePages(std::size_t count) {
+  if (count == 0)
     return cpp::fail(Failure::InvalidSize);
+
+  std::size_t size = count * GetPageSize();
 
   void* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

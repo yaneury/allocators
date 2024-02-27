@@ -17,7 +17,7 @@ namespace dmt::allocator {
 template <class... Args> class Block {
 public:
   // Allocator used to request memory defaults to unconfigured Page allocator.
-  using Allocator = typename ntp::type<AllocatorT<Page<>>, Args...>::value;
+  using Allocator = typename ntp::type<BlockAllocatorT<Page<>>, Args...>::value;
 
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment

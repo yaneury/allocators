@@ -71,8 +71,13 @@ template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 template <std::size_t R>
 struct RequestT : std::integral_constant<std::size_t, R> {};
 
-// Allocator type used to fetch blocks of memory.
-template <Trait Allocator> struct AllocatorT : ntp::integral_type<Allocator> {};
+// Allocator type used to fetch variable-sized objects.
+template <ObjectAllocator Allocator>
+struct ObjectAllocatorT : ntp::integral_type<Allocator> {};
+
+// Allocator type used to fetch fixed-size blocks.
+template <BlockAllocator Allocator>
+struct BlockAllocatorT : ntp::integral_type<Allocator> {};
 
 } // namespace dmt::allocator
 
@@ -84,6 +89,10 @@ template <Trait Allocator> struct AllocatorT : ntp::integral_type<Allocator> {};
 
 #ifndef DMT_ALLOCATOR_SIZE
 #define DMT_ALLOCATOR_SIZE 4096ul
+#endif
+
+#ifndef DMT_ALLOCATOR_PAGE_SIZE
+#define DMT_ALLOCATOR_PAGE_SIZE 4096ul
 #endif
 
 #ifndef DMT_ALLOCATOR_BLOCKS_MUST
