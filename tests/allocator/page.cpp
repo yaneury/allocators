@@ -10,7 +10,7 @@ TEST_CASE("Page allocator", "[allocator::Page]") {
   static constexpr std::size_t kPageSize = 4096;
   static constexpr std::size_t kMaxPages = 8;
 
-  using AllocatorUnderTest = Page<RequestT<kMaxPages>>;
+  using AllocatorUnderTest = Page<CountT<kMaxPages>>;
 
   SECTION("Can allocate page-aligned request sizes") {
     std::array<std::byte*, kMaxPages> allocations;
