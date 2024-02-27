@@ -63,7 +63,7 @@ public:
     if (index == kMaxRequests)
       return cpp::fail(Error::ReachedMemoryLimit);
 
-    auto allocation_or = internal::AllocatePages(count);
+    auto allocation_or = internal::FetchPages(count);
     if (!allocation_or.has_value())
       return cpp::fail(Error::OutOfMemory);
 
@@ -87,7 +87,7 @@ public:
     if (itr == std::end(requests_))
       return cpp::fail(Error::InvalidInput);
 
-    auto result = internal::ReleasePages(*itr);
+    auto result = internal::ReturnPages(*itr);
     itr->Unset();
 
     if (result.has_error())

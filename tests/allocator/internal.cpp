@@ -44,8 +44,8 @@ TEST_CASE("AlignUp", "[internal/util]") {
   REQUIRE(AlignUp(11, 8) == 16);
 }
 
-TEST_CASE("AllocatePages", "[internal/platform]") {
-  REQUIRE(AllocatePages(/*invalid size*/ 0) == cpp::fail(Failure::InvalidSize));
+TEST_CASE("FetchPages", "[internal/platform]") {
+  REQUIRE(FetchPages(/*invalid size*/ 0) == cpp::fail(Failure::InvalidSize));
 }
 
 TEST_CASE("ZeroBlock", "[internal/block]") {

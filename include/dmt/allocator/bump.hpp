@@ -148,8 +148,8 @@ public:
   }
 
 private:
-  // This only allows ~1,000 entries which isn't a lot. Initially, this was set
-  // to 20 bits, but that blew the static data space, causing immediate
+  // This only allows ~1,000 descriptors which isn't a lot. Initially, this was
+  // set to 20 bits, but that blew the static data space, causing immediate
   // segfaults.
   // TODO: Figure out a way to improve block_table_ size without ballooning
   //  virtual address space. Perhaps, we can model something like the page table
@@ -205,7 +205,7 @@ private:
   // Override options for allocator.
   Options options_;
 
-  // Tracking descriptor for currently active_ block.
+  // Tracking anchor for currently active_ block.
   std::atomic<BlockDescriptor> active_ = BlockDescriptor();
 
   // Table of all allocated blocks.

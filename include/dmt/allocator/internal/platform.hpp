@@ -42,9 +42,9 @@ inline bool IsPageMultiple(std::size_t request) {
   return request >= GetPageSize() && request % GetPageSize() == 0;
 }
 
-Failable<Allocation> AllocatePages(std::size_t size);
+Failable<Allocation> FetchPages(std::size_t count);
 
-Failable<void> ReleasePages(Allocation allocation);
+Failable<void> ReturnPages(Allocation allocation);
 
 } // namespace dmt::allocator::internal
 
@@ -60,7 +60,7 @@ namespace dmt::allocator::internal {
   return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
 }
 
-inline Failable<Allocation> AllocatePages(std::size_t count) {
+inline Failable<Allocation> FetchPages(std::size_t count) {
   if (count == 0)
     return cpp::fail(Failure::InvalidSize);
 
@@ -76,7 +76,7 @@ inline Failable<Allocation> AllocatePages(std::size_t count) {
   return Allocation(static_cast<std::byte*>(ptr), size);
 }
 
-inline Failable<void> ReleasePages(Allocation allocation) {
+inline Failable<void> ReturnPages(Allocation allocation) {
   // TODO: Log platform error
   if (auto result = munmap(allocation.base, allocation.size); result != 0)
     return cpp::fail(Failure::ReleaseFailed);
