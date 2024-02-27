@@ -1,7 +1,7 @@
 #pragma once
 
-#include <array>
-#include <mutex>
+#include <atomic>
+#include <cstdint>
 
 #include <template/parameters.hpp>
 
@@ -24,85 +24,97 @@ namespace dmt::allocator {
 // requests at all.
 template <class... Args> class Page {
 public:
-  static constexpr std::size_t k4KBPageSize = 1 << 12;
+  // Max number of pages that this allocator will allow. This is a strict limit.
+  // No more than |kCount| pages will be supported.
+  // Defaults to 1GB / GetPageSize().
+  static constexpr std::size_t kCount =
+      std::max({1 << 30 / internal::GetPageSize(),
+                ntp::optional<CountT<0>, Args...>::value});
 
-  // Page size. This field determines the page size when requesting memory
-  // from OS.
-  // This field is optional. If not provided, will default to
-  // |DMT_ALLOCATOR_PAGE_SIZE|. If provided, the value must be greater
-  // than and a multiple of 4KB.
-  static constexpr std::size_t kPageSize =
-      ntp::optional<SizeT<DMT_ALLOCATOR_PAGE_SIZE>, Args...>::value;
-
-  static_assert(kPageSize >= k4KBPageSize,
-                "Provided page size is not greater than or equal to 4KB");
-  static_assert(kPageSize % k4KBPageSize == 0,
-                "Provided page size is not multiple of 4KB");
-
-  // TODO: Make this growable. TCMalloc uses a Span to contain a range of
-  //  contiguous pages. That sounds like a promising approach.
-  static constexpr std::size_t kMaxRequests =
-      std::max({1ul << internal::kSmallPageShift,
-                ntp::optional<RequestT<0>, Args...>::value});
-
-  Page() : lock(std::make_unique<std::mutex>()) {}
+  Page() = default;
 
   Result<std::byte*> Allocate(std::size_t count) {
     if (count == 0)
       return cpp::fail(Error::InvalidInput);
 
-    std::lock_guard<std::mutex> guard(*lock);
-    std::size_t index = kMaxRequests;
-    for (size_t i = 0; i < kMaxRequests; ++i) {
-      if (requests_[i].base == nullptr) {
-        index = i;
+    while (true) {
+      auto old_anchor = anchor.load();
+      if (!old_anchor.initialized) {
+        InitializeHeap();
+        continue;
+      }
+
+      if (old_anchor.available == 0 || old_anchor.head == kNumBlocks)
+        return nullptr;
+
+      auto new_anchor = old_anchor;
+      new_anchor.available = old_anchor.available - 1;
+      new_anchor.head = heap->descriptors[old_anchor.head].next;
+      if (anchor.compare_exchange_weak(old_anchor, new_anchor)) {
+        auto& descriptor = heap->descriptors[old_anchor.head];
+        descriptor.occupied = true;
+        descriptor.next = 0;
+        auto ptr = heap->super_block.base + old_anchor.head * kPageSize;
+        return reinterpret_cast<std::byte*>(ptr);
+      }
+    }
+    return nullptr;
+  }
+
+  Result<void> Release(std::byte* p) {
+    if (p == nullptr || heap_ == nullptr)
+      return cpp::fail(Error::InvalidInput);
+
+    auto distance =
+        reinterpret_cast<std::uintptr_t>(p) - heap_->super_block.base;
+    std::size_t index = distance / internal::GetPageSize();
+    heap_->descriptors[index].occupied = false;
+
+    while (true) {
+      auto old_anchor = anchor_.load();
+      auto new_anchor = old_anchor;
+      // new_anchor.head = index;
+      // new_anchor.available++;
+
+      // Eagerly set head here so that if another thread immediately takes
+      // this block after the CAS instruction below, the Descriptor entry
+      // is in a valid state.
+      heap_->descriptors[index].next = old_anchor; // .head;
+      if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
         break;
       }
     }
-
-    if (index == kMaxRequests)
-      return cpp::fail(Error::ReachedMemoryLimit);
-
-    auto allocation_or = internal::FetchPages(count);
-    if (!allocation_or.has_value())
-      return cpp::fail(Error::OutOfMemory);
-
-    auto allocation = allocation_or.value();
-    requests_[index] = allocation;
-
-    return allocation.base;
-  }
-
-  Result<void> Release(std::byte* ptr) {
-    if (!ptr)
-      return cpp::fail(Error::InvalidInput);
-
-    // TODO: Change to lock-free algorithm
-    std::lock_guard<std::mutex> guard(*lock);
-
-    auto itr =
-        std::find_if(std::begin(requests_), std::end(requests_),
-                     [=](auto& allocation) { return allocation.base == ptr; });
-
-    if (itr == std::end(requests_))
-      return cpp::fail(Error::InvalidInput);
-
-    auto result = internal::ReturnPages(*itr);
-    itr->base = nullptr;
-
-    if (result.has_error())
-      return cpp::fail(Error::Internal);
-
     return {};
   }
 
 private:
-  std::array<internal::VirtualAddressRange, kMaxRequests> requests_;
+  // A block descriptor is an entry in the linked list of blocks.
+  struct Descriptor {
+    // Index of next entry in list.
+    std::size_t next;
 
-  // Mutex is wrapped inside a std::unique_ptr in order to allow move
-  // construction. However, I'm probably going to delete once I refactor
-  // Block / Freelist.
-  std::unique_ptr<std::mutex> lock;
+    // Whether this block is currently in use.
+    bool occupied;
+  };
+
+  struct alignas(internal::GetPageSize()) Heap {
+    internal::VirtualAddressRange super_block;
+    Descriptor descriptors[kCount];
+  };
+
+  /*
+   * Anchor is a bitfield of 64 bits. The bits are outlined below from low bit
+   * to high bits.
+   *  initialized: 1 = Bit to see if heap has been initialized.
+   *  head: 18 = Index of current head of LIFO list.
+   *  available: 18 = Number of pages available for allocation.
+   *    0 if at capacity.
+   *  tag: 27 = Used to prevent ABA problem when invoking CAS on anchor.
+   */
+  using Anchor = std::uint64_t;
+
+  std::atomic<Anchor> anchor_ = 0;
+  Heap* heap_ = nullptr;
 };
 
 } // namespace dmt::allocator
