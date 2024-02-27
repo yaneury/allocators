@@ -32,7 +32,7 @@ template <class... Args> class Bump {
 public:
   // Allocator used to request memory from OS.
   // Defaults to unconfigured Page allocator.
-  using Allocator = typename ntp::type<AllocatorT<Page<>>, Args...>::value;
+  using Allocator = typename ntp::type<BlockAllocatorT<Page<>>, Args...>::value;
 
   // Size of the blocks. This allocator doesn't support variable-sized blocks.
   // All blocks allocated are of the same size.
