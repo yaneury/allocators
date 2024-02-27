@@ -37,12 +37,12 @@ struct BlockHeader {
   BlockHeader* next = nullptr;
 
   // Cast |allocation| to |BlockHeader*|.
-  static inline BlockHeader* Create(Allocation allocation,
+  static inline BlockHeader* Create(VirtualAddressRange allocation,
                                     BlockHeader* next = nullptr) {
-    assert(allocation.base != nullptr && allocation.size != 0);
+    assert(allocation.base != nullptr && allocation.pages != 0);
 
     BlockHeader* header = reinterpret_cast<BlockHeader*>(allocation.base);
-    header->size = allocation.size;
+    header->size = allocation.GetSize();
     header->next = next;
     return header;
   }
@@ -106,8 +106,8 @@ inline void ZeroBlock(BlockHeader* header) {
   bzero(base, size);
 }
 
-// Cast |BlockHeader*| pointed by head to |Allocation| objects and free their
-// associated memory using |release|.
+// Cast |BlockHeader*| pointed by head to |VirtualAddressRange| objects and free
+// their associated memory using |release|.
 inline Failable<void>
 ReleaseBlockList(BlockHeader* head,
                  std::function<Failable<void>(std::byte*)> release,

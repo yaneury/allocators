@@ -9,42 +9,32 @@
 
 namespace dmt::allocator::internal {
 
-// A successful allocation request. This POD
-// contains the returned pointer and provided size
-// for a request to allocate memory, e.g. through `std::malloc`.
-struct Allocation {
-  std::byte* base = nullptr;
-  std::size_t size = 0;
-
-  Allocation() : base(nullptr), size(0){};
-
-  explicit Allocation(std::byte* base, std::size_t size)
-      : base(base), size(size) {
-    assert(base != nullptr && size != 0);
-  }
-
-  // TODO: Using Unset() and IsSet() for presence checking
-  //  is odd. Consider moving to std::optional.
-  void Unset() {
-    base = nullptr;
-    size = 0;
-  }
-
-  [[nodiscard]] constexpr bool IsSet() const {
-    return base != nullptr && size != 0;
-  }
-};
-
 // Gets the page size (in bytes) for the current platform.
 constexpr inline std::size_t GetPageSize();
 
-inline bool IsPageMultiple(std::size_t request) {
-  return request >= GetPageSize() && request % GetPageSize() == 0;
-}
+// A contiguous region of page-aligned memory. The |base| pointer is guaranteed
+// to be page aligned. The total size of allocated memory is determined by
+// multiplying GetPageSize() with |pages|.
+struct VirtualAddressRange {
+  std::byte* base = nullptr;
+  std::size_t pages = 0;
 
-Failable<Allocation> FetchPages(std::size_t count);
+  VirtualAddressRange() : base(nullptr), pages(0){};
 
-Failable<void> ReturnPages(Allocation allocation);
+  constexpr explicit VirtualAddressRange(std::byte* base, std::size_t pages)
+      : base(base), pages(pages) {
+    // This should never happen.
+    assert(base != nullptr && pages != 0);
+  }
+
+  [[nodiscard]] constexpr std::size_t GetSize() const {
+    return pages * GetPageSize();
+  }
+};
+
+Failable<VirtualAddressRange> FetchPages(std::size_t count);
+
+Failable<void> ReturnPages(VirtualAddressRange allocation);
 
 } // namespace dmt::allocator::internal
 
@@ -69,7 +59,7 @@ constexpr inline std::size_t GetPageSize() { return 1 << 12; }
 
 namespace dmt::allocator::internal {
 
-inline Failable<Allocation> FetchPages(std::size_t count) {
+inline Failable<VirtualAddressRange> FetchPages(std::size_t count) {
   if (count == 0)
     return cpp::fail(Failure::InvalidSize);
 
@@ -82,12 +72,12 @@ inline Failable<Allocation> FetchPages(std::size_t count) {
   if (ptr == MAP_FAILED)
     return cpp::fail(Failure::AllocationFailed);
 
-  return Allocation(static_cast<std::byte*>(ptr), size);
+  return VirtualAddressRange(static_cast<std::byte*>(ptr), size);
 }
 
-inline Failable<void> ReturnPages(Allocation allocation) {
+inline Failable<void> ReturnPages(VirtualAddressRange allocation) {
   // TODO: Log platform error
-  if (auto result = munmap(allocation.base, allocation.size); result != 0)
+  if (auto result = munmap(allocation.base, allocation.GetSize()); result != 0)
     return cpp::fail(Failure::ReleaseFailed);
 
   return {};

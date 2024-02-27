@@ -54,7 +54,7 @@ public:
     std::lock_guard<std::mutex> guard(*lock);
     std::size_t index = kMaxRequests;
     for (size_t i = 0; i < kMaxRequests; ++i) {
-      if (!requests_[i].IsSet()) {
+      if (requests_[i].base == nullptr) {
         index = i;
         break;
       }
@@ -88,7 +88,7 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     auto result = internal::ReturnPages(*itr);
-    itr->Unset();
+    itr->base = nullptr;
 
     if (result.has_error())
       return cpp::fail(Error::Internal);
@@ -97,7 +97,7 @@ public:
   }
 
 private:
-  std::array<internal::Allocation, kMaxRequests> requests_;
+  std::array<internal::VirtualAddressRange, kMaxRequests> requests_;
 
   // Mutex is wrapped inside a std::unique_ptr in order to allow move
   // construction. However, I'm probably going to delete once I refactor

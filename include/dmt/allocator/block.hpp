@@ -92,8 +92,8 @@ protected:
                : internal::AlignDown(options_.size, options_.alignment);
   }
 
-  internal::Allocation CreateAllocation(std::byte* base) {
-    return internal::Allocation(base, GetAlignedSize());
+  internal::VirtualAddressRange CreateAllocation(std::byte* base) {
+    return internal::VirtualAddressRange(base, GetAlignedSize());
   }
 
   Result<internal::BlockHeader*>
@@ -103,7 +103,8 @@ protected:
     if (base_or.has_error())
       return cpp::fail(base_or.error());
 
-    auto allocation = internal::Allocation(base_or.value(), GetAlignedSize());
+    auto allocation =
+        internal::VirtualAddressRange(base_or.value(), GetAlignedSize());
     return internal::BlockHeader::Create(allocation, next);
   }
 
