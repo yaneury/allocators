@@ -36,7 +36,7 @@ struct Allocation {
 };
 
 // Gets the page size (in bytes) for the current platform.
-std::size_t GetPageSize();
+constexpr inline std::size_t GetPageSize();
 
 inline bool IsPageMultiple(std::size_t request) {
   return request >= GetPageSize() && request % GetPageSize() == 0;
@@ -48,6 +48,19 @@ Failable<void> ReturnPages(Allocation allocation);
 
 } // namespace dmt::allocator::internal
 
+namespace dmt::allocator::internal {
+
+// Apple Silicon uses 16KB page sizes. Every other supported platform uses 4KB.
+#if defined(__APPLE__) && defined(__MACH__) && defined(__arm__)
+// 16KB page size
+constexpr inline std::size_t GetPageSize() { return 1 << 14; }
+#else
+// 4KB page size
+constexpr inline std::size_t GetPageSize() { return 1 << 12; }
+#endif
+
+} // namespace dmt::allocator::internal
+
 // TODO: Add Windows support
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 
@@ -55,10 +68,6 @@ Failable<void> ReturnPages(Allocation allocation);
 #include <unistd.h>
 
 namespace dmt::allocator::internal {
-
-[[gnu::pure]] inline std::size_t GetPageSize() {
-  return static_cast<std::size_t>(sysconf(_SC_PAGE_SIZE));
-}
 
 inline Failable<Allocation> FetchPages(std::size_t count) {
   if (count == 0)
