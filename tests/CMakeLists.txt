@@ -7,6 +7,7 @@ add_executable(
   test.cpp
   performance/performance_allocator_all.cpp
   concurrency/concurrency_allocator_bump.cpp
+  concurrency/concurrency_allocator_page.cpp
   functional/functional_allocator_freelist.cpp
   functional/functional_allocator_all.cpp
   functional/functional_allocator_internal.cpp
