@@ -7,9 +7,6 @@
 using namespace dmt::allocator;
 
 TEST_CASE("Page allocator", "[allocator][Page]") {
-  // TODO: Enable once fixed.
-  SKIP();
-
   static constexpr std::size_t kPageSize = 4096;
   static constexpr std::size_t kMaxPages =
       Page<>::kDefaultMaxSize / kPageSize - 1;
