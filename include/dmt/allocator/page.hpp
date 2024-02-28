@@ -8,6 +8,7 @@
 #include <template/parameters.hpp>
 
 #include "error.hpp"
+#include "internal/bit_field.hpp"
 #include "internal/common.hpp"
 #include "internal/platform.hpp"
 #include "parameters.hpp"
@@ -103,6 +104,8 @@ public:
   }
 
 private:
+  Result<void> InitializeHeap() { return {}; }
+
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
     // Index of next entry in list.
