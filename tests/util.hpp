@@ -6,11 +6,11 @@
 #include <ranges>
 #include <vector>
 
-#include <catch2/catch_test_macros.hpp>
-#include <magic_enum.hpp>
+#include "catch2/catch_test_macros.hpp"
+#include "magic_enum.hpp"
 
-#include <dmt/allocator/error.hpp>
-#include <dmt/allocator/internal/block.hpp>
+#include "dmt/allocator/error.hpp"
+#include "dmt/allocator/internal/block.hpp"
 
 using namespace dmt::allocator;
 using namespace dmt::allocator::internal;

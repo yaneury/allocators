@@ -1,14 +1,14 @@
 #include <array>
 #include <cstddef>
 
-#include <catch2/catch_all.hpp>
-#include <magic_enum.hpp>
+#include "catch2/catch_all.hpp"
+#include "magic_enum.hpp"
 
-#include <dmt/allocator/adapter.hpp>
-#include <dmt/allocator/freelist.hpp>
+#include "dmt/allocator/adapter.hpp"
+#include "dmt/allocator/freelist.hpp"
 
+#include "../util.hpp"
 #include "dmt/allocator/fixed.hpp"
-#include "util.hpp"
 
 using namespace dmt::allocator;
 

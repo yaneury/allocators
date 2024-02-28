@@ -2,13 +2,13 @@
 #include <ranges>
 #include <vector>
 
-#include <catch2/catch_all.hpp>
-#include <catch2/catch_test_macros.hpp>
+#include "catch2/catch_all.hpp"
+#include "catch2/catch_test_macros.hpp"
 
-#include <dmt/allocator/internal/block.hpp>
-#include <dmt/allocator/internal/util.hpp>
+#include "dmt/allocator/internal/block.hpp"
+#include "dmt/allocator/internal/util.hpp"
 
-#include "util.hpp"
+#include "../util.hpp"
 
 using namespace dmt::allocator::internal;
 

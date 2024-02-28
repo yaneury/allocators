@@ -5,14 +5,13 @@ project(dmt-tests LANGUAGES CXX)
 add_executable(
   ${PROJECT_NAME}
   test.cpp
-  allocator/benchmark.cpp
-  allocator/bump.cpp
-  allocator/freelist.cpp
-  allocator/functional.cpp
-  allocator/internal.cpp
-  allocator/fixed.cpp
-  allocator/page.cpp
-  handle/owned.cpp)
+  performance/performance_allocator_all.cpp
+  concurrency/concurrency_allocator_bump.cpp
+  functional/functional_allocator_freelist.cpp
+  functional/functional_allocator_all.cpp
+  functional/functional_allocator_internal.cpp
+  functional/functional_allocator_fixed.cpp
+  functional/functional_allocator_page.cpp)
 
 # Link to dmt library
 target_link_libraries(${PROJECT_NAME} PRIVATE dmt)
