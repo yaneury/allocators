@@ -11,7 +11,7 @@
 using namespace dmt::allocator;
 
 TEST_CASE("Page allocator", "[concurrency][allocator][Page]") {
-  static constexpr std::size_t kNumThreads = 4;
+  static constexpr std::size_t kNumThreads = 32;
 
   using AllocatorUnderTest = Page<>;
   AllocatorUnderTest allocator;
