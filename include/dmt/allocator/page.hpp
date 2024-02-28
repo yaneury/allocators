@@ -48,11 +48,7 @@ public:
 
     while (true) {
       auto old_anchor = anchor_.load();
-<<<<<<< HEAD
       if (old_anchor.status == Status::Initial) {
-=======
-      if (!old_anchor.initialized) {
->>>>>>> ddf9c18 (refactor: remove BitField class)
         if (auto result = InitializeHeap(); result.has_error())
           return cpp::fail(result.error());
 
@@ -67,7 +63,6 @@ public:
 
       auto new_anchor = old_anchor;
       new_anchor.available = old_anchor.available - 1;
-<<<<<<< HEAD
       new_anchor.head = GetHeap()->descriptors[old_anchor.head].next;
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
         auto& descriptor = GetHeap()->descriptors[old_anchor.head];
@@ -75,15 +70,6 @@ public:
         descriptor.next = 0;
         auto ptr = GetHeap()->super_block.base +
                    old_anchor.head * internal::GetPageSize();
-=======
-      new_anchor.head = heap_->descriptors[old_anchor.head].next;
-      if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
-        auto& descriptor = heap_->descriptors[old_anchor.head];
-        descriptor.occupied = true;
-        descriptor.next = 0;
-        auto ptr =
-            heap_->super_block.base + old_anchor.head * internal::GetPageSize();
->>>>>>> ddf9c18 (refactor: remove BitField class)
         return reinterpret_cast<std::byte*>(ptr);
       }
     }
@@ -109,11 +95,7 @@ public:
       // Eagerly set head here so that if another thread immediately takes
       // this block after the CAS instruction below, the Descriptor entry
       // is in a valid state.
-<<<<<<< HEAD
       GetHeap()->descriptors[index].next = old_anchor.head;
-=======
-      heap_->descriptors[index].next = old_anchor.head;
->>>>>>> ddf9c18 (refactor: remove BitField class)
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
         return {};
       }
@@ -154,7 +136,6 @@ private:
    *    0 if at capacity.
    */
   struct Anchor {
-<<<<<<< HEAD
     std::uint64_t status : 2;
     std::uint64_t head : 18;
     std::uint64_t available : 18;
@@ -207,16 +188,6 @@ private:
 
   std::atomic<Anchor> anchor_ = {};
   std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
-=======
-    std::uint64_t initialized : 1;
-    std::uint64_t head : 18;
-    std::uint64_t available : 18;
-    std::uint64_t reserved : 27;
-  };
-
-  std::atomic<Anchor> anchor_ = {};
-  Heap* heap_ = nullptr;
->>>>>>> ddf9c18 (refactor: remove BitField class)
 };
 
 } // namespace dmt::allocator
