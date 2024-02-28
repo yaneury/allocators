@@ -63,8 +63,6 @@ public:
         return reinterpret_cast<std::byte*>(ptr);
       }
     }
-
-    return nullptr;
   }
 
   Result<void> Release(std::byte* p) {
@@ -88,10 +86,9 @@ public:
       // is in a valid state.
       heap_->descriptors[index].next = old_anchor.head;
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
-        break;
+        return {};
       }
     }
-    return {};
   }
 
 private:
