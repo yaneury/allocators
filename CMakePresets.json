@@ -20,7 +20,8 @@
       "name": "debug",
       "inherits": "configure-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DMT_DEBUG": "ON"
       }
     },
     {

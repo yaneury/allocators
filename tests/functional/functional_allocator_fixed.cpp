@@ -1,10 +1,10 @@
-#include <catch2/catch_all.hpp>
+#include "catch2/catch_all.hpp"
 #include <cstdint>
 
-#include <dmt/allocator/fixed.hpp>
+#include "dmt/allocator/fixed.hpp"
 #include <iterator>
 
-#include "util.hpp"
+#include "../util.hpp"
 
 using namespace dmt::allocator;
 

@@ -1,13 +1,13 @@
 #include <stack>
 
-#include <catch2/catch_all.hpp>
+#include "catch2/catch_all.hpp"
 
-#include <dmt/allocator/bump.hpp>
-#include <dmt/allocator/fixed.hpp>
-#include <dmt/allocator/freelist.hpp>
-#include <dmt/allocator/page.hpp>
+#include "dmt/allocator/bump.hpp"
+#include "dmt/allocator/fixed.hpp"
+#include "dmt/allocator/freelist.hpp"
+#include "dmt/allocator/page.hpp"
 
-#include "util.hpp"
+#include "../util.hpp"
 
 using namespace dmt::allocator;
 
@@ -15,7 +15,7 @@ template <class... Allocator> struct AllocatorPack {};
 
 using AllocatorsUnderTest = AllocatorPack<Bump<>, FreeList<>>;
 
-TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][benchmarks]",
+TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
                         AllocatorsUnderTest) {
   // Use page-sized blocks for every allocator.
   static constexpr std::size_t kBlockSize = 4096;

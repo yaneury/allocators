@@ -1,13 +1,13 @@
-#include <catch2/catch_all.hpp>
+#include "catch2/catch_all.hpp"
 
 #include <ranges>
 #include <thread>
 #include <vector>
 
-#include <dmt/allocator/adapter.hpp>
-#include <dmt/allocator/bump.hpp>
+#include "dmt/allocator/adapter.hpp"
+#include "dmt/allocator/bump.hpp"
 
-#include "util.hpp"
+#include "../util.hpp"
 
 using namespace dmt::allocator;
 
