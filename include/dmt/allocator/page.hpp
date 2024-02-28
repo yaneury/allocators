@@ -2,6 +2,8 @@
 
 #include <atomic>
 #include <cstdint>
+#include <optional>
+#include <thread>
 
 #include <template/parameters.hpp>
 
@@ -30,7 +32,7 @@ public:
   // No more than |kCount| pages will be supported.
   // Defaults to 1GB / GetPageSize().
   static constexpr std::size_t kCount =
-      std::max({kDefaultMaxSize / internal::GetPageSize(),
+      std::max({kDefaultMaxSize / internal::GetPageSize() - 1,
                 ntp::optional<CountT<0>, Args...>::value});
 
   Page() = default;
@@ -41,10 +43,13 @@ public:
 
     while (true) {
       auto old_anchor = anchor_.load();
-      if (!old_anchor.initialized) {
+      if (old_anchor.status == Status::Initial) {
         if (auto result = InitializeHeap(); result.has_error())
           return cpp::fail(result.error());
 
+        continue;
+      } else if (old_anchor.status == Status::Allocating) {
+        std::this_thread::yield();
         continue;
       }
 
@@ -53,27 +58,28 @@ public:
 
       auto new_anchor = old_anchor;
       new_anchor.available = old_anchor.available - 1;
-      new_anchor.head = heap_->descriptors[old_anchor.head].next;
+      new_anchor.head = GetHeap()->descriptors[old_anchor.head].next;
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
-        auto& descriptor = heap_->descriptors[old_anchor.head];
+        auto& descriptor = GetHeap()->descriptors[old_anchor.head];
         descriptor.occupied = true;
         descriptor.next = 0;
-        auto ptr =
-            heap_->super_block.base + old_anchor.head * internal::GetPageSize();
+        auto ptr = GetHeap()->super_block.base +
+                   old_anchor.head * internal::GetPageSize();
         return reinterpret_cast<std::byte*>(ptr);
       }
     }
   }
 
   Result<void> Release(std::byte* p) {
-    if (p == nullptr || heap_ == nullptr)
+    if (p == nullptr || heap_ == std::nullopt)
       return cpp::fail(Error::InvalidInput);
 
-    auto distance = reinterpret_cast<std::uintptr_t>(p) -
-                    reinterpret_cast<std::uintptr_t>(heap_->super_block.base);
+    auto distance =
+        reinterpret_cast<std::uintptr_t>(p) -
+        reinterpret_cast<std::uintptr_t>(GetHeap()->super_block.base);
 
     std::size_t index = distance / internal::GetPageSize();
-    heap_->descriptors[index].occupied = false;
+    GetHeap()->descriptors[index].occupied = false;
 
     while (true) {
       auto old_anchor = anchor_.load();
@@ -84,7 +90,7 @@ public:
       // Eagerly set head here so that if another thread immediately takes
       // this block after the CAS instruction below, the Descriptor entry
       // is in a valid state.
-      heap_->descriptors[index].next = old_anchor.head;
+      GetHeap()->descriptors[index].next = old_anchor.head;
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
         return {};
       }
@@ -92,8 +98,6 @@ public:
   }
 
 private:
-  Result<void> InitializeHeap() { return {}; }
-
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
     // Index of next entry in list.
@@ -108,24 +112,75 @@ private:
     Descriptor descriptors[kCount];
   };
 
+  enum Status : std::uint64_t {
+    Initial = 0,
+    Allocating = 1,
+    Allocated = 2,
+    Failed = 3
+  };
+
   /*
    * Anchor is a bitfield of 64 bits. The bits are outlined below from low bit
    * to high bits.
-   *  initialized: 1 = Bit to see if heap has been initialized.
+   *  status: 2 = Status to see if heap has been initialized:
+   *    Initial, Allocating, Allocated
    *  head: 18 = Index of current head of LIFO list.
    *  available: 18 = Number of pages available for allocation.
    *    0 if at capacity.
-   *  tag: 27 = Used to prevent ABA problem when invoking CAS on anchor.
    */
   struct Anchor {
-    std::uint64_t initialized : 1;
+    std::uint64_t status : 2;
     std::uint64_t head : 18;
     std::uint64_t available : 18;
-    std::uint64_t reserved : 27;
+    std::uint64_t reserved : 26;
   };
 
+  Result<void> InitializeHeap() {
+    auto old_anchor = anchor_.load();
+    if (old_anchor.status != Status::Initial)
+      return {};
+
+    auto new_anchor = old_anchor;
+    new_anchor.status = Status::Allocating;
+    if (!anchor_.compare_exchange_weak(old_anchor, new_anchor))
+      return {};
+
+    auto heap_va_range_or =
+        internal::FetchPages(sizeof(Heap) / internal::GetPageSize());
+    // TODO: Mapping of internal to user-facing error should be more robust.
+    if (heap_va_range_or.has_error())
+      return cpp::fail(Error::OutOfMemory);
+
+    auto sb_va_range_or = internal::FetchPages(kCount);
+    if (sb_va_range_or.has_error())
+      return cpp::fail(Error::OutOfMemory);
+
+    auto heap_va_range = heap_va_range_or.value();
+    Heap* heap = reinterpret_cast<Heap*>(heap_va_range.base);
+    heap->super_block = sb_va_range_or.value();
+    for (auto i = 0u; i < kCount; ++i) {
+      Descriptor& descriptor = heap->descriptors[i];
+      descriptor.occupied = false;
+      descriptor.next = i + 1;
+    }
+
+    heap_ = heap_va_range;
+
+    new_anchor.available = kCount;
+    new_anchor.status = Status::Allocated;
+    anchor_.store(new_anchor);
+    return {};
+  }
+
+  Heap* GetHeap() {
+    if (!heap_.has_value())
+      return nullptr;
+
+    return reinterpret_cast<Heap*>(heap_->base);
+  }
+
   std::atomic<Anchor> anchor_ = {};
-  Heap* heap_ = nullptr;
+  std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
 };
 
 } // namespace dmt::allocator

@@ -157,7 +157,7 @@ private:
   static constexpr unsigned kTotalEntryInBits = 10;
 
   struct BlockDescriptor {
-    // Whether the block was initialized.
+    // Whether the block was status.
     std::uint64_t initialized : 1;
 
     // Index in |block_table_|.
