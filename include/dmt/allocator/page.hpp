@@ -6,6 +6,7 @@
 #include <template/parameters.hpp>
 
 #include "error.hpp"
+#include "internal/bit_field.hpp"
 #include "internal/common.hpp"
 #include "internal/platform.hpp"
 #include "parameters.hpp"
@@ -24,11 +25,13 @@ namespace dmt::allocator {
 // requests at all.
 template <class... Args> class Page {
 public:
+  static constexpr std::size_t kDefaultMaxSize = 1 << 30;
+
   // Max number of pages that this allocator will allow. This is a strict limit.
   // No more than |kCount| pages will be supported.
   // Defaults to 1GB / GetPageSize().
   static constexpr std::size_t kCount =
-      std::max({1 << 30 / internal::GetPageSize(),
+      std::max({kDefaultMaxSize / internal::GetPageSize(),
                 ntp::optional<CountT<0>, Args...>::value});
 
   Page() = default;
@@ -38,26 +41,34 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     while (true) {
-      auto old_anchor = anchor.load();
-      if (!old_anchor.initialized) {
-        InitializeHeap();
+      auto old_anchor = anchor_.load();
+      if (!kInitializedBitField.Get(old_anchor)) {
+        if (auto result = InitializeHeap(); result.has_error())
+          return cpp::fail(result.error());
+
         continue;
       }
 
-      if (old_anchor.available == 0 || old_anchor.head == kNumBlocks)
-        return nullptr;
+      if (kAvailableBitField.Get(old_anchor) == 0 ||
+          kHeadBitField.Get(old_anchor) == kCount)
+        return cpp::fail(Error::NoFreeBlock);
 
       auto new_anchor = old_anchor;
-      new_anchor.available = old_anchor.available - 1;
-      new_anchor.head = heap->descriptors[old_anchor.head].next;
-      if (anchor.compare_exchange_weak(old_anchor, new_anchor)) {
-        auto& descriptor = heap->descriptors[old_anchor.head];
+      new_anchor = kAvailableBitField.Replace(
+          new_anchor, kAvailableBitField.Get(new_anchor) - 1);
+
+      auto old_head = kHeadBitField.Get(new_anchor);
+      new_anchor =
+          kHeadBitField.Replace(new_anchor, heap_->descriptors[old_head].next);
+      if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
+        auto& descriptor = heap_->descriptors[old_head];
         descriptor.occupied = true;
         descriptor.next = 0;
-        auto ptr = heap->super_block.base + old_anchor.head * kPageSize;
+        auto ptr = heap_->super_block.base + old_head * internal::GetPageSize();
         return reinterpret_cast<std::byte*>(ptr);
       }
     }
+
     return nullptr;
   }
 
@@ -65,21 +76,23 @@ public:
     if (p == nullptr || heap_ == nullptr)
       return cpp::fail(Error::InvalidInput);
 
-    auto distance =
-        reinterpret_cast<std::uintptr_t>(p) - heap_->super_block.base;
+    auto distance = reinterpret_cast<std::uintptr_t>(p) -
+                    reinterpret_cast<std::uintptr_t>(heap_->super_block.base);
+
     std::size_t index = distance / internal::GetPageSize();
     heap_->descriptors[index].occupied = false;
 
     while (true) {
       auto old_anchor = anchor_.load();
       auto new_anchor = old_anchor;
-      // new_anchor.head = index;
-      // new_anchor.available++;
+      new_anchor = kHeadBitField.Replace(new_anchor, index);
+      new_anchor = kAvailableBitField.Replace(
+          new_anchor, kAvailableBitField.Get(new_anchor) + 1);
 
       // Eagerly set head here so that if another thread immediately takes
       // this block after the CAS instruction below, the Descriptor entry
       // is in a valid state.
-      heap_->descriptors[index].next = old_anchor; // .head;
+      heap_->descriptors[index].next = kHeadBitField.Get(old_anchor);
       if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
         break;
       }
@@ -88,6 +101,8 @@ public:
   }
 
 private:
+  Result<void> InitializeHeap() { return {}; }
+
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
     // Index of next entry in list.
@@ -112,6 +127,12 @@ private:
    *  tag: 27 = Used to prevent ABA problem when invoking CAS on anchor.
    */
   using Anchor = std::uint64_t;
+
+  using BitField = internal::BitField<Anchor>;
+  static constexpr BitField kInitializedBitField = {.width = 1, .offset = 0};
+  static constexpr BitField kHeadBitField = {.width = 18, .offset = 1};
+  static constexpr BitField kAvailableBitField = {.width = 18, .offset = 19};
+  static constexpr BitField kTagBitField = {.width = 27, .offset = 37};
 
   std::atomic<Anchor> anchor_ = 0;
   Heap* heap_ = nullptr;
