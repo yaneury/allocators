@@ -7,7 +7,10 @@ add_executable(
   test.cpp
   performance/performance_allocator_all.cpp
   concurrency/concurrency_allocator_bump.cpp
+<<<<<<< HEAD
   concurrency/concurrency_allocator_page.cpp
+=======
+>>>>>>> 3b049da (chore: reorganize test directory layout)
   functional/functional_allocator_freelist.cpp
   functional/functional_allocator_all.cpp
   functional/functional_allocator_internal.cpp
