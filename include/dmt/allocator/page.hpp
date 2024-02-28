@@ -15,7 +15,7 @@
 
 namespace dmt::allocator {
 
-// Coarse-grained allocator that allocated multiples of system page size
+// Coarse-grained allocator that allocates multiples of system page size
 // on request. This is used internally by other allocators in this library
 // to fetch memory from the heap. However, it's available for general usage
 // in the public API.
@@ -38,8 +38,13 @@ public:
   Page() = default;
 
   Result<std::byte*> Allocate(std::size_t count) {
-    if (count == 0)
+    if (count == 0 || count > kCount)
       return cpp::fail(Error::InvalidInput);
+
+    // TODO: Currently, this allocator doesn't support requesting more than
+    //  one page at a time.
+    if (count != 1)
+      return cpp::fail(Error::OperationNotSupported);
 
     while (true) {
       auto old_anchor = anchor_.load();
