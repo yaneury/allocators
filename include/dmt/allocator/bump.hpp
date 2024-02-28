@@ -86,7 +86,6 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
-    DINFO("Request Size: " << request_size);
 
     if (request_size > kBlockSize)
       return cpp::fail(Error::SizeRequestTooLarge);
