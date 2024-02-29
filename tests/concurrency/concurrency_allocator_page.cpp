@@ -4,9 +4,9 @@
 #include <thread>
 #include <vector>
 
-#include "dmt/allocator/page.hpp"
+#include <boost/lockfree/queue.hpp>
 
-#include "thread_safe_container.hpp"
+#include "dmt/allocator/page.hpp"
 
 using namespace dmt::allocator;
 
@@ -17,7 +17,7 @@ TEST_CASE("Page allocator", "[concurrency][allocator][Page]") {
   AllocatorUnderTest allocator;
 
   std::atomic<std::size_t> requests_made = 0;
-  dmt::testing::ThreadSafeQueue<std::byte*> allocations;
+  boost::lockfree::queue<std::byte*> allocations(AllocatorUnderTest::kCount);
   std::mutex message_lock;
 
   auto chaos_allocate = [&](std::size_t id) {
@@ -38,7 +38,7 @@ TEST_CASE("Page allocator", "[concurrency][allocator][Page]") {
           }
         }
 
-        allocations.Push(p_or.value());
+        allocations.push(p_or.value());
       }
     }
   };
@@ -56,11 +56,11 @@ TEST_CASE("Page allocator", "[concurrency][allocator][Page]") {
 
   auto chaos_release = [&](std::size_t id) {
     while (true) {
-      auto p_or = allocations.Pop();
-      if (!p_or.has_value())
+      std::byte* p_or = nullptr;
+      if (!allocations.pop(p_or))
         return;
 
-      auto result = allocator.Release(p_or.value());
+      auto result = allocator.Release(p_or);
       if (result.has_error()) {
         {
           std::lock_guard<std::mutex> guard(message_lock);

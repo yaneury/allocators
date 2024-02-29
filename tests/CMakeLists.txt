@@ -33,6 +33,17 @@ include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})
 
+# # Fetch and install Boost
+set(BOOST_INCLUDE_LIBRARIES lockfree)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_Declare(
+  Boost
+  GIT_REPOSITORY https://github.com/boostorg/boost.git
+  GIT_TAG boost-1.84.0)
+FetchContent_MakeAvailable(Boost)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE Boost::lockfree)
+
 enable_testing()
 
 add_test(NAME ${PROJECT_NAME} COMMAND $<TARGET_FILE:${PROJECT_NAME}>
