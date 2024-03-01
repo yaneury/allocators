@@ -40,10 +40,11 @@ concept ObjectAllocator = requires(T allocator, std::size_t size, Layout layout,
 };
 
 template <class T>
-concept BlockAllocator = requires(T allocator, std::size_t count,
-                                  std::byte* bytes) {
+concept BlockAllocator = requires(T allocator, const T const_allocator,
+                                  std::size_t count, std::byte* bytes) {
   { allocator.Allocate(count) } -> std::same_as<Result<std::byte*>>;
   { allocator.Release(bytes) } -> std::same_as<Result<void>>;
+  { const_allocator.GetBlockSize() } -> std::same_as<std::size_t>;
 };
 
 #endif

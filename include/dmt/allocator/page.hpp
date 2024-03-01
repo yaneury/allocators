@@ -101,6 +101,10 @@ public:
     }
   }
 
+  [[nodiscard]] constexpr std::size_t GetBlockSize() const {
+    return internal::GetPageSize();
+  }
+
 private:
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
