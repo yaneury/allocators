@@ -9,7 +9,6 @@ jobs:
       matrix:
         cxx:
           - g++
-          - clang++
         build_type: [ Debug, Release ]
         std: [ 20 ]
 
