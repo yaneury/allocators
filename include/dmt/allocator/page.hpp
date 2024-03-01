@@ -103,8 +103,6 @@ public:
   }
 
 private:
-  Result<void> InitializeHeap() { return {}; }
-
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
     // Index of next entry in list.
