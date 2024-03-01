@@ -1,11 +1,10 @@
 #include "catch2/catch_all.hpp"
 
-#include <atomic>
+#include <mutex>
 #include <thread>
 #include <vector>
 
-#include <boost/lockfree/queue.hpp>
-#include <mutex>
+#include "atomic_queue/atomic_queue.h"
 
 #include "dmt/allocator/page.hpp"
 
@@ -20,7 +19,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
   static_assert(kNumThreads % 2 == 0, "number of threads must even");
 
   AllocatorUnderTest allocator;
-  boost::lockfree::queue<std::byte*> allocations(AllocatorUnderTest::kCount);
+  atomic_queue::AtomicQueue<std::byte*, AllocatorUnderTest::kCount> allocations;
   // Mutex used for calling Catch2's APIs
   std::mutex catch_mutex;
 
@@ -36,7 +35,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
         }
       }
 
-      while (!allocations.push(p_or.value()))
+      while (!allocations.try_push(p_or.value()))
         ;
     }
   };
@@ -44,7 +43,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
   auto release = [&]() {
     for (std::size_t i = 0; i < kMaximumOps; ++i) {
       std::byte* p = nullptr;
-      while (!allocations.pop(p))
+      while (!allocations.try_pop(p))
         ;
 
       auto result = allocator.Release(p);
@@ -68,5 +67,5 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
   for (auto& th : threads)
     th.join();
 
-  REQUIRE(allocations.empty());
+  REQUIRE(allocations.was_empty());
 }
