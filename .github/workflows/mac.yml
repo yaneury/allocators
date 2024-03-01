@@ -1,0 +1,36 @@
+name: Mac tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cxx:
+          - g++-13
+          - clang++
+        build_type: [ Debug, Release ]
+        std: [ 20 ]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get latest CMake and ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Configure CMake
+        env:
+          CXX: ${{matrix.cxx}}
+          CXXFLAGS: ${{matrix.cxxflags}}
+        run: >
+          cmake -B ${{github.workspace}}/build
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+          -DCMAKE_CXX_STANDARD=${{matrix.std}}
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DDMT_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.BUILD_TYPE}}
+
+      - name: Test
+        run: ${{github.workspace}}/build/tests/dmt-tests
