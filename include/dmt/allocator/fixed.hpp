@@ -55,6 +55,8 @@ public:
     return {};
   }
 
+  [[nodiscard]] constexpr std::size_t GetBlockSize() const { return kSize; }
+
   Buffer* GetBuffer() { return &buffer_; }
 
 private:
