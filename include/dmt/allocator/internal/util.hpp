@@ -56,16 +56,4 @@ template <class T> T* PtrSubtract(T* ptr, std::size_t offset) {
   return reinterpret_cast<T*>(addr - offset);
 }
 
-inline auto SetBit(std::integral auto value, std::integral auto n) {
-  return value | (1 << n);
-}
-
-inline auto ClearBit(std::integral auto value, std::integral auto n) {
-  return value & ~(1 << n);
-}
-
-inline auto ToggleBit(std::integral auto value, std::integral auto n) {
-  return value ^ (1 << n);
-}
-
 } // namespace dmt::allocator::internal
