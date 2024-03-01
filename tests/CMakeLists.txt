@@ -33,16 +33,14 @@ include(CTest)
 include(Catch)
 catch_discover_tests(${PROJECT_NAME})
 
-# # Fetch and install Boost
-set(BOOST_INCLUDE_LIBRARIES lockfree)
-set(BOOST_ENABLE_CMAKE ON)
+# Fetch and install atomic_queue
 FetchContent_Declare(
-  Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG boost-1.84.0)
-FetchContent_MakeAvailable(Boost)
+  atomic_queue
+  GIT_REPOSITORY https://github.com/yaneury/atomic_queue.git
+  GIT_TAG stable)
+FetchContent_MakeAvailable(atomic_queue)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Boost::lockfree)
+target_link_libraries(${PROJECT_NAME} PRIVATE atomic_queue)
 
 enable_testing()
 
