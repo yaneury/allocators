@@ -5,79 +5,67 @@
 #include <vector>
 
 #include <boost/lockfree/queue.hpp>
+#include <mutex>
 
 #include "dmt/allocator/page.hpp"
 
 using namespace dmt::allocator;
 
 TEST_CASE("Page allocator", "[concurrency][allocator][Page]") {
-  static constexpr std::size_t kNumThreads = 32;
-
   using AllocatorUnderTest = Page<>;
+
+  static constexpr std::size_t kMaximumOps = 100;
+  static constexpr std::size_t kNumThreads = 64;
+  static_assert(kNumThreads % 2 == 0, "number of threads must even");
+
   AllocatorUnderTest allocator;
-
-  std::atomic<std::size_t> requests_made = 0;
   boost::lockfree::queue<std::byte*> allocations(AllocatorUnderTest::kCount);
-  std::mutex message_lock;
+  // Mutex used for calling Catch2's APIs
+  std::mutex catch_mutex;
 
-  auto chaos_allocate = [&](std::size_t id) {
-    while (true) {
-      auto old_allocation = requests_made.load();
-      if (old_allocation == AllocatorUnderTest::kCount)
-        return;
-
-      if (requests_made.compare_exchange_weak(old_allocation,
-                                              old_allocation + 1)) {
-        auto p_or = allocator.Allocate(1);
-        if (p_or.has_error()) {
-          {
-            std::lock_guard<std::mutex> guard(message_lock);
-            INFO("[" << id
-                     << "] Allocation failed: " << ToString(p_or.error()));
-            FAIL();
-          }
+  auto allocate = [&]() {
+    for (std::size_t i = 0; i < kMaximumOps; ++i) {
+      auto p_or = allocator.Allocate(1);
+      if (p_or.has_error()) {
+        {
+          std::scoped_lock lock(catch_mutex);
+          INFO("[" << std::this_thread::get_id()
+                   << "] Allocation failed: " << ToString(p_or.error()));
+          FAIL();
         }
+      }
 
-        allocations.push(p_or.value());
+      while (!allocations.push(p_or.value()))
+        ;
+    }
+  };
+
+  auto release = [&]() {
+    for (std::size_t i = 0; i < kMaximumOps; ++i) {
+      std::byte* p = nullptr;
+      while (!allocations.pop(p))
+        ;
+
+      auto result = allocator.Release(p);
+      if (result.has_error()) {
+        std::scoped_lock<std::mutex> lock(catch_mutex);
+        INFO("[" << std::this_thread::get_id()
+                 << "] Release failed: " << ToString(result.error()));
+        FAIL();
       }
     }
   };
 
   std::vector<std::thread> threads;
-  threads.reserve(kNumThreads);
   for (auto i = 0ul; i < kNumThreads; ++i) {
-    threads.emplace_back(chaos_allocate, i);
+    if (i % 2)
+      threads.emplace_back(allocate);
+    else
+      threads.emplace_back(release);
   }
 
   for (auto& th : threads)
     th.join();
 
-  threads.clear();
-
-  auto chaos_release = [&](std::size_t id) {
-    while (true) {
-      std::byte* p_or = nullptr;
-      if (!allocations.pop(p_or))
-        return;
-
-      auto result = allocator.Release(p_or);
-      if (result.has_error()) {
-        {
-          std::lock_guard<std::mutex> guard(message_lock);
-          INFO("[" << id << "] Release failed: " << ToString(result.error()));
-          FAIL();
-        }
-      }
-    }
-  };
-
-  threads.reserve(kNumThreads);
-  for (auto i = 0ul; i < kNumThreads; ++i) {
-    threads.emplace_back(chaos_release, i);
-  }
-
-  for (auto& th : threads)
-    th.join();
-
-  threads.clear();
+  REQUIRE(allocations.empty());
 }
