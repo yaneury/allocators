@@ -8,7 +8,6 @@
 #include <template/parameters.hpp>
 
 #include "error.hpp"
-#include "internal/common.hpp"
 #include "internal/platform.hpp"
 #include "parameters.hpp"
 #include "trait.hpp"
