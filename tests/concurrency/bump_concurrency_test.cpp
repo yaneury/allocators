@@ -13,8 +13,8 @@ using namespace dmt::allocator;
 using AllocatorUnderTest = Bump<>;
 
 TEST_CASE("Bump allocator works in multi-threaded contexts",
-          "[allocator][Bump][concurrent]") {
-  static constexpr std::size_t kNumThreads = 1;
+          "[concurrency][allocator][Bump]") {
+  static constexpr std::size_t kNumThreads = 64;
 
   AllocatorUnderTest allocator;
   std::mutex catch_mutex;
