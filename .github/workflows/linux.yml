@@ -8,8 +8,8 @@ jobs:
     strategy:
       matrix:
         cxx:
-          - g++-13
-          - clang++
+          - g++-11
+          - clang++-11
         build_type: [ Debug, Release ]
         std: [ 20 ]
 
