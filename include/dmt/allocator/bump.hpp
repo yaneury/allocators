@@ -34,14 +34,6 @@ public:
   // Defaults to unconfigured Page allocator.
   using Allocator = typename ntp::type<BlockAllocatorT<Page<>>, Args...>::value;
 
-  // Size of the blocks. This allocator doesn't support variable-sized blocks.
-  // All blocks allocated are of the same size.
-  //
-  // This field is optional. If not provided, will default |DMT_ALLOCATOR_SIZE|.
-  // TODO: Remove this field and support variable-sized blocks.
-  static constexpr std::size_t kBlockSize =
-      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
-
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
   // if |ReturnNull| is provided, then nullptr is returned on the allocation
@@ -59,7 +51,6 @@ public:
   };
 
   static constexpr Options kDefaultOptions = {
-      .size = kBlockSize,
       .grow_when_full = kGrowWhenFull,
   };
 
@@ -87,7 +78,7 @@ public:
 
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
 
-    if (request_size > kBlockSize)
+    if (request_size > allocator_.GetBlockSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // The loop here is a little deceiving. The intention here is not to
@@ -102,7 +93,7 @@ public:
         continue;
       }
 
-      std::size_t headroom = kBlockSize - old_active.size;
+      std::size_t headroom = allocator_.GetBlockSize() - old_active.size;
       if (headroom < request_size) {
         if (!kGrowWhenFull)
           return cpp::fail(Error::ReachedMemoryLimit);
@@ -184,7 +175,7 @@ private:
     // 0.
     new_active.initialized = 1;
 
-    auto new_block_or = allocator_.Allocate(kBlockSize);
+    auto new_block_or = allocator_.Allocate(1);
     if (new_block_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
