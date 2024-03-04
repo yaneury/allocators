@@ -25,80 +25,55 @@ namespace dmt::allocator {
 // requests at all.
 template <class... Args> class Page {
 public:
-  static constexpr std::size_t kDefaultMaxSize = 1 << 30;
-
-  // Max number of pages that this allocator will allow. This is a strict limit.
-  // No more than |kCount| pages will be supported.
-  // Defaults to 1GB / GetPageSize().
-  static constexpr std::size_t kCount =
-      std::max({kDefaultMaxSize / internal::GetPageSize() - 1,
-                ntp::optional<CountT<0>, Args...>::value});
+  // Number of pages used for page registry. Defaults to 1. Should be template
+  // param though.
+  // TODO: Make this user-provided template param.
+  static constexpr std::size_t kRegistrySize = 1;
 
   Page() = default;
 
   Result<std::byte*> Allocate(std::size_t count) {
-    if (count == 0 || count > kCount)
+    if (count == 0 || count >= 1 << 16)
       return cpp::fail(Error::InvalidInput);
 
-    // TODO: Currently, this allocator doesn't support requesting more than
-    //  one page at a time.
-    if (count != 1)
-      return cpp::fail(Error::OperationNotSupported);
+    auto va_range_or = internal::FetchPages(count);
+    if (va_range_or.has_error())
+      return cpp::fail(Error::Internal);
 
-    while (true) {
-      auto old_anchor = anchor_.load();
-      if (old_anchor.status == Status::Initial) {
-        if (auto result = InitializeHeap(); result.has_error())
-          return cpp::fail(result.error());
+    auto va_range = va_range_or.value();
 
-        continue;
-      } else if (old_anchor.status == Status::Allocating) {
-        std::this_thread::yield();
-        continue;
-      }
+    Span span = {.address = reinterpret_cast<std::uint64_t>(va_range.base),
+                 .count = static_cast<std::uint64_t>(count)};
 
-      if (old_anchor.available == 0 || old_anchor.head == kCount)
-        return cpp::fail(Error::NoFreeBlock);
+    if (auto result = RegisterSpan(span); result.has_error()) {
+      if (auto inner_result = internal::ReturnPages(va_range);
+          inner_result.has_error())
+        return cpp::fail(Error::Internal);
 
-      auto new_anchor = old_anchor;
-      new_anchor.available = old_anchor.available - 1;
-      new_anchor.head = GetHeap()->descriptors[old_anchor.head].next;
-      if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
-        auto& descriptor = GetHeap()->descriptors[old_anchor.head];
-        descriptor.occupied = true;
-        descriptor.next = 0;
-        auto ptr = GetHeap()->super_block.base +
-                   old_anchor.head * internal::GetPageSize();
-        return reinterpret_cast<std::byte*>(ptr);
-      }
+      return cpp::fail(result.error());
     }
+
+    return va_range.base;
   }
 
   Result<void> Release(std::byte* p) {
-    if (p == nullptr || heap_ == std::nullopt)
+    if (p == nullptr)
       return cpp::fail(Error::InvalidInput);
 
-    auto distance =
-        reinterpret_cast<std::uintptr_t>(p) -
-        reinterpret_cast<std::uintptr_t>(GetHeap()->super_block.base);
+    auto maybe_span = FindSpan(p);
+    if (!maybe_span.has_value())
+      return cpp::fail(Error::InvalidInput);
 
-    std::size_t index = distance / internal::GetPageSize();
-    GetHeap()->descriptors[index].occupied = false;
+    auto span = maybe_span.value();
 
-    while (true) {
-      auto old_anchor = anchor_.load();
-      auto new_anchor = old_anchor;
-      new_anchor.head = index;
-      new_anchor.available = old_anchor.available + 1;
+    assert(span.address == reinterpret_cast<std::uint64_t>(p));
+    auto va_range =
+        internal::VirtualAddressRange{.base = p, .pages = span.count};
 
-      // Eagerly set head here so that if another thread immediately takes
-      // this block after the CAS instruction below, the Descriptor entry
-      // is in a valid state.
-      GetHeap()->descriptors[index].next = old_anchor.head;
-      if (anchor_.compare_exchange_weak(old_anchor, new_anchor)) {
-        return {};
-      }
-    }
+    if (auto result = internal::ReturnPages(va_range); result.has_error())
+      return cpp::fail(Error::Internal);
+
+    return {};
   }
 
   [[nodiscard]] constexpr std::size_t GetBlockSize() const {
@@ -106,89 +81,81 @@ public:
   }
 
 private:
-  // A block descriptor is an entry in the linked list of blocks.
-  struct Descriptor {
-    // Index of next entry in list.
-    std::size_t next;
+  struct Span {
+    // 48 bits tracking actual address of page Span. All modern OSes,
+    // as far as I know, only support 48-bit virtual address space (about
+    // 256TB!) for userspace memory. The rest is either reserved or unused.
+    // Given that, we can use the remaining bits
+    std::uint64_t address : 48;
 
-    // Whether this block is currently in use.
-    bool occupied;
+    // Number of pages allocated for this Span.
+    std::uint64_t count : 16;
   };
 
-  struct alignas(internal::GetPageSize()) Heap {
-    internal::VirtualAddressRange super_block;
-    Descriptor descriptors[kCount];
+  enum class State : std::uint64_t {
+    Inactive = 0,
+    Empty = 1,
+    Partial = 2,
+    Full = 3
   };
 
-  enum Status : std::uint64_t {
-    Initial = 0,
-    Allocating = 1,
-    Allocated = 2,
-    Failed = 3
+  struct Registry {
+    std::uint64_t span_set_address : 48;
+    std::uint64_t next_registry : 48;
+    std::uint64_t next_slot : 12;
+    std::uint64_t state : 2;
+    std::uint64_t _padding : 18;
   };
 
-  /*
-   * Anchor is a bitfield of 64 bits. The bits are outlined below from low bit
-   * to high bits.
-   *  status: 2 = Status to see if heap has been initialized:
-   *    Initial, Allocating, Allocated
-   *  head: 18 = Index of current head of LIFO list.
-   *  available: 18 = Number of pages available for allocation.
-   *    0 if at capacity.
-   */
-  struct Anchor {
-    std::uint64_t status : 2;
-    std::uint64_t head : 18;
-    std::uint64_t available : 18;
-    std::uint64_t reserved : 26;
-  };
+  // static_assert(sizeof(Registry) == sizeof(std::uintptr_t) * 2, "Registry is
+  // not size of double word");
 
-  Result<void> InitializeHeap() {
-    auto old_anchor = anchor_.load();
-    if (old_anchor.status != Status::Initial)
-      return {};
+  Result<void> RegisterSpan(Span span) {
+    while (true) {
+      auto registry = registry_.load(std::memory_order_relaxed);
 
-    auto new_anchor = old_anchor;
-    new_anchor.status = Status::Allocating;
-    if (!anchor_.compare_exchange_weak(old_anchor, new_anchor))
-      return {};
+      if (registry.state == State::Inactive) {
+        // Initialize registry
+        continue;
+      }
 
-    auto heap_va_range_or =
-        internal::FetchPages(sizeof(Heap) / internal::GetPageSize());
-    // TODO: Mapping of internal to user-facing error should be more robust.
-    if (heap_va_range_or.has_error())
-      return cpp::fail(Error::OutOfMemory);
+      if (registry.next_slot == kRegistrySize) {
+        auto new_registry = registry;
+        new_registry.state = State::Full;
+        registry_.compare_exchange_weak(registry, new_registry);
+        continue;
+      }
 
-    auto sb_va_range_or = internal::FetchPages(kCount);
-    if (sb_va_range_or.has_error())
-      return cpp::fail(Error::OutOfMemory);
+      if (registry.state == State::Full) {
+        // Add new registry
+        continue;
+      }
 
-    auto heap_va_range = heap_va_range_or.value();
-    Heap* heap = reinterpret_cast<Heap*>(heap_va_range.base);
-    heap->super_block = sb_va_range_or.value();
-    for (auto i = 0u; i < kCount; ++i) {
-      Descriptor& descriptor = heap->descriptors[i];
-      descriptor.occupied = false;
-      descriptor.next = i + 1;
+      Span* span_set = reinterpret_cast<Span*>(registry.span_set_address);
+      auto new_registry = registry;
+      ++new_registry.next_slot;
+
+      if (registry_.compare_exchange_weak(registry, new_registry,
+                                          std::memory_order_relaxed)) {
+        span_set[registry.next_slot] = span;
+        return {};
+      }
     }
-
-    heap_ = heap_va_range;
-
-    new_anchor.available = kCount;
-    new_anchor.status = Status::Allocated;
-    anchor_.store(new_anchor);
-    return {};
   }
 
-  Heap* GetHeap() {
-    if (!heap_.has_value())
-      return nullptr;
+  std::optional<Span> FindSpan(Registry registry, std::byte* base) {
+    Span* span_set = reinterpret_cast<Span*>(registry.span_set_address);
 
-    return reinterpret_cast<Heap*>(heap_->base);
+    for (std::size_t i = sizeof(Registry); i < kRegistrySize; ++i)
+      if (span_set[i].address == reinterpret_cast<std::uintptr_t>(base))
+        return span_set[i];
+
+    // TODO: Search through entire list of Registry
+
+    return std::nullopt;
   }
 
-  std::atomic<Anchor> anchor_ = {};
-  std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
+  std::atomic<Registry> registry_;
 };
 
 } // namespace dmt::allocator
