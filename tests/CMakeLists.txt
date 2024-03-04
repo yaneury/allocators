@@ -36,11 +36,11 @@ catch_discover_tests(${PROJECT_NAME})
 # Fetch and install atomic_queue
 FetchContent_Declare(
   atomic_queue
-  GIT_REPOSITORY https://github.com/yaneury/atomic_queue.git
-  GIT_TAG stable)
+  GIT_REPOSITORY https://github.com/max0x7ba/atomic_queue.git
+  GIT_TAG v1.6.3)
 FetchContent_MakeAvailable(atomic_queue)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE atomic_queue)
+target_link_libraries(${PROJECT_NAME} PRIVATE max0x7ba::atomic_queue)
 
 enable_testing()
 
