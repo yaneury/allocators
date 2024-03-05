@@ -9,6 +9,9 @@
 
 namespace dmt::allocator::internal {
 
+constexpr auto kWordSize = sizeof(std::uintptr_t);
+constexpr auto kDoubleWordSize = kWordSize * 2;
+
 // Gets the page size (in bytes) for the current platform.
 constexpr inline std::size_t GetPageSize();
 

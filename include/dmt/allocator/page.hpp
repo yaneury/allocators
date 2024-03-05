@@ -66,7 +66,7 @@ public:
 
     auto span = maybe_span.value();
 
-    assert(span.address == reinterpret_cast<std::uint64_t>(p));
+    assert(span.address == reinterpret_cast<std::uintptr_t>(p));
     auto va_range =
         internal::VirtualAddressRange(/*base=*/p, /*pages=*/span.count);
 
@@ -80,7 +80,7 @@ public:
     return internal::GetPageSize();
   }
 
-private:
+public:
   struct Span {
     // 48 bits tracking actual address of page Span. All modern OSes,
     // as far as I know, only support 48-bit virtual address space (about
@@ -102,7 +102,7 @@ private:
   // Registry must be aligned on a double-word boundary to ensure it works with
   // double-word atomic instructions, hence: alignas(16).
   struct alignas(16) Registry {
-    std::uint64_t span_set_address : 48;
+    std::uint64_t self_address : 48;
     std::uint64_t next_slot : 12;
     std::uint64_t next_registry : 48;
     std::uint64_t state : 2;
@@ -111,33 +111,40 @@ private:
     // Pack together to ensure sizeof(Registry) is 16 bytes.
   } __attribute__((packed));
 
-  static_assert(sizeof(Registry) == sizeof(std::uintptr_t) * 2,
+  static_assert(sizeof(Registry) == internal::kDoubleWordSize,
                 "Registry is not size of double word");
+
+  // Starting index for set of Span inside a Registry. Normally, the first
+  // sizeof(Registry) bytes are inside a page(s) are reserved for the Registry
+  // itself. This means that technically, that the entire page(s) is not used
+  // for Span.
+  static constexpr auto kSpanSetStart = sizeof(Registry) / sizeof(Span);
+  static constexpr auto kSpanSetEnd = kRegistrySize * internal::GetPageSize();
 
   Result<void> RegisterSpan(Span span) {
     while (true) {
       auto registry = registry_.load(std::memory_order_relaxed);
 
       if (registry.state == internal::to_underlying(State::Inactive)) {
-        // Initialize registry
-        continue;
-      }
+        if (auto result = CreateNewRegistry(registry); result.has_error())
+          return cpp::fail(result.error());
 
-      if (registry.next_slot == kRegistrySize) {
-        auto new_registry = registry;
-        new_registry.state = internal::to_underlying(State::Full);
-        registry_.compare_exchange_weak(registry, new_registry);
         continue;
       }
 
       if (registry.state == internal::to_underlying(State::Full)) {
-        // Add new registry
+        if (auto result = CreateNewRegistry(registry); result.has_error())
+          return cpp::fail(result.error());
+
         continue;
       }
 
-      Span* span_set = reinterpret_cast<Span*>(registry.span_set_address);
+      Span* span_set = reinterpret_cast<Span*>(registry.self_address);
       auto new_registry = registry;
-      ++new_registry.next_slot;
+      new_registry.next_slot += 1;
+      new_registry.state = new_registry.next_slot == kSpanSetEnd
+                               ? internal::to_underlying(State::Full)
+                               : internal::to_underlying(State::Partial);
 
       if (registry_.compare_exchange_weak(registry, new_registry,
                                           std::memory_order_relaxed)) {
@@ -147,10 +154,32 @@ private:
     }
   }
 
-  std::optional<Span> FindSpan(Registry registry, std::byte* base) {
-    Span* span_set = reinterpret_cast<Span*>(registry.span_set_address);
+  Result<void> CreateNewRegistry(Registry registry) {
+    auto va_range_or = internal::FetchPages(kRegistrySize);
+    if (va_range_or.has_error())
+      return cpp::fail(Error::Internal);
 
-    for (std::size_t i = sizeof(Registry); i < kRegistrySize; ++i)
+    auto va_range = va_range_or.value();
+    Registry new_registry = registry;
+    new_registry.state = internal::to_underlying(State::Empty);
+    if (registry.state != internal::to_underlying(State::Inactive))
+      new_registry.next_registry = registry.self_address;
+    new_registry.next_slot = sizeof(Registry) / sizeof(Span);
+    new_registry.self_address = reinterpret_cast<std::uint64_t>(va_range.base);
+
+    if (!registry_.compare_exchange_weak(registry, new_registry)) {
+      if (auto result = internal::ReturnPages(va_range); result.has_error()) {
+        return cpp::fail(Error::Internal);
+      }
+    }
+
+    return {};
+  }
+
+  std::optional<Span> FindSpan(Registry registry, std::byte* base) {
+    Span* span_set = reinterpret_cast<Span*>(registry.self_address);
+
+    for (auto i = kSpanSetStart; i < kSpanSetEnd; ++i)
       if (span_set[i].address == reinterpret_cast<std::uintptr_t>(base))
         return span_set[i];
 

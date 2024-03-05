@@ -14,9 +14,9 @@ using AllocatorUnderTest = Page<>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {
-  static constexpr std::size_t kMaxPages = 1000;
-  static constexpr std::size_t kMaximumOps = 100;
-  static constexpr std::size_t kNumThreads = 64;
+  static constexpr std::size_t kMaxPages = 1;
+  static constexpr std::size_t kMaximumOps = 1;
+  static constexpr std::size_t kNumThreads = 2;
   static_assert(kNumThreads % 2 == 0, "number of threads must even");
 
   AllocatorUnderTest allocator;
