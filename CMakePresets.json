@@ -13,45 +13,141 @@
       "cacheVariables": {
         "DMT_BUILD_TESTS": "ON",
         "DMT_BUILD_SANDBOX": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
+      }
+    },
+    {
+      "name": "configure-gcc",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "configure-clang",
+      "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
       }
     },
     {
-      "name": "debug",
-      "inherits": "configure-base",
+      "name": "configure-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "DMT_DEBUG": "ON"
       }
     },
     {
-      "name": "release",
-      "inherits": "configure-base",
+      "name": "configure-release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "DMT_DEBUG": "OFF"
       }
+    },
+    {
+      "name": "debug-gcc",
+      "inherits": [
+        "configure-base",
+        "configure-debug",
+        "configure-gcc"
+      ]
+    },
+    {
+      "name": "debug-clang",
+      "inherits": [
+        "configure-base",
+        "configure-debug",
+        "configure-clang"
+      ]
+    },
+    {
+      "name": "release-gcc",
+      "inherits": [
+        "configure-base",
+        "configure-release",
+        "configure-gcc"
+      ]
+    },
+    {
+      "name": "release-clang",
+      "inherits": [
+        "configure-base",
+        "configure-release",
+        "configure-clang"
+      ]
     }
   ],
   "buildPresets": [
     {
-      "name": "build-base",
-      "configurePreset": "debug",
+      "name": "debug-gcc",
+      "configurePreset": "debug-gcc",
       "nativeToolOptions": [
         "--no-print-directory"
-      ]
+      ],
+      "verbose": true
     },
     {
-      "name": "debug",
-      "inherits": "build-base",
+      "name": "debug-clang",
+      "configurePreset": "debug-clang",
+      "nativeToolOptions": [
+        "--no-print-directory"
+      ],
+      "verbose": true
+    },
+    {
+      "name": "release-gcc",
+      "configurePreset": "release-gcc",
+      "nativeToolOptions": [
+        "--no-print-directory"
+      ],
+      "verbose": true
+    },
+    {
+      "name": "release-clang",
+      "configurePreset": "release-clang",
+      "nativeToolOptions": [
+        "--no-print-directory"
+      ],
       "verbose": true
     }
   ],
   "testPresets": [
     {
-      "name": "test",
-      "configurePreset": "debug",
+      "name": "test-debug-gcc",
+      "configurePreset": "debug-gcc",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    },
+    {
+      "name": "test-debug-clang",
+      "configurePreset": "debug-clang",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    },
+    {
+      "name": "test-release-gcc",
+      "configurePreset": "release-gcc",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    },
+    {
+      "name": "test-release-clang",
+      "configurePreset": "release-clang",
       "output": {
         "outputOnFailure": true
       },
