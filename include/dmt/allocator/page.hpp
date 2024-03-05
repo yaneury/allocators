@@ -119,7 +119,8 @@ public:
   // itself. This means that technically, that the entire page(s) is not used
   // for Span.
   static constexpr auto kSpanSetStart = sizeof(Registry) / sizeof(Span);
-  static constexpr auto kSpanSetEnd = kRegistrySize * internal::GetPageSize();
+  static constexpr auto kSpanSetEnd =
+      (kRegistrySize * internal::GetPageSize()) / sizeof(Span);
 
   Result<void> RegisterSpan(Span span) {
     while (true) {
@@ -145,7 +146,6 @@ public:
       new_registry.state = new_registry.next_slot == kSpanSetEnd
                                ? internal::to_underlying(State::Full)
                                : internal::to_underlying(State::Partial);
-
       if (registry_.compare_exchange_weak(registry, new_registry,
                                           std::memory_order_relaxed)) {
         span_set[registry.next_slot] = span;
