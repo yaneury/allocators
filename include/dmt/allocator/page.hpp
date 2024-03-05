@@ -60,7 +60,7 @@ public:
     if (p == nullptr)
       return cpp::fail(Error::InvalidInput);
 
-    auto maybe_span = FindSpan(p);
+    auto maybe_span = FindSpan(registry_.load(std::memory_order_relaxed), p);
     if (!maybe_span.has_value())
       return cpp::fail(Error::InvalidInput);
 
@@ -68,7 +68,7 @@ public:
 
     assert(span.address == reinterpret_cast<std::uint64_t>(p));
     auto va_range =
-        internal::VirtualAddressRange{.base = p, .pages = span.count};
+        internal::VirtualAddressRange(/*base=*/p, /*pages=*/span.count);
 
     if (auto result = internal::ReturnPages(va_range); result.has_error())
       return cpp::fail(Error::Internal);
@@ -99,34 +99,38 @@ private:
     Full = 3
   };
 
-  struct Registry {
+  // Registry must be aligned on a double-word boundary to ensure it works with
+  // double-word atomic instructions, hence: alignas(16).
+  struct alignas(16) Registry {
     std::uint64_t span_set_address : 48;
-    std::uint64_t next_registry : 48;
     std::uint64_t next_slot : 12;
+    std::uint64_t next_registry : 48;
     std::uint64_t state : 2;
     std::uint64_t _padding : 18;
-  };
 
-  // static_assert(sizeof(Registry) == sizeof(std::uintptr_t) * 2, "Registry is
-  // not size of double word");
+    // Pack together to ensure sizeof(Registry) is 16 bytes.
+  } __attribute__((packed));
+
+  static_assert(sizeof(Registry) == sizeof(std::uintptr_t) * 2,
+                "Registry is not size of double word");
 
   Result<void> RegisterSpan(Span span) {
     while (true) {
       auto registry = registry_.load(std::memory_order_relaxed);
 
-      if (registry.state == State::Inactive) {
+      if (registry.state == internal::to_underlying(State::Inactive)) {
         // Initialize registry
         continue;
       }
 
       if (registry.next_slot == kRegistrySize) {
         auto new_registry = registry;
-        new_registry.state = State::Full;
+        new_registry.state = internal::to_underlying(State::Full);
         registry_.compare_exchange_weak(registry, new_registry);
         continue;
       }
 
-      if (registry.state == State::Full) {
+      if (registry.state == internal::to_underlying(State::Full)) {
         // Add new registry
         continue;
       }

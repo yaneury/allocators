@@ -8,8 +8,7 @@ using namespace dmt::allocator;
 
 TEST_CASE("Page allocator", "[allocator][Page]") {
   static constexpr std::size_t kPageSize = 4096;
-  static constexpr std::size_t kMaxPages =
-      Page<>::kDefaultMaxSize / kPageSize - 1;
+  static constexpr std::size_t kMaxPages = 1000;
 
   // Use default allocator parameters to see upper bound of space.
   using AllocatorUnderTest = Page<CountT<kMaxPages>>;

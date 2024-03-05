@@ -4,6 +4,16 @@ set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
+# gcc does not compile double-word atomic operations into the appropriate
+# assembly instruction by default. This flag is added to support that operation.
+# So far, the Registry struct used by the Page allocator depends on the
+# availability of double-word atomic instructions. Though more classes may end
+# up needing it as well. Relatedly, we need to link against libatomic to ensure
+# we get the implementation of these atomic operations. Reference:
+# https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-mcx16
+add_compile_options(-mcx16)
+set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
+
 project(
   dmt
   VERSION 0.0.1

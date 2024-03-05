@@ -13,7 +13,9 @@
       "cacheVariables": {
         "DMT_BUILD_TESTS": "ON",
         "DMT_BUILD_SANDBOX": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
       }
     },
     {

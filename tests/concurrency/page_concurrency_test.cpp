@@ -14,12 +14,13 @@ using AllocatorUnderTest = Page<>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {
+  static constexpr std::size_t kMaxPages = 1000;
   static constexpr std::size_t kMaximumOps = 100;
   static constexpr std::size_t kNumThreads = 64;
   static_assert(kNumThreads % 2 == 0, "number of threads must even");
 
   AllocatorUnderTest allocator;
-  atomic_queue::AtomicQueue<std::byte*, AllocatorUnderTest::kCount> allocations;
+  atomic_queue::AtomicQueue<std::byte*, kMaxPages> allocations;
   // Mutex used for calling Catch2's APIs
   std::mutex catch_mutex;
 
