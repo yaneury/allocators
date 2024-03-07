@@ -6,9 +6,9 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include "dmt/allocator/page.hpp"
+#include "cppalloc/page.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using AllocatorUnderTest = Page<>;
 

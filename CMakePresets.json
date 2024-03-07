@@ -11,8 +11,8 @@
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "DMT_BUILD_TESTS": "ON",
-        "DMT_BUILD_SANDBOX": "ON",
+        "CPPALLOC_BUILD_TESTS": "ON",
+        "CPPALLOC_BUILD_SANDBOX": "ON",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
       }
     },
@@ -21,7 +21,7 @@
       "inherits": "configure-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "DMT_DEBUG": "ON"
+        "CPPALLOC_DEBUG": "ON"
       }
     },
     {

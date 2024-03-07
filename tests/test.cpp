@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 
-#if DMT_DEBUG
+#if CPPALLOC_DEBUG
 #include <memory>
 
 #include <catch2/reporters/catch_reporter_event_listener.hpp>

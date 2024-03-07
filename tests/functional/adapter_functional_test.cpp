@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "dmt/allocator/adapter.hpp"
+#include "cppalloc/adapter.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using T = long;
 

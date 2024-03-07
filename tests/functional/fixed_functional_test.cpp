@@ -1,12 +1,12 @@
 #include "catch2/catch_all.hpp"
 #include <cstdint>
 
-#include "dmt/allocator/fixed.hpp"
+#include "cppalloc/fixed.hpp"
 #include <iterator>
 
 #include "../util.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using T = long;
 static constexpr std::size_t SizeOfT = sizeof(T);

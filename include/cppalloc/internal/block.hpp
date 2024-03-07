@@ -21,7 +21,7 @@
 #include "failure.hpp"
 #include "platform.hpp"
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 // A BlockHeader contains the necessary metadata used to track
 // a block of memory. The block is the bytes starting from
@@ -244,4 +244,4 @@ inline Failable<void> CoalesceBlock(BlockHeader* block) {
   return {};
 }
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal

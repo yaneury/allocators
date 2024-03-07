@@ -4,11 +4,11 @@
 #include <thread>
 #include <vector>
 
-#include "dmt/allocator/bump.hpp"
+#include "cppalloc/bump.hpp"
 
 #include "../util.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using AllocatorUnderTest = Bump<>;
 

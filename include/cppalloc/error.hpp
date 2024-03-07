@@ -6,7 +6,7 @@
 
 #include <result.hpp>
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // Errors encountered during allocation or release requests on the allocators
 // supported by this library.
@@ -37,4 +37,4 @@ inline std::string_view ToString(Error error) {
 
 template <class T> using Result = cpp::result<T, Error>;
 
-} // namespace dmt::allocator
+} // namespace cppalloc

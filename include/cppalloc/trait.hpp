@@ -9,7 +9,7 @@
 #include <concepts>
 #endif
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // A parameter used for making an allocation request.
 struct Layout {
@@ -49,4 +49,4 @@ concept BlockAllocator = requires(T allocator, const T const_allocator,
 
 #endif
 
-} // namespace dmt::allocator
+} // namespace cppalloc

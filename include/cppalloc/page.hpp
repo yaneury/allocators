@@ -12,7 +12,7 @@
 #include "parameters.hpp"
 #include "trait.hpp"
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // Coarse-grained allocator that allocates multiples of system page size
 // on request. This is used internally by other allocators in this library
@@ -191,4 +191,4 @@ private:
   std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
 };
 
-} // namespace dmt::allocator
+} // namespace cppalloc

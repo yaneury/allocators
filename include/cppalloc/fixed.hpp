@@ -8,7 +8,7 @@
 #include "parameters.hpp"
 #include "trait.hpp"
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // An allocator that "allocates" bytes on a fixed buffer (i.e. array of bytes).
 // The use case for this is to allow pre-allocating chunks of memory and using
@@ -20,7 +20,7 @@ template <class... Args> class Fixed {
 public:
   // Size of the memory block.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
+      ntp::optional<SizeT<CPPALLOC_ALLOCATOR_SIZE>, Args...>::value;
 
   using Buffer = std::array<std::byte, kSize>;
 
@@ -64,4 +64,4 @@ private:
   std::size_t end_ = 0;
 };
 
-} // namespace dmt::allocator
+} // namespace cppalloc

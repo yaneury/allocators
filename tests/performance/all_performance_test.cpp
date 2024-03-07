@@ -2,13 +2,13 @@
 
 #include "catch2/catch_all.hpp"
 
-#include "dmt/allocator/bump.hpp"
-#include "dmt/allocator/fixed.hpp"
-#include "dmt/allocator/freelist.hpp"
+#include "cppalloc/bump.hpp"
+#include "cppalloc/fixed.hpp"
+#include "cppalloc/freelist.hpp"
 
 #include "../util.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 template <class... Allocator> struct AllocatorPack {};
 

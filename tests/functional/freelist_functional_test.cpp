@@ -4,13 +4,13 @@
 #include "catch2/catch_all.hpp"
 #include "magic_enum.hpp"
 
-#include "dmt/allocator/adapter.hpp"
-#include "dmt/allocator/freelist.hpp"
+#include "cppalloc/adapter.hpp"
+#include "cppalloc/freelist.hpp"
 
 #include "../util.hpp"
-#include "dmt/allocator/fixed.hpp"
+#include "cppalloc/fixed.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using T = long;
 static constexpr std::size_t SizeOfT = sizeof(T);

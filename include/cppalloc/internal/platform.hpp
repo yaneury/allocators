@@ -7,7 +7,7 @@
 #include "failure.hpp"
 #include "util.hpp"
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 // Gets the page size (in bytes) for the current platform.
 constexpr inline std::size_t GetPageSize();
@@ -36,9 +36,9 @@ Failable<VirtualAddressRange> FetchPages(std::size_t count);
 
 Failable<void> ReturnPages(VirtualAddressRange allocation);
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 // Apple Silicon uses 16KB page sizes. Every other supported platform uses 4KB.
 #if defined(__APPLE__) && defined(__MACH__) && defined(__arm__)
@@ -49,7 +49,7 @@ constexpr inline std::size_t GetPageSize() { return 1 << 14; }
 constexpr inline std::size_t GetPageSize() { return 1 << 12; }
 #endif
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal
 
 // TODO: Add Windows support
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -57,7 +57,7 @@ constexpr inline std::size_t GetPageSize() { return 1 << 12; }
 #include <sys/mman.h>
 #include <unistd.h>
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 inline Failable<VirtualAddressRange> FetchPages(std::size_t count) {
   if (count == 0)
@@ -83,6 +83,6 @@ inline Failable<void> ReturnPages(VirtualAddressRange allocation) {
   return {};
 }
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal
 
 #endif

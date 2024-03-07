@@ -8,7 +8,7 @@
 #include "parameters.hpp"
 #include "trait.hpp"
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // Coarse-grained allocator that allocates fixed block sizes on request.
 // This is used internally by other allocators in this library to fetch
@@ -25,10 +25,11 @@ public:
   // requirements.
   //
   // This field is optional. If not provided, will default to
-  // |DMT_ALLOCATOR_ALIGNMENT|. If provided, it must greater than
-  // |DMT_ALLOCATOR_ALIGNMENT| and be a power of two.
-  static constexpr std::size_t kAlignment = std::max(
-      {DMT_ALLOCATOR_ALIGNMENT, ntp::optional<AlignmentT<0>, Args...>::value});
+  // |CPPALLOC_ALLOCATOR_ALIGNMENT|. If provided, it must greater than
+  // |CPPALLOC_ALLOCATOR_ALIGNMENT| and be a power of two.
+  static constexpr std::size_t kAlignment =
+      std::max({CPPALLOC_ALLOCATOR_ALIGNMENT,
+                ntp::optional<AlignmentT<0>, Args...>::value});
 
   // Size of the blocks. This allocator doesn't support variable-sized blocks.
   // All blocks allocated are of the same size. N.b. that the size here will
@@ -36,9 +37,10 @@ public:
   // because supplemental memory is needed for block headers and to ensure
   // alignment as specified with |kAlignment|.
   //
-  // This field is optional. If not provided, will default |DMT_ALLOCATOR_SIZE|.
+  // This field is optional. If not provided, will default
+  // |CPPALLOC_ALLOCATOR_SIZE|.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<DMT_ALLOCATOR_SIZE>, Args...>::value;
+      ntp::optional<SizeT<CPPALLOC_ALLOCATOR_SIZE>, Args...>::value;
 
   // Sizing limits placed on |kSize|.
   // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
@@ -46,7 +48,7 @@ public:
   // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
   // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<DMT_ALLOCATOR_LIMIT>, Args...>::value ==
+      ntp::optional<LimitT<CPPALLOC_ALLOCATOR_LIMIT>, Args...>::value ==
       BlocksMust::HaveAtLeastSizeBytes;
 
   // Policy employed when block has no more space for pending request.
@@ -57,7 +59,7 @@ public:
   // size. If a smaller size request comes along, it may be possible that the
   // block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<DMT_ALLOCATOR_GROW>, Args...>::value ==
+      ntp::optional<GrowT<CPPALLOC_ALLOCATOR_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
   struct Options {
@@ -140,4 +142,4 @@ protected:
   Options options_;
 };
 
-} // namespace dmt::allocator
+} // namespace cppalloc
