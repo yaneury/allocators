@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
-#include <ranges>
 #include <vector>
 
 #include "catch2/catch_test_macros.hpp"
@@ -51,10 +50,10 @@ class TestFreeList {
 public:
   static TestFreeList FromBlockSizes(std::vector<std::size_t> block_sizes) {
     std::size_t total_size = 0;
-    std::ranges::for_each(block_sizes, [&total_size](std::size_t& sz) {
-      sz += GetBlockHeaderSize();
-      total_size += sz;
-    });
+    for (auto& bz : block_sizes) {
+      bz += GetBlockHeaderSize();
+      total_size += bz;
+    }
 
     auto buffer = std::make_unique<std::byte[]>(total_size);
 
