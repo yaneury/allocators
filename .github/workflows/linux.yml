@@ -1,6 +1,6 @@
 name: Linux tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
@@ -26,7 +26,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
           -DCMAKE_CXX_STANDARD=${{matrix.std}}
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
-          -DDMT_BUILD_TESTS=ON
+          -DCPPALLOC_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}}

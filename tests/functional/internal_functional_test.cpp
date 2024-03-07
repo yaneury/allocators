@@ -5,12 +5,12 @@
 #include "catch2/catch_all.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-#include "dmt/allocator/internal/block.hpp"
-#include "dmt/allocator/internal/util.hpp"
+#include "cppalloc/internal/block.hpp"
+#include "cppalloc/internal/util.hpp"
 
 #include "../util.hpp"
 
-using namespace dmt::allocator::internal;
+using namespace cppalloc::internal;
 
 TEST_CASE("IsPowerOfTwo", "[internal/util]") {
   size_t kMaxExp = 16;

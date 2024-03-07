@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef DMT_DEBUG
+#ifdef CPPALLOC_DEBUG
 
 #include <plog/Log.h>
 
@@ -13,7 +13,7 @@
 
 #include <cstddef>
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 static constexpr size_t kMinimumAlignment = sizeof(void*);
 
@@ -56,4 +56,4 @@ template <class T> T* PtrSubtract(T* ptr, std::size_t offset) {
   return reinterpret_cast<T*>(addr - offset);
 }
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal

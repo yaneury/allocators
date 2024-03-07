@@ -8,11 +8,11 @@
 #include "catch2/catch_test_macros.hpp"
 #include "magic_enum.hpp"
 
-#include "dmt/allocator/error.hpp"
-#include "dmt/allocator/internal/block.hpp"
+#include "cppalloc/error.hpp"
+#include "cppalloc/internal/block.hpp"
 
-using namespace dmt::allocator;
-using namespace dmt::allocator::internal;
+using namespace cppalloc;
+using namespace cppalloc::internal;
 
 template <class T> inline T* FromBytePtr(std::byte* p) {
   return reinterpret_cast<T*>(p);

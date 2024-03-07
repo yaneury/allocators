@@ -9,7 +9,7 @@
 
 #include "trait.hpp"
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // Size (in bytes) for allocator's blocks. Usually, an allocator uses fixed-size
 // blocks to allocate memory. Within a block, several objects of varying length
@@ -78,52 +78,52 @@ struct ObjectAllocatorT : ntp::integral_type<Allocator> {};
 template <BlockAllocator Allocator>
 struct BlockAllocatorT : ntp::integral_type<Allocator> {};
 
-} // namespace dmt::allocator
+} // namespace cppalloc
 
 // Macro-based defaults
 
-#ifndef DMT_ALLOCATOR_ALIGNMENT
-#define DMT_ALLOCATOR_ALIGNMENT sizeof(void*)
+#ifndef CPPALLOC_ALLOCATOR_ALIGNMENT
+#define CPPALLOC_ALLOCATOR_ALIGNMENT sizeof(void*)
 #endif
 
-#ifndef DMT_ALLOCATOR_SIZE
-#define DMT_ALLOCATOR_SIZE 4096ul
+#ifndef CPPALLOC_ALLOCATOR_SIZE
+#define CPPALLOC_ALLOCATOR_SIZE 4096ul
 #endif
 
-#ifndef DMT_ALLOCATOR_PAGE_SIZE
-#define DMT_ALLOCATOR_PAGE_SIZE 4096ul
+#ifndef CPPALLOC_ALLOCATOR_PAGE_SIZE
+#define CPPALLOC_ALLOCATOR_PAGE_SIZE 4096ul
 #endif
 
-#ifndef DMT_ALLOCATOR_BLOCKS_MUST
-#define DMT_ALLOCATOR_BLOCKS_MUST 0
+#ifndef CPPALLOC_ALLOCATOR_BLOCKS_MUST
+#define CPPALLOC_ALLOCATOR_BLOCKS_MUST 0
 #endif
 
-#if DMT_ALLOCATOR_BLOCKS_MUST == 0
-#define DMT_ALLOCATOR_LIMIT BlocksMust::HaveAtLeastSizeBytes
-#elif DMT_ALLOCATOR_BLOCKS_MUST == 1
-#define DMT_ALLOCATOR_LIMIT BlocksMust::NoMoreThanSizeBytes
+#if CPPALLOC_ALLOCATOR_BLOCKS_MUST == 0
+#define CPPALLOC_ALLOCATOR_LIMIT BlocksMust::HaveAtLeastSizeBytes
+#elif CPPALLOC_ALLOCATOR_BLOCKS_MUST == 1
+#define CPPALLOC_ALLOCATOR_LIMIT BlocksMust::NoMoreThanSizeBytes
 #else
 #error "Only values 0 or 1 can be provided"
 #endif
 
-#ifndef DMT_ALLOCATOR_WHEN_FULL
-#define DMT_ALLOCATOR_WHEN_FULL 0
+#ifndef CPPALLOC_ALLOCATOR_WHEN_FULL
+#define CPPALLOC_ALLOCATOR_WHEN_FULL 0
 #endif
 
-#if DMT_ALLOCATOR_WHEN_FULL == 0
-#define DMT_ALLOCATOR_GROW WhenFull::GrowStorage
-#elif DMT_ALLOCATOR_WHEN_FULL == 1
-#define DMT_ALLOCATOR_GROW WhenFull::ReturnNull
+#if CPPALLOC_ALLOCATOR_WHEN_FULL == 0
+#define CPPALLOC_ALLOCATOR_GROW WhenFull::GrowStorage
+#elif CPPALLOC_ALLOCATOR_WHEN_FULL == 1
+#define CPPALLOC_ALLOCATOR_GROW WhenFull::ReturnNull
 #else
 #error "Only values 0 or 1 can be provided"
 #endif
 
-#if DMT_ALLOCATOR_FIND_BY == 0
-#define DMT_ALLOCATOR_SEARCH FindBy::FirstFit
-#elif DMT_ALLOCATOR_FIND_BY == 1
-#define DMT_ALLOCATOR_SEARCH FindBy::BestFit
-#elif DMT_ALLOCATOR_FIND_BY == 2
-#define DMT_ALLOCATOR_SEARCH FindBy::WorstFit
+#if CPPALLOC_ALLOCATOR_FIND_BY == 0
+#define CPPALLOC_ALLOCATOR_SEARCH FindBy::FirstFit
+#elif CPPALLOC_ALLOCATOR_FIND_BY == 1
+#define CPPALLOC_ALLOCATOR_SEARCH FindBy::BestFit
+#elif CPPALLOC_ALLOCATOR_FIND_BY == 2
+#define CPPALLOC_ALLOCATOR_SEARCH FindBy::WorstFit
 #else
 #error "Only values 0, 1, or 2 can be provided"
 #endif

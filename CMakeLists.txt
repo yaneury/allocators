@@ -5,7 +5,7 @@ set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 project(
-  dmt
+  cppalloc
   VERSION 0.0.1
   LANGUAGES CXX)
 
@@ -52,25 +52,22 @@ FetchContent_MakeAvailable(magic_enum)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE magic_enum)
 
-# Enable incomplete features for Ranges support in clang@15
-add_definitions(-DLIBCXX_ENABLE_INCOMPLETE_FEATURES=ON)
+option(CPPALLOC_BUILD_TESTS "Set to ON to build tests" OFF)
+option(CPPALLOC_BUILD_SANDBOX "Set to ON to build sandbox" OFF)
+option(CPPALLOC_DEBUG "Set to ON to enable debug messages" OFF)
 
-option(DMT_BUILD_TESTS "Set to ON to build tests" OFF)
-option(DMT_BUILD_SANDBOX "Set to ON to build sandbox" OFF)
-option(DMT_DEBUG "Set to ON to enable debug messages" OFF)
-
-if(DMT_BUILD_TESTS)
+if(CPPALLOC_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
 
-if(DMT_BUILD_SANDBOX)
+if(CPPALLOC_BUILD_SANDBOX)
   add_subdirectory(sandbox)
 endif()
 
-if(DMT_DEBUG)
-  # Enable logging if building with -D DMT_DEBUG
-  target_compile_definitions(dmt INTERFACE -DDMT_DEBUG)
+if(CPPALLOC_DEBUG)
+  # Enable logging if building with -D CPPALLOC_DEBUG
+  target_compile_definitions(${PROJECT_NAME} INTERFACE -DCPPALLOC_DEBUG)
 
   FetchContent_Declare(
     plog

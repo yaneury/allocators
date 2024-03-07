@@ -3,11 +3,11 @@
 #include <ranges>
 #include <vector>
 
-#include "dmt/allocator/bump.hpp"
+#include "cppalloc/bump.hpp"
 
 #include "../util.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 using T = long;
 static constexpr std::size_t SizeOfT = sizeof(T);

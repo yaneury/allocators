@@ -6,7 +6,7 @@
 
 #include <result.hpp>
 
-namespace dmt::allocator::internal {
+namespace cppalloc::internal {
 
 // Failures encountered during internal operations.
 enum class Failure {
@@ -24,4 +24,4 @@ inline std::string_view ToString(Failure failure) {
 
 template <class T> using Failable = cpp::result<T, Failure>;
 
-} // namespace dmt::allocator::internal
+} // namespace cppalloc::internal

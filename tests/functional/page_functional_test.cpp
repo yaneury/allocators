@@ -2,9 +2,9 @@
 
 #include <array>
 
-#include "dmt/allocator/page.hpp"
+#include "cppalloc/page.hpp"
 
-using namespace dmt::allocator;
+using namespace cppalloc;
 
 TEST_CASE("Page allocator", "[allocator][Page]") {
   static constexpr std::size_t kPageSize = 4096;

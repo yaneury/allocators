@@ -10,7 +10,7 @@
 #include "parameters.hpp"
 #include "trait.hpp"
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
@@ -42,7 +42,7 @@ public:
   // size. If a request with a smaller size comes along, it may be possible that
   // the block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<DMT_ALLOCATOR_GROW>, Args...>::value ==
+      ntp::optional<GrowT<CPPALLOC_ALLOCATOR_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
   struct Options {
@@ -202,4 +202,4 @@ private:
   std::array<std::byte*, 1 << kTotalEntryInBits> block_table_ = {0};
 };
 
-} // namespace dmt::allocator
+} // namespace cppalloc

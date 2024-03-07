@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(dmt-tests LANGUAGES CXX)
+project(cppalloc-tests LANGUAGES CXX)
 
 add_executable(
   ${PROJECT_NAME}
@@ -14,8 +14,8 @@ add_executable(
   functional/fixed_functional_test.cpp
   functional/page_functional_test.cpp)
 
-# Link to dmt library
-target_link_libraries(${PROJECT_NAME} PRIVATE dmt)
+# Link to cppalloc library
+target_link_libraries(${PROJECT_NAME} PRIVATE cppalloc)
 
 # Fetch and install Catch2
 include(FetchContent)
@@ -47,6 +47,6 @@ add_test(NAME ${PROJECT_NAME}
          COMMAND $<TARGET_FILE:${PROJECT_NAME}> --skip-benchmarks
                  --allow-running-no-tests)
 
-if(DMT_DEBUG)
+if(CPPALLOC_DEBUG)
   add_definitions(-DDEBUG)
 endif()

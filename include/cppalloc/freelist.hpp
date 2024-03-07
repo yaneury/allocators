@@ -13,7 +13,7 @@
 
 #include <iostream>
 
-namespace dmt::allocator {
+namespace cppalloc {
 
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "parameters.hpp".
@@ -27,7 +27,7 @@ public:
   using Allocator = typename Parent::Allocator;
 
   static constexpr FindBy kSearchStrategy =
-      ntp::optional<SearchT<DMT_ALLOCATOR_SEARCH>, Args...>::value;
+      ntp::optional<SearchT<CPPALLOC_ALLOCATOR_SEARCH>, Args...>::value;
 
   using BlockOptions = typename Parent::Options;
 
@@ -214,4 +214,4 @@ private:
   internal::BlockHeader* free_list_ = nullptr;
 };
 
-} // namespace dmt::allocator
+} // namespace cppalloc
