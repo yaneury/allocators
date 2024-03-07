@@ -39,6 +39,17 @@ Failable<VirtualAddressRange> FetchPages(std::size_t count);
 
 Failable<void> ReturnPages(VirtualAddressRange allocation);
 
+#if !defined(__SIZEOF_INT128__)
+#error "128-bit int not defined in this platform"
+#endif
+
+#define AsDWordPtr(x) reinterpret_cast<__uint128_t*>(&x)
+
+inline bool cmpxchg(__uint128_t* value, __uint128_t expected,
+                    __uint128_t newval) {
+  return __sync_bool_compare_and_swap(value, expected, newval);
+}
+
 } // namespace dmt::allocator::internal
 
 namespace dmt::allocator::internal {

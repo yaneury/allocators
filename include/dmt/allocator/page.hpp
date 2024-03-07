@@ -124,50 +124,51 @@ public:
 
   Result<void> RegisterSpan(Span span) {
     while (true) {
-      auto registry = registry_.load(std::memory_order_relaxed);
+      auto old_registry = registry_.load(std::memory_order_relaxed);
 
-      if (registry.state == internal::to_underlying(State::Inactive)) {
-        if (auto result = CreateNewRegistry(registry); result.has_error())
+      if (old_registry.state == internal::to_underlying(State::Inactive)) {
+        if (auto result = CreateNewRegistry(old_registry); result.has_error())
           return cpp::fail(result.error());
 
         continue;
       }
 
-      if (registry.state == internal::to_underlying(State::Full)) {
-        if (auto result = CreateNewRegistry(registry); result.has_error())
+      if (old_registry.state == internal::to_underlying(State::Full)) {
+        if (auto result = CreateNewRegistry(old_registry); result.has_error())
           return cpp::fail(result.error());
 
         continue;
       }
 
-      Span* span_set = reinterpret_cast<Span*>(registry.self_address);
-      auto new_registry = registry;
+      Span* span_set = reinterpret_cast<Span*>(old_registry.self_address);
+      auto new_registry = old_registry;
       new_registry.next_slot += 1;
       new_registry.state = new_registry.next_slot == kSpanSetEnd
                                ? internal::to_underlying(State::Full)
                                : internal::to_underlying(State::Partial);
-      if (registry_.compare_exchange_weak(registry, new_registry,
-                                          std::memory_order_relaxed)) {
-        span_set[registry.next_slot] = span;
+      if (internal::cmpxchg(AsDWordPtr(registry_), *AsDWordPtr(old_registry),
+                            *AsDWordPtr(new_registry))) {
+        span_set[old_registry.next_slot] = span;
         return {};
       }
     }
   }
 
-  Result<void> CreateNewRegistry(Registry registry) {
+  Result<void> CreateNewRegistry(Registry old_registry) {
     auto va_range_or = internal::FetchPages(kRegistrySize);
     if (va_range_or.has_error())
       return cpp::fail(Error::Internal);
 
     auto va_range = va_range_or.value();
-    Registry new_registry = registry;
+    Registry new_registry = old_registry;
     new_registry.state = internal::to_underlying(State::Empty);
-    if (registry.state != internal::to_underlying(State::Inactive))
-      new_registry.next_registry = registry.self_address;
+    if (old_registry.state != internal::to_underlying(State::Inactive))
+      new_registry.next_registry = old_registry.self_address;
     new_registry.next_slot = sizeof(Registry) / sizeof(Span);
     new_registry.self_address = reinterpret_cast<std::uint64_t>(va_range.base);
 
-    if (!registry_.compare_exchange_weak(registry, new_registry)) {
+    if (!internal::cmpxchg(AsDWordPtr(registry_), *AsDWordPtr(old_registry),
+                           *AsDWordPtr(new_registry))) {
       if (auto result = internal::ReturnPages(va_range); result.has_error()) {
         return cpp::fail(Error::Internal);
       }
