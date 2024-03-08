@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.23.5)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED ON)
@@ -65,9 +65,8 @@ if(CPPALLOC_BUILD_SANDBOX)
   add_subdirectory(sandbox)
 endif()
 
-if(CPPALLOC_DEBUG)
-  # Enable logging if building with -D CPPALLOC_DEBUG
-  target_compile_definitions(${PROJECT_NAME} INTERFACE -DCPPALLOC_DEBUG)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_compile_definitions(${PROJECT_NAME} INTERFACE -DDEBUG)
 
   FetchContent_Declare(
     plog
@@ -77,5 +76,4 @@ if(CPPALLOC_DEBUG)
   FetchContent_MakeAvailable(plog)
 
   target_link_libraries(${PROJECT_NAME} INTERFACE plog)
-
 endif()
