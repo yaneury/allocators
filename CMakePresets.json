@@ -33,22 +33,37 @@
   ],
   "buildPresets": [
     {
-      "name": "build-base",
+      "name": "debug",
       "configurePreset": "debug",
       "nativeToolOptions": [
         "--no-print-directory"
-      ]
+      ],
+      "verbose": true
     },
     {
-      "name": "debug",
-      "inherits": "build-base",
+      "name": "release",
+      "configurePreset": "release",
+      "nativeToolOptions": [
+        "--no-print-directory"
+      ],
       "verbose": true
     }
   ],
   "testPresets": [
     {
-      "name": "test",
+      "name": "test-debug",
       "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    },
+    {
+      "name": "test-release",
+      "configurePreset": "release",
       "output": {
         "outputOnFailure": true
       },
