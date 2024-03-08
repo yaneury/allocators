@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
-
-project(cppalloc-tests LANGUAGES CXX)
+project(tests LANGUAGES CXX)
 
 add_executable(
   ${PROJECT_NAME}
@@ -46,7 +44,3 @@ enable_testing()
 add_test(NAME ${PROJECT_NAME}
          COMMAND $<TARGET_FILE:${PROJECT_NAME}> --skip-benchmarks
                  --allow-running-no-tests)
-
-if(CPPALLOC_DEBUG)
-  add_definitions(-DDEBUG)
-endif()
