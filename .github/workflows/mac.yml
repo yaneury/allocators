@@ -1,4 +1,4 @@
-name: Mac tests
+name: macOS
 
 on: [pull_request]
 

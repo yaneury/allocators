@@ -28,3 +28,19 @@ Lastly, tests can be run likeso:
 ```sh
 ctest --preset test
 ```
+
+## Commits
+Commits should be formatted following the [Conventional Commits][conventional-commits] specification.
+The project loosely follows the spec, only using the `<type>: <description` in the commit message header.
+
+Though there's no hard rule as to what types are allowed, the ones generally used are:
+
+1. `fix`: a commit of the type fix patches a bug in your codebase.
+2. `feat`: a commit of the type feat introduces a new feature to the codebase.
+3. `test`: changes strictly to tests with no accompanying changes to API.
+4. `build`: changes to build (e.g. CMakeLists.txt) or Github Workflows config. 
+5. `chore`: cleanup or refactoring that don't modify public API.
+6. `misc`: anything else.
+
+[conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/
+
