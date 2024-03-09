@@ -1,4 +1,4 @@
-name: Linux tests
+name: Ubuntu
 
 on: [pull_request]
 
