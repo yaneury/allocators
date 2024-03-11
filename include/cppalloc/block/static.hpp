@@ -2,8 +2,8 @@
 
 #include <template/parameters.hpp>
 
-#include "error.hpp"
-#include "parameters.hpp"
+#include <cppalloc/error.hpp>
+#include <cppalloc/parameters.hpp>
 
 namespace cppalloc {
 

@@ -2,10 +2,9 @@
 
 #include <cassert>
 #include <cstdlib>
-#include <optional>
 
-#include "failure.hpp"
-#include "util.hpp"
+#include <cppalloc/internal/failure.hpp>
+#include <cppalloc/internal/util.hpp>
 
 namespace cppalloc::internal {
 

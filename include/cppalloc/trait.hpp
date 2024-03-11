@@ -2,8 +2,8 @@
 
 #include <cstddef>
 
-#include "error.hpp"
-#include "internal/util.hpp"
+#include <cppalloc/error.hpp>
+#include <cppalloc/internal/util.hpp>
 
 #if __cplusplus >= 202002L
 #include <concepts>

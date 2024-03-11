@@ -1,17 +1,14 @@
 #pragma once
 
-#include <cassert>
 #include <cstddef>
 
 #include <template/optional.hpp>
 
-#include "block.hpp"
-#include "error.hpp"
-#include "internal/block.hpp"
-#include "internal/util.hpp"
-#include "trait.hpp"
-
-#include <iostream>
+#include <cppalloc/error.hpp>
+#include <cppalloc/internal/block.hpp>
+#include <cppalloc/internal/util.hpp>
+#include <cppalloc/object/block.hpp>
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 
@@ -136,11 +133,8 @@ public:
     if (ptr == nullptr)
       return cpp::fail(Error::InvalidInput);
 
-    std::cout << "Ptr: " << ptr << std::endl;
     std::byte* low = reinterpret_cast<std::byte*>(block_);
     std::byte* high = reinterpret_cast<std::byte*>(block_) + block_->size;
-    std::cout << "Low: " << low << std::endl;
-    std::cout << "High: " << high << std::endl;
     if (ptr < low || ptr > high)
       return cpp::fail(Error::InvalidInput);
 

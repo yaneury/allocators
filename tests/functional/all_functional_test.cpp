@@ -7,11 +7,11 @@
 
 #include "catch2/catch_all.hpp"
 
-#include "cppalloc/bump.hpp"
-#include "cppalloc/freelist.hpp"
-#include "cppalloc/internal/util.hpp"
-#include "cppalloc/page.hpp"
-#include "cppalloc/static.hpp"
+#include <cppalloc/block/page.hpp>
+#include <cppalloc/block/static.hpp>
+#include <cppalloc/internal/util.hpp>
+#include <cppalloc/object/bump.hpp>
+#include <cppalloc/object/freelist.hpp>
 
 #include "../util.hpp"
 

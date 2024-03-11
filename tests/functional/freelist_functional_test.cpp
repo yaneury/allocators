@@ -4,11 +4,11 @@
 #include "catch2/catch_all.hpp"
 #include "magic_enum.hpp"
 
-#include "cppalloc/adapter.hpp"
-#include "cppalloc/freelist.hpp"
+#include <cppalloc/adapter/adapter.hpp>
+#include <cppalloc/object/freelist.hpp>
 
 #include "../util.hpp"
-#include "cppalloc/static.hpp"
+#include <cppalloc/block/static.hpp>
 
 using namespace cppalloc;
 

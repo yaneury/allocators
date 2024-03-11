@@ -3,7 +3,7 @@
 #include <ranges>
 #include <vector>
 
-#include "cppalloc/bump.hpp"
+#include <cppalloc/block/bump.hpp>
 
 #include "../util.hpp"
 

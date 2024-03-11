@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "cppalloc/adapter.hpp"
+#include <cppalloc/adapter/adapter.hpp>
 
 using namespace cppalloc;
 
