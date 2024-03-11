@@ -23,13 +23,13 @@ static constexpr std::size_t N = kBlockSize / kChunkSize;
 template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
-using FixedFreeList =
-    strategy::FreeList<provider::LockFreePage<>, GrowT<WhenFull::ReturnNull>,
-                       SizeT<kBlockSize>, Args...>;
+using FixedFreeList = strategy::FreeList<provider::LockFreePage<>, Args...>;
 
-using FixedFreeListAllocators =
-    AllocatorPack<FixedFreeList<LimitT<BlocksMust::HaveAtLeastSizeBytes>>,
-                  FixedFreeList<LimitT<BlocksMust::NoMoreThanSizeBytes>>>;
+using FixedFreeListAllocators = AllocatorPack<
+    FixedFreeList<strategy::FreeListParams::LimitT<
+        strategy::FreeListParams::BlocksMust::HaveAtLeastSizeBytes>>,
+    FixedFreeList<strategy::FreeListParams::LimitT<
+        strategy::FreeListParams::BlocksMust::NoMoreThanSizeBytes>>>;
 
 TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
                         "[allocator][FreeList][fixed]",

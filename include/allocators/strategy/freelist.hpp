@@ -6,64 +6,72 @@
 #include <template/optional.hpp>
 
 #include <allocators/common/error.hpp>
-#include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
 
 namespace allocators::strategy {
 
+struct FreeListParams {
+  // Size (in bytes) for allocator's blocks. Usually, an allocator uses
+  // fixed-size blocks to allocate memory. Within a block, several objects of
+  // varying length can be "allocated", so long as they fit within the amount of
+  // memory already acquired. Currently, this field is used by the Bump
+  // allocator.
+  template <std::size_t Size>
+  struct SizeT : std::integral_constant<std::size_t, Size> {};
+
+  // Alignment used when making an allocation. Usually, allocators defer to the
+  // alignment of the underlying object they are allocating. The constrains for
+  // this value are that it is a power of two and greater than |sizeof(void*)|.
+  template <std::size_t Alignment>
+  struct AlignmentT : std::integral_constant<std::size_t, Alignment> {};
+
+  // Policy used to determine sizing constraint for blocks.
+  enum BlocksMust {
+    // Block must have enough space to fulfill requested size in |SizeT|
+    // parameter.
+    HaveAtLeastSizeBytes = 0,
+
+    // Block can not be larger than requested size in |SizeT| parameter.
+    NoMoreThanSizeBytes = 1,
+  };
+
+  // Policy to employ when looking for free block in free list.
+  enum FindBy {
+    // Use first block that contains the minimum sizes of bytes.
+    FirstFit = 0,
+
+    // Use the *smallest* block that contains the minimum sizes of bytes.
+    BestFit = 1,
+    //
+    // Use the *largest* block that contains the minimum sizes of bytes.
+    WorstFit = 2
+  };
+
+  template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
+
+  template <BlocksMust CM>
+  struct LimitT : std::integral_constant<BlocksMust, CM> {};
+};
+
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "common/parameters.hpp".
 template <class Provider, class... Args>
 requires ProviderTrait<Provider>
-class FreeList {
+class FreeList : public FreeListParams {
 public:
-  template <BlocksMust CM>
-  struct LimitT : std::integral_constant<BlocksMust, CM> {};
-
-  // Alignment used for the blocks requested. N.b. this is *not* the alignment
-  // for individual allocation requests, of which may have different alignment
-  // requirements.
-  //
-  // This field is optional. If not provided, will default to
-  // |ALLOCATORS_ALLOCATORS_ALIGNMENT|. If provided, it must greater than
-  // |ALLOCATORS_ALLOCATORS_ALIGNMENT| and be a power of two.
   static constexpr std::size_t kAlignment =
-      std::max({ALLOCATORS_ALLOCATORS_ALIGNMENT,
-                ntp::optional<AlignmentT<0>, Args...>::value});
+      std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
 
-  // Size of the blocks. This allocator doesn't support variable-sized blocks.
-  // All blocks allocated are of the same size. N.b. that the size here will
-  // *not* be the size of memory ultimately requested for blocks. This is so
-  // because supplemental memory is needed for block headers and to ensure
-  // alignment as specified with |kAlignment|.
-  //
-  // This field is optional. If not provided, will default
-  // |ALLOCATORS_ALLOCATORS_SIZE|.
-  static constexpr std::size_t kSize =
-      ntp::optional<SizeT<ALLOCATORS_ALLOCATORS_SIZE>, Args...>::value;
-
-  // Sizing limits placed on |kSize|.
-  // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
-  // available not including header size and alignment.
-  // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
-  // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<ALLOCATORS_ALLOCATORS_LIMIT>, Args...>::value ==
+      ntp::optional<LimitT<BlocksMust::NoMoreThanSizeBytes>, Args...>::value ==
       BlocksMust::HaveAtLeastSizeBytes;
 
-  // Policy employed when block has no more space for pending request.
-  // If |GrowStorage| is provided, then a new block will be requested;
-  // if |ReturnNull| is provided, then nullptr is returned on the allocation
-  // request. This does not mean that it's impossible to request more memory
-  // though. It only means that the block has no more space for the requested
-  // size. If a smaller size request comes along, it may be possible that the
-  // block has sufficient storage for it.
   static constexpr bool kGrowWhenFull = true;
 
   static constexpr FindBy kSearchStrategy =
-      ntp::optional<SearchT<ALLOCATORS_ALLOCATORS_SEARCH>, Args...>::value;
+      ntp::optional<SearchT<FindBy::BestFit>, Args...>::value;
 
   FreeList(Provider& provider) : provider_(provider) {}
 
@@ -172,9 +180,10 @@ private:
   // Ultimate size of the blocks after accounting for header and alignment.
   [[nodiscard]] static constexpr std::size_t GetAlignedSize() {
     return kMustContainSizeBytesInSpace
-               ? internal::AlignUp(kSize + internal::GetBlockHeaderSize(),
+               ? internal::AlignUp(Provider::GetBlockSize() +
+                                       internal::GetBlockHeaderSize(),
                                    kAlignment)
-               : internal::AlignDown(kSize, kAlignment);
+               : internal::AlignDown(Provider::GetBlockSize(), kAlignment);
   }
 
   internal::VirtualAddressRange CreateAllocation(std::byte* base) {
