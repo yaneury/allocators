@@ -25,7 +25,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
 
   auto allocate = [&]() {
     for (std::size_t i = 0; i < kMaximumOps; ++i) {
-      auto p_or = allocator.Allocate(1);
+      auto p_or = allocator.Provide(1);
       if (p_or.has_error()) {
         {
           std::scoped_lock lock(catch_mutex);
@@ -46,7 +46,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
       while (!allocations.try_pop(p))
         ;
 
-      auto result = allocator.Release(p);
+      auto result = allocator.Return(p);
       if (result.has_error()) {
         std::scoped_lock<std::mutex> lock(catch_mutex);
         INFO("[" << std::this_thread::get_id()

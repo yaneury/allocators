@@ -17,8 +17,7 @@ namespace allocators {
 template <class... Args> class Block {
 public:
   // Allocator used to request memory defaults to unconfigured Page allocator.
-  using Allocator =
-      typename ntp::type<BlockAllocatorT<Static<>>, Args...>::value;
+  using Allocator = typename ntp::type<ProviderT<Static<>>, Args...>::value;
 
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment
@@ -101,7 +100,7 @@ protected:
 
   Result<internal::BlockHeader*>
   AllocateNewBlock(internal::BlockHeader* next = nullptr) {
-    Result<std::byte*> base_or = allocator_.Allocate(GetAlignedSize());
+    Result<std::byte*> base_or = allocator_.Provide(GetAlignedSize());
 
     if (base_or.has_error())
       return cpp::fail(base_or.error());
@@ -116,7 +115,7 @@ protected:
   Result<void> ReleaseAllBlocks(internal::BlockHeader* block,
                                 internal::BlockHeader* sentinel = nullptr) {
     auto release = [&](std::byte* p) -> internal::Failable<void> {
-      auto result = allocator_.Release(p);
+      auto result = allocator_.Return(p);
       if (result.has_error()) {
         DERROR("Block release failed: " << (int)result.error());
         return cpp::fail(internal::Failure::ReleaseFailed);

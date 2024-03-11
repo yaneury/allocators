@@ -28,7 +28,7 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
     Allocator allocator;
     std::stack<std::byte*> allocations;
     for (std::size_t size : kRequestSizes) {
-      auto p_or = allocator.Allocate(size);
+      auto p_or = allocator.Find(size);
       allocations.push(GetValueOrFail<std::byte*>(p_or));
     }
 
@@ -37,7 +37,7 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
     } else {
       while (allocations.size()) {
         INFO("Top: " << allocations.top());
-        auto result = allocator.Release(allocations.top());
+        auto result = allocator.Return(allocations.top());
         INFO("Received error: " << (int)result.error());
         REQUIRE(result.has_value());
         allocations.pop();

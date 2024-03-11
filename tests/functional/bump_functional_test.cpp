@@ -31,7 +31,7 @@ TEMPLATE_LIST_TEST_CASE("Fixed Bump allocator that can fit N objects",
 
   std::array<T*, N> allocs;
   for (std::size_t i = 0; i < N; ++i)
-    allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
+    allocs[i] = GetPtrOrFail<T>(allocator.Find(SizeOfT));
 
   SECTION("All objects are neighbors to each other") {
     for (std::size_t i = 0; i < N - 1; ++i)
@@ -39,12 +39,11 @@ TEMPLATE_LIST_TEST_CASE("Fixed Bump allocator that can fit N objects",
   }
 
   SECTION("Can not allocate more objects when at capacity") {
-    REQUIRE(allocator.Allocate(SizeOfT) ==
-            cpp::fail(Error::ReachedMemoryLimit));
+    REQUIRE(allocator.Find(SizeOfT) == cpp::fail(Error::ReachedMemoryLimit));
   }
 
   SECTION("Release is not supported") {
-    REQUIRE(allocator.Release(ToBytePtr(allocs.front())) ==
+    REQUIRE(allocator.Return(ToBytePtr(allocs.front())) ==
             cpp::fail(Error::OperationNotSupported));
   }
 
@@ -53,7 +52,7 @@ TEMPLATE_LIST_TEST_CASE("Fixed Bump allocator that can fit N objects",
 
     SECTION("Allowing subsequent requests") {
       for (std::size_t i = 0; i < N; ++i)
-        allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
+        allocs[i] = GetPtrOrFail<T>(allocator.Find(SizeOfT));
     }
   }
 }
@@ -71,20 +70,20 @@ TEMPLATE_LIST_TEST_CASE(
   TestType allocator;
 
   for (std::size_t i = 0; i < N; ++i)
-    REQUIRE(allocator.Allocate(SizeOfT).has_value());
+    REQUIRE(allocator.Find(SizeOfT).has_value());
 
   SECTION("Can make allocations beyond single block") {
     // After this second loop, there should be two blocks filled with N
     // allocations each.
     for (std::size_t i = 0; i < N; ++i)
-      REQUIRE(allocator.Allocate(SizeOfT).has_value());
+      REQUIRE(allocator.Find(SizeOfT).has_value());
   }
 
   SECTION("Can reset allocations") {
     REQUIRE(allocator.Reset().has_value());
 
     SECTION("But can't fit request size larger than block size") {
-      REQUIRE(allocator.Allocate(MinBlockSize + 1) ==
+      REQUIRE(allocator.Find(MinBlockSize + 1) ==
               cpp::fail(Error::SizeRequestTooLarge));
     }
   }

@@ -36,7 +36,7 @@ public:
 
   Page() = default;
 
-  Result<std::byte*> Allocate(std::size_t count) {
+  Result<std::byte*> Provide(std::size_t count) {
     if (count == 0 || count > kCount)
       return cpp::fail(Error::InvalidInput);
 
@@ -74,7 +74,7 @@ public:
     }
   }
 
-  Result<void> Release(std::byte* p) {
+  Result<void> Return(std::byte* p) {
     if (p == nullptr || heap_ == std::nullopt)
       return cpp::fail(Error::InvalidInput);
 

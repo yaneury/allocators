@@ -78,7 +78,7 @@ public:
         search_strategy_(options.search_strategy) {}
         */
 
-  Result<std::byte*> Allocate(Layout layout) noexcept {
+  Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
@@ -125,11 +125,11 @@ public:
            internal::GetBlockHeaderSize();
   }
 
-  Result<std::byte*> Allocate(std::size_t size) noexcept {
-    return Allocate(Layout(size, internal::kMinimumAlignment));
+  Result<std::byte*> Find(std::size_t size) noexcept {
+    return Find(Layout(size, internal::kMinimumAlignment));
   }
 
-  Result<void> Release(std::byte* ptr) {
+  Result<void> Return(std::byte* ptr) {
     if (ptr == nullptr)
       return cpp::fail(Error::InvalidInput);
 
@@ -174,6 +174,10 @@ public:
   }
 
   Allocator& GetAllocator() { return Parent::allocator_; }
+
+  constexpr bool AcceptsAlignment() const { return true; }
+
+  constexpr bool AcceptsReturn() const { return false; }
 
 private:
   // Max size allowed per request.
