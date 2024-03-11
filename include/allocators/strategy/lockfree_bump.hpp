@@ -45,12 +45,7 @@ public:
 
   explicit LockfreeBump(Provider& provider) : provider_(provider) {}
 
-  // Allocator is neither default-constructible, copy-able, nor move-able.
-  LockfreeBump() = delete;
-  LockfreeBump(LockfreeBump&) = delete;
-  LockfreeBump(LockfreeBump&&) = delete;
-  LockfreeBump& operator=(LockfreeBump&) = delete;
-  LockfreeBump& operator=(LockfreeBump&&) = delete;
+  ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(LockfreeBump);
 
   // TODO: Don't ignore this error.
   ~LockfreeBump() { (void)Reset(); }

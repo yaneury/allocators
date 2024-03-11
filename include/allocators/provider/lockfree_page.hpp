@@ -11,6 +11,7 @@
 #include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/platform.hpp>
+#include <allocators/internal/util.hpp>
 
 namespace allocators::provider {
 
@@ -35,6 +36,8 @@ public:
                 ntp::optional<CountT<0>, Args...>::value});
 
   LockfreePage() = default;
+
+  ALLOCATORS_NO_COPY_NO_MOVE(LockfreePage);
 
   Result<std::byte*> Provide(std::size_t count) {
     if (count == 0 || count > kCount)

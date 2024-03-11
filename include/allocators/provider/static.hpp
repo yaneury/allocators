@@ -4,6 +4,7 @@
 
 #include <allocators/common/error.hpp>
 #include <allocators/common/parameters.hpp>
+#include <allocators/internal/util.hpp>
 
 namespace allocators::provider {
 
@@ -19,13 +20,7 @@ public:
 
   Static() = default;
 
-  /*
-  Static(Static&) = delete;
-  Static& operator=(Static&) = delete;
-
-  Static(Static&&) = delete;
-  Static& operator=(Static&&) = delete;
-  */
+  ALLOCATORS_NO_COPY_NO_MOVE(Static);
 
   Result<std::byte*> Provide(std::size_t count) {
     if (count != 1)
