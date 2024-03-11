@@ -4,13 +4,13 @@
 
 #include <template/parameters.hpp>
 
-#include <cppalloc/block/page.hpp>
-#include <cppalloc/error.hpp>
-#include <cppalloc/internal/util.hpp>
-#include <cppalloc/parameters.hpp>
-#include <cppalloc/trait.hpp>
+#include <allocators/block/page.hpp>
+#include <allocators/error.hpp>
+#include <allocators/internal/util.hpp>
+#include <allocators/parameters.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
@@ -42,7 +42,7 @@ public:
   // size. If a request with a smaller size comes along, it may be possible that
   // the block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<CPPALLOC_ALLOCATOR_GROW>, Args...>::value ==
+      ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
   struct Options {
@@ -202,4 +202,4 @@ private:
   std::array<std::byte*, 1 << kTotalEntryInBits> block_table_ = {0};
 };
 
-} // namespace cppalloc
+} // namespace allocators

@@ -2,13 +2,13 @@
 
 #include <template/parameters.hpp>
 
-#include <cppalloc/block/static.hpp>
-#include <cppalloc/internal/block.hpp>
-#include <cppalloc/internal/util.hpp>
-#include <cppalloc/parameters.hpp>
-#include <cppalloc/trait.hpp>
+#include <allocators/block/static.hpp>
+#include <allocators/internal/block.hpp>
+#include <allocators/internal/util.hpp>
+#include <allocators/parameters.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // Coarse-grained allocator that allocates fixed block sizes on request.
 // This is used internally by other allocators in this library to fetch
@@ -25,10 +25,10 @@ public:
   // requirements.
   //
   // This field is optional. If not provided, will default to
-  // |CPPALLOC_ALLOCATOR_ALIGNMENT|. If provided, it must greater than
-  // |CPPALLOC_ALLOCATOR_ALIGNMENT| and be a power of two.
+  // |ALLOCATORS_ALLOCATORS_ALIGNMENT|. If provided, it must greater than
+  // |ALLOCATORS_ALLOCATORS_ALIGNMENT| and be a power of two.
   static constexpr std::size_t kAlignment =
-      std::max({CPPALLOC_ALLOCATOR_ALIGNMENT,
+      std::max({ALLOCATORS_ALLOCATORS_ALIGNMENT,
                 ntp::optional<AlignmentT<0>, Args...>::value});
 
   // Size of the blocks. This allocator doesn't support variable-sized blocks.
@@ -38,9 +38,9 @@ public:
   // alignment as specified with |kAlignment|.
   //
   // This field is optional. If not provided, will default
-  // |CPPALLOC_ALLOCATOR_SIZE|.
+  // |ALLOCATORS_ALLOCATORS_SIZE|.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<CPPALLOC_ALLOCATOR_SIZE>, Args...>::value;
+      ntp::optional<SizeT<ALLOCATORS_ALLOCATORS_SIZE>, Args...>::value;
 
   // Sizing limits placed on |kSize|.
   // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
@@ -48,7 +48,7 @@ public:
   // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
   // bytes, including after accounting for header size and alignment.
   static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<CPPALLOC_ALLOCATOR_LIMIT>, Args...>::value ==
+      ntp::optional<LimitT<ALLOCATORS_ALLOCATORS_LIMIT>, Args...>::value ==
       BlocksMust::HaveAtLeastSizeBytes;
 
   // Policy employed when block has no more space for pending request.
@@ -59,7 +59,7 @@ public:
   // size. If a smaller size request comes along, it may be possible that the
   // block has sufficient storage for it.
   static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<CPPALLOC_ALLOCATOR_GROW>, Args...>::value ==
+      ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
   struct Options {
@@ -142,4 +142,4 @@ protected:
   Options options_;
 };
 
-} // namespace cppalloc
+} // namespace allocators

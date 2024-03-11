@@ -2,14 +2,14 @@
 
 #include <cstddef>
 
-#include <cppalloc/error.hpp>
-#include <cppalloc/internal/util.hpp>
+#include <allocators/error.hpp>
+#include <allocators/internal/util.hpp>
 
 #if __cplusplus >= 202002L
 #include <concepts>
 #endif
 
-namespace cppalloc {
+namespace allocators {
 
 // A parameter used for making an allocation request.
 struct Layout {
@@ -49,4 +49,4 @@ concept BlockAllocator = requires(T allocator, const T const_allocator,
 
 #endif
 
-} // namespace cppalloc
+} // namespace allocators

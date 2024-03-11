@@ -11,8 +11,8 @@ add_executable(
   functional/internal_functional_test.cpp
   functional/page_functional_test.cpp)
 
-# Link to cppalloc library
-target_link_libraries(${PROJECT_NAME} PRIVATE cppalloc)
+# Link to allocators library
+target_link_libraries(${PROJECT_NAME} PRIVATE allocators)
 
 # Fetch and install Catch2
 include(FetchContent)

@@ -4,13 +4,13 @@
 #include "catch2/catch_all.hpp"
 #include "magic_enum.hpp"
 
-#include <cppalloc/adapter/adapter.hpp>
-#include <cppalloc/object/freelist.hpp>
+#include <allocators/adapter/adapter.hpp>
+#include <allocators/object/freelist.hpp>
 
 #include "../util.hpp"
-#include <cppalloc/block/static.hpp>
+#include <allocators/block/static.hpp>
 
-using namespace cppalloc;
+using namespace allocators;
 
 using T = long;
 static constexpr std::size_t SizeOfT = sizeof(T);

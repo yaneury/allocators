@@ -7,15 +7,15 @@
 
 #include "catch2/catch_all.hpp"
 
-#include <cppalloc/block/page.hpp>
-#include <cppalloc/block/static.hpp>
-#include <cppalloc/internal/util.hpp>
-#include <cppalloc/object/bump.hpp>
-#include <cppalloc/object/freelist.hpp>
+#include <allocators/block/page.hpp>
+#include <allocators/block/static.hpp>
+#include <allocators/internal/util.hpp>
+#include <allocators/object/bump.hpp>
+#include <allocators/object/freelist.hpp>
 
 #include "../util.hpp"
 
-using namespace cppalloc;
+using namespace allocators;
 
 template <class... Allocator> struct AllocatorPack {};
 
