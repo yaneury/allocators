@@ -11,7 +11,8 @@ using namespace allocators;
 
 template <class... Allocator> struct AllocatorPack {};
 
-using AllocatorsUnderTest = AllocatorPack<Bump<>, FreeList<>>;
+using AllocatorsUnderTest =
+    AllocatorPack<strategy::Bump<>, strategy::FreeList<>>;
 
 TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
                         AllocatorsUnderTest) {
@@ -32,7 +33,7 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
       allocations.push(GetValueOrFail<std::byte*>(p_or));
     }
 
-    if constexpr (std::is_same_v<Allocator, Bump<>>) {
+    if constexpr (std::is_same_v<Allocator, strategy::Bump<>>) {
       REQUIRE(allocator.Reset().has_value());
     } else {
       while (allocations.size()) {

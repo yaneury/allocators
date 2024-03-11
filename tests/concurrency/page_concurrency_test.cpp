@@ -10,7 +10,7 @@
 
 using namespace allocators;
 
-using AllocatorUnderTest = Page<>;
+using AllocatorUnderTest = provider::Page<>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {

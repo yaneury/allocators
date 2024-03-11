@@ -5,7 +5,7 @@
 #include <allocators/common/error.hpp>
 #include <allocators/common/parameters.hpp>
 
-namespace allocators {
+namespace allocators::provider {
 
 // A wrapper over statically-initialized array that conforms to
 // the BlockAllocator interface. Unlike other allocators, memory
@@ -49,4 +49,4 @@ private:
   std::byte block_[kSize] = {std::byte(0)};
 };
 
-} // namespace allocators
+} // namespace allocators::provider

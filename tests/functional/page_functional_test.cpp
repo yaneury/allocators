@@ -9,10 +9,10 @@ using namespace allocators;
 TEST_CASE("Page allocator", "[allocator][Page]") {
   static constexpr std::size_t kPageSize = 4096;
   static constexpr std::size_t kMaxPages =
-      Page<>::kDefaultMaxSize / kPageSize - 1;
+      provider::Page<>::kDefaultMaxSize / kPageSize - 1;
 
   // Use default allocator parameters to see upper bound of space.
-  using AllocatorUnderTest = Page<CountT<kMaxPages>>;
+  using AllocatorUnderTest = provider::Page<CountT<kMaxPages>>;
 
   SECTION("Can allocate 1 * kMaxPages worth of pages") {
     std::array<std::byte*, kMaxPages> allocations = {};
