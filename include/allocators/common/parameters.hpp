@@ -63,9 +63,6 @@ enum FindBy {
 
 template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 
-// Max number of pages that Provider will create. This is a strict limit.
-// No more than this number of pages will be supported.
-// Defaults to |kDefaultMaxSize|, which is roughly: 1GB / GetPageSize().
 template <std::size_t R>
 struct LimitT : std::integral_constant<std::size_t, R> {};
 

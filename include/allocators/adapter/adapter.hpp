@@ -8,21 +8,20 @@
 #include <cstddef>
 
 #include <allocators/common/trait.hpp>
+#include <allocators/provider/lock_free_page.hpp>
 #include <allocators/strategy/lock_free_bump.hpp>
 
 namespace allocators::adapter {
 
 template <class T, class... Args>
 class BumpAdapter
-    : public strategy::LockFreeBump<AlignmentT<std::alignment_of_v<T>>,
-                                    Args...> {
+    : public strategy::LockFreeBump<provider::LockFreePage<>, Args...> {
 public:
   // Require alias for std::allocator_traits to infer other types, e.g.
   // using pointer = value_type*.
   using value_type = T;
 
-  using Parent =
-      strategy::LockFreeBump<AlignmentT<std::alignment_of_v<T>>, Args...>;
+  using Parent = strategy::LockFreeBump<Args...>;
 
   T* allocate(std::size_t n) noexcept {
     Result<std::byte*> ptr_or = Parent::Allocate(n);

@@ -15,14 +15,8 @@
 
 namespace allocators::provider {
 
-// Provider class that returns page-aligned and page-sized blocks. The page size
-// is determined by the platform, 4KB for most scenarios. For the actual page
-// size used on particular platform, see |internal::GetPageSize|. This provider
-// is thread-safe using lock-free algorithms.
-template <class... Args> class LockFreePage;
-
-namespace {
-struct Params {
+// Parameters for LockFreePage class defined below.
+struct LockFreePageParams {
   // Default limit is set to 1GB (1 << 30) of VA range
   // divided by system page size.
   static constexpr std::size_t kDefaultLimit =
@@ -35,9 +29,12 @@ struct Params {
   template <std::size_t R>
   struct LimitT : std::integral_constant<std::size_t, R> {};
 };
-} // namespace
 
-template <class... Args> class LockFreePage : Params {
+// Provider class that returns page-aligned and page-sized blocks. The page size
+// is determined by the platform, 4KB for most scenarios. For the actual page
+// size used on particular platform, see |internal::GetPageSize|. This provider
+// is thread-safe using lock-free algorithms.
+template <class... Args> class LockFreePage : LockFreePageParams {
 public:
   LockFreePage() = default;
 

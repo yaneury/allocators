@@ -6,22 +6,35 @@
 #include <template/parameters.hpp>
 
 #include <allocators/common/error.hpp>
-#include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/util.hpp>
 
 namespace allocators::strategy {
 
-namespace {
+// Parameters for LockFreeBump allocator defined below.
+struct LockFreeBumpParams {
+  // Policy to employ when Bump allocator's block is out of space and
+  // can't fullfill an allocation request.
+  enum WhenFull {
+    // Return |nullptr|, signalling that no more allocations can be made on the
+    // allocator until a free request
+    // is made.
+    ReturnNull = 0,
 
-struct Params {
-  // Max number of pages that Provider will create. This is a strict limit.
-  // No more than this number of pages will be supported.
-  // Defaults to |kDefaultMaxSize|, which is roughly: 1GB / GetPageSize().
-  template <std::size_t R>
-  struct LimitT : std::integral_constant<std::size_t, R> {};
+    // Grow storage by requesting a new block to allocate the request and
+    // subsequent requests in.
+    GrowStorage = 1
+  };
+
+  // If |GrowStorage| is provided, then a new block will be requested;
+  // if |ReturnNull| is provided, then nullptr is returned on the allocation
+  // request. This does not mean that it's impossible to request more memory
+  // though. It only means that the block has no more space for the requested
+  // size. If a request with a smaller size comes along, it may be possible that
+  // the block has sufficient storage for it.
+  // Defaults to |WhenFull::GrowStorage|.
+  template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {};
 };
-} // namespace
 
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
@@ -39,21 +52,12 @@ struct Params {
 //
 // For more information about this form of memory allocation, visit:
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
+//
+// This provider is thread-safe using lock-free algorithms.
 template <class Provider, class... Args>
 requires ProviderTrait<Provider>
-class LockFreeBump {
+class LockFreeBump : LockFreeBumpParams {
 public:
-  // Policy employed when block has no more space for pending request.
-  // If |GrowStorage| is provided, then a new block will be requested;
-  // if |ReturnNull| is provided, then nullptr is returned on the allocation
-  // request. This does not mean that it's impossible to request more memory
-  // though. It only means that the block has no more space for the requested
-  // size. If a request with a smaller size comes along, it may be possible that
-  // the block has sufficient storage for it.
-  static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
-      WhenFull::GrowStorage;
-
   explicit LockFreeBump(Provider& provider) : provider_(provider) {}
 
   ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(LockFreeBump);
@@ -139,6 +143,10 @@ private:
   //  virtual address space. Perhaps, we can model something like the page table
   //  structures where multiple tables are used to determine the final address.
   static constexpr unsigned kTotalEntryInBits = 10;
+
+  static constexpr bool kGrowWhenFull =
+      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
+      WhenFull::GrowStorage;
 
   struct BlockDescriptor {
     // Whether the block was status.

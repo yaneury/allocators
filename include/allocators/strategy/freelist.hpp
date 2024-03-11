@@ -6,6 +6,7 @@
 #include <template/optional.hpp>
 
 #include <allocators/common/error.hpp>
+#include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
@@ -59,9 +60,7 @@ public:
   // though. It only means that the block has no more space for the requested
   // size. If a smaller size request comes along, it may be possible that the
   // block has sufficient storage for it.
-  static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
-      WhenFull::GrowStorage;
+  static constexpr bool kGrowWhenFull = true;
 
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<ALLOCATORS_ALLOCATORS_SEARCH>, Args...>::value;
@@ -83,7 +82,7 @@ public:
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
 
-    if constexpr (kGrowWhenFull == WhenFull::ReturnNull)
+    if constexpr (kGrowWhenFull == false)
       if (free_list_ == nullptr)
         return cpp::fail(Error::NoFreeBlock);
 
