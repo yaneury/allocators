@@ -4,16 +4,16 @@
 
 #include <template/optional.hpp>
 
-#include <allocators/error.hpp>
+#include <allocators/common/error.hpp>
+#include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
 #include <allocators/strategy/block.hpp>
-#include <allocators/trait.hpp>
 
 namespace allocators {
 
 // Freelist allocator with tunable parameters. For reference as
-// to how to configure, see "parameters.hpp".
+// to how to configure, see "common/parameters.hpp".
 template <class... Args> class FreeList : public Block<Args...> {
 public:
   // We have to explicitly provide the parent class in contexts with a

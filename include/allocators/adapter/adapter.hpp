@@ -7,8 +7,8 @@
 
 #include <cstddef>
 
+#include <allocators/common/trait.hpp>
 #include <allocators/strategy/bump.hpp>
-#include <allocators/trait.hpp>
 
 namespace allocators {
 
