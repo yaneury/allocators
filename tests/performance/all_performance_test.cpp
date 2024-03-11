@@ -2,8 +2,8 @@
 
 #include "catch2/catch_all.hpp"
 
-#include <allocators/strategy/bump.hpp>
 #include <allocators/strategy/freelist.hpp>
+#include <allocators/strategy/lockfree_bump.hpp>
 
 #include "../util.hpp"
 
@@ -12,7 +12,7 @@ using namespace allocators;
 template <class... Allocator> struct AllocatorPack {};
 
 using AllocatorsUnderTest =
-    AllocatorPack<strategy::Bump<>, strategy::FreeList<>>;
+    AllocatorPack<strategy::LockfreeBump<>, strategy::FreeList<>>;
 
 TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
                         AllocatorsUnderTest) {
@@ -33,7 +33,7 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
       allocations.push(GetValueOrFail<std::byte*>(p_or));
     }
 
-    if constexpr (std::is_same_v<Allocator, strategy::Bump<>>) {
+    if constexpr (std::is_same_v<Allocator, strategy::LockfreeBump<>>) {
       REQUIRE(allocator.Reset().has_value());
     } else {
       while (allocations.size()) {
