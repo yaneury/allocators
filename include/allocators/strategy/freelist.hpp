@@ -14,7 +14,9 @@ namespace allocators::strategy {
 
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "common/parameters.hpp".
-template <class Provider, class... Args> class FreeList {
+template <class Provider, class... Args>
+requires ProviderTrait<Provider>
+class FreeList {
 public:
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment

@@ -28,7 +28,9 @@ namespace allocators::strategy {
 //
 // For more information about this form of memory allocation, visit:
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
-template <class Provider, class... Args> class LockfreeBump {
+template <class Provider, class... Args>
+requires ProviderTrait<Provider>
+class LockfreeBump {
 public:
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
