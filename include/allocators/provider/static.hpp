@@ -2,8 +2,8 @@
 
 #include <template/parameters.hpp>
 
-#include <allocators/error.hpp>
-#include <allocators/parameters.hpp>
+#include <allocators/common/error.hpp>
+#include <allocators/common/parameters.hpp>
 
 namespace allocators {
 

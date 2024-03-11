@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include <allocators/error.hpp>
+#include <allocators/common/error.hpp>
 #include <allocators/internal/util.hpp>
 
 #if __cplusplus >= 202002L

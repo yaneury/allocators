@@ -7,7 +7,7 @@
 
 #include <template/parameters.hpp>
 
-#include <allocators/trait.hpp>
+#include <allocators/common/trait.hpp>
 
 namespace allocators {
 

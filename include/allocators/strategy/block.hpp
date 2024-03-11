@@ -2,11 +2,11 @@
 
 #include <template/parameters.hpp>
 
+#include <allocators/common/parameters.hpp>
+#include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/parameters.hpp>
 #include <allocators/provider/static.hpp>
-#include <allocators/trait.hpp>
 
 namespace allocators {
 

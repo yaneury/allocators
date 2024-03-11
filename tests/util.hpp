@@ -8,7 +8,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "magic_enum.hpp"
 
-#include "allocators/error.hpp"
+#include "allocators/common/error.hpp"
 #include "allocators/internal/block.hpp"
 
 using namespace allocators;
