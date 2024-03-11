@@ -8,7 +8,7 @@
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/provider/page.hpp>
+#include <allocators/provider/lockfree_page.hpp>
 
 namespace allocators::strategy {
 
@@ -18,7 +18,7 @@ template <class... Args> class FreeList {
 public:
   // Allocator used to request memory defaults to unconfigured Page allocator.
   using Allocator =
-      typename ntp::type<ProviderT<provider::Page<>>, Args...>::value;
+      typename ntp::type<ProviderT<provider::LockfreePage<>>, Args...>::value;
 
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment

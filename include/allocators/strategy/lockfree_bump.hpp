@@ -8,7 +8,7 @@
 #include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/provider/page.hpp>
+#include <allocators/provider/lockfree_page.hpp>
 
 namespace allocators::strategy {
 
@@ -33,7 +33,7 @@ public:
   // Allocator used to request memory from OS.
   // Defaults to unconfigured Page allocator.
   using Allocator =
-      typename ntp::type<ProviderT<provider::Page<>>, Args...>::value;
+      typename ntp::type<ProviderT<provider::LockfreePage<>>, Args...>::value;
 
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
