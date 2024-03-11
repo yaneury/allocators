@@ -2,17 +2,16 @@
 
 #include <array>
 
-#include <allocators/provider/lockfree_page.hpp>
+#include <allocators/provider/lock_free_page.hpp>
 
 using namespace allocators;
 
 TEST_CASE("Page allocator", "[allocator][Page]") {
   static constexpr std::size_t kPageSize = 4096;
-  static constexpr std::size_t kMaxPages =
-      provider::LockfreePage<>::kDefaultMaxSize / kPageSize - 1;
+  static constexpr std::size_t kMaxPages = (1 << 30) / kPageSize;
 
   // Use default allocator parameters to see upper bound of space.
-  using AllocatorUnderTest = provider::LockfreePage<CountT<kMaxPages>>;
+  using AllocatorUnderTest = provider::LockFreePage<LimitT<kMaxPages>>;
 
   SECTION("Can allocate 1 * kMaxPages worth of pages") {
     std::array<std::byte*, kMaxPages> allocations = {};

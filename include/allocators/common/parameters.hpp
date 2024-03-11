@@ -49,9 +49,6 @@ enum BlocksMust {
   NoMoreThanSizeBytes = 1,
 };
 
-template <BlocksMust CM>
-struct LimitT : std::integral_constant<BlocksMust, CM> {};
-
 // Policy to employ when looking for free block in free list.
 enum FindBy {
   // Use first block that contains the minimum sizes of bytes.
@@ -66,9 +63,11 @@ enum FindBy {
 
 template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
 
-// Max number of pages that an individual Page allocator will keep track of.
+// Max number of pages that Provider will create. This is a strict limit.
+// No more than this number of pages will be supported.
+// Defaults to |kDefaultMaxSize|, which is roughly: 1GB / GetPageSize().
 template <std::size_t R>
-struct CountT : std::integral_constant<std::size_t, R> {};
+struct LimitT : std::integral_constant<std::size_t, R> {};
 
 // Allocator type used to fetch variable-sized objects.
 template <StrategyTrait S> struct StrategyT : ntp::integral_type<S> {};

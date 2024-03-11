@@ -18,6 +18,9 @@ template <class Provider, class... Args>
 requires ProviderTrait<Provider>
 class FreeList {
 public:
+  template <BlocksMust CM>
+  struct LimitT : std::integral_constant<BlocksMust, CM> {};
+
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment
   // requirements.

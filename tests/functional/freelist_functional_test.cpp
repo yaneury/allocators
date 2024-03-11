@@ -8,7 +8,7 @@
 #include <allocators/strategy/freelist.hpp>
 
 #include "../util.hpp"
-#include <allocators/provider/lockfree_page.hpp>
+#include <allocators/provider/lock_free_page.hpp>
 #include <allocators/provider/static.hpp>
 
 using namespace allocators;
@@ -24,7 +24,7 @@ template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
 using FixedFreeList =
-    strategy::FreeList<provider::LockfreePage<>, GrowT<WhenFull::ReturnNull>,
+    strategy::FreeList<provider::LockFreePage<>, GrowT<WhenFull::ReturnNull>,
                        SizeT<kBlockSize>, Args...>;
 
 using FixedFreeListAllocators =
@@ -36,7 +36,7 @@ TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
                         FixedFreeListAllocators) {
   // TODO: Enable once fixed.
   SKIP();
-  provider::LockfreePage<> provider;
+  provider::LockFreePage<> provider;
   TestType allocator(provider);
 
   std::array<T*, N> allocs;

@@ -12,6 +12,17 @@
 
 namespace allocators::strategy {
 
+namespace {
+
+struct Params {
+  // Max number of pages that Provider will create. This is a strict limit.
+  // No more than this number of pages will be supported.
+  // Defaults to |kDefaultMaxSize|, which is roughly: 1GB / GetPageSize().
+  template <std::size_t R>
+  struct LimitT : std::integral_constant<std::size_t, R> {};
+};
+} // namespace
+
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
 // Each allocation moves a pointer upward, tracking the location of the most
@@ -30,7 +41,7 @@ namespace allocators::strategy {
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
 template <class Provider, class... Args>
 requires ProviderTrait<Provider>
-class LockfreeBump {
+class LockFreeBump {
 public:
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
@@ -43,12 +54,12 @@ public:
       ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
-  explicit LockfreeBump(Provider& provider) : provider_(provider) {}
+  explicit LockFreeBump(Provider& provider) : provider_(provider) {}
 
-  ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(LockfreeBump);
+  ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(LockFreeBump);
 
   // TODO: Don't ignore this error.
-  ~LockfreeBump() { (void)Reset(); }
+  ~LockFreeBump() { (void)Reset(); }
 
   Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))

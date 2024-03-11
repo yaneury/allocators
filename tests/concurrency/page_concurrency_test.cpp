@@ -6,11 +6,13 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include <allocators/provider/lockfree_page.hpp>
+#include <allocators/provider/lock_free_page.hpp>
 
 using namespace allocators;
 
-using AllocatorUnderTest = provider::LockfreePage<>;
+static constexpr std::size_t kLimit = (1 << 30) / 4096;
+
+using AllocatorUnderTest = provider::LockFreePage<LimitT<kLimit>>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {
@@ -19,7 +21,7 @@ TEST_CASE("Page allocator works in multi-threaded contexts",
   static_assert(kNumThreads % 2 == 0, "number of threads must even");
 
   AllocatorUnderTest allocator;
-  atomic_queue::AtomicQueue<std::byte*, AllocatorUnderTest::kCount> allocations;
+  atomic_queue::AtomicQueue<std::byte*, kLimit> allocations;
   // Mutex used for calling Catch2's APIs
   std::mutex catch_mutex;
 
