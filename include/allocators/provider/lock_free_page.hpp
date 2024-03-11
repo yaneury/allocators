@@ -8,7 +8,6 @@
 #include <template/parameters.hpp>
 
 #include <allocators/common/error.hpp>
-#include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/platform.hpp>
 #include <allocators/internal/util.hpp>
@@ -34,7 +33,7 @@ struct LockFreePageParams {
 // is determined by the platform, 4KB for most scenarios. For the actual page
 // size used on particular platform, see |internal::GetPageSize|. This provider
 // is thread-safe using lock-free algorithms.
-template <class... Args> class LockFreePage : LockFreePageParams {
+template <class... Args> class LockFreePage : public LockFreePageParams {
 public:
   LockFreePage() = default;
 
@@ -105,13 +104,13 @@ public:
     }
   }
 
-  [[nodiscard]] constexpr std::size_t GetBlockSize() const {
+  [[nodiscard]] static constexpr std::size_t GetBlockSize() {
     return internal::GetPageSize();
   }
 
 private:
-  static constexpr std::size_t kLimit =
-      std::max({kDefaultLimit, ntp::optional<LimitT<0>, Args...>::value});
+  static constexpr std::size_t kLimit = 100;
+  // std::max({kDefaultLimit, ntp::optional<LimitT<0>, Args...>::value});
 
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {

@@ -12,7 +12,8 @@ using namespace allocators;
 
 static constexpr std::size_t kLimit = (1 << 30) / 4096;
 
-using AllocatorUnderTest = provider::LockFreePage<LimitT<kLimit>>;
+using AllocatorUnderTest =
+    provider::LockFreePage<provider::LockFreePageParams::LimitT<kLimit>>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {
