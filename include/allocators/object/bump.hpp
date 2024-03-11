@@ -4,10 +4,10 @@
 
 #include <template/parameters.hpp>
 
-#include <allocators/block/page.hpp>
 #include <allocators/error.hpp>
 #include <allocators/internal/util.hpp>
 #include <allocators/parameters.hpp>
+#include <allocators/provider/page.hpp>
 #include <allocators/trait.hpp>
 
 namespace allocators {

@@ -8,7 +8,7 @@
 #include <allocators/object/freelist.hpp>
 
 #include "../util.hpp"
-#include <allocators/block/static.hpp>
+#include <allocators/provider/static.hpp>
 
 using namespace allocators;
 

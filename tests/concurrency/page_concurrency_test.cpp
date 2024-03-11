@@ -6,7 +6,7 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include <allocators/block/page.hpp>
+#include <allocators/provider/page.hpp>
 
 using namespace allocators;
 

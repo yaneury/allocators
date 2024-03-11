@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include <allocators/block/page.hpp>
+#include <allocators/provider/page.hpp>
 
 using namespace allocators;
 
