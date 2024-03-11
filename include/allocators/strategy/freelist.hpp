@@ -65,12 +65,7 @@ public:
 
   FreeList(Provider& provider) : provider_(provider) {}
 
-  // Allocator is neither default-constructible, copy-able, nor move-able.
-  FreeList() = delete;
-  FreeList(FreeList&) = delete;
-  FreeList(FreeList&&) = delete;
-  FreeList& operator=(FreeList&) = delete;
-  FreeList& operator=(FreeList&&) = delete;
+  ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(FreeList);
 
   Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))

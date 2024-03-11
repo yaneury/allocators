@@ -11,6 +11,19 @@
 #define DERROR(x)
 #endif
 
+#define ALLOCATORS_NO_COPY_NO_MOVE_NO_DEFAULT(class_)                          \
+  class_() = delete;                                                           \
+  class_(const class_&) = delete;                                              \
+  class_& operator=(const class_&) = delete;                                   \
+  class_(class_&&) = delete;                                                   \
+  class_& operator=(class_&&) = delete;
+
+#define ALLOCATORS_NO_COPY_NO_MOVE(class_)                                     \
+  class_(const class_&) = delete;                                              \
+  class_& operator=(const class_&) = delete;                                   \
+  class_(class_&&) = delete;                                                   \
+  class_& operator=(class_&&) = delete;
+
 #include <cstddef>
 
 namespace allocators::internal {
