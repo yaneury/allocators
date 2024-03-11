@@ -3,6 +3,7 @@
 #include <ranges>
 #include <vector>
 
+#include <allocators/provider/lockfree_page.hpp>
 #include <allocators/strategy/lockfree_bump.hpp>
 
 #include "../util.hpp"
@@ -19,7 +20,8 @@ static constexpr std::size_t MaxBlockSize =
 template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
-using FixedBump = strategy::LockfreeBump<GrowT<WhenFull::ReturnNull>, Args...>;
+using FixedBump = strategy::LockfreeBump<provider::LockfreePage<>,
+                                         GrowT<WhenFull::ReturnNull>, Args...>;
 
 using FixedBumpAllocators = AllocatorPack<
     FixedBump<LimitT<BlocksMust::HaveAtLeastSizeBytes>, SizeT<MinBlockSize>>,
@@ -28,7 +30,8 @@ using FixedBumpAllocators = AllocatorPack<
 TEMPLATE_LIST_TEST_CASE("Fixed LockfreeBump allocator that can fit N objects",
                         "[functional][allocator][LockfreeBump]",
                         FixedBumpAllocators) {
-  TestType allocator;
+  provider::LockfreePage<> provider;
+  TestType allocator(provider);
 
   std::array<T*, N> allocs;
   for (std::size_t i = 0; i < N; ++i)
@@ -69,7 +72,8 @@ using VariableBumpAllocators = AllocatorPack<
 TEMPLATE_LIST_TEST_CASE(
     "Variable-sized LockfreeBump allocator with block size fitting N objects",
     "[functional][allocator][LockfreeBump]", VariableBumpAllocators) {
-  TestType allocator;
+  provider::LockfreePage<> provider;
+  TestType allocator(provider);
 
   for (std::size_t i = 0; i < N; ++i)
     REQUIRE(allocator.Find(SizeOfT).has_value());

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 
 #include <template/parameters.hpp>
 
@@ -8,7 +9,6 @@
 #include <allocators/common/parameters.hpp>
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/provider/lockfree_page.hpp>
 
 namespace allocators::strategy {
 
@@ -28,13 +28,8 @@ namespace allocators::strategy {
 //
 // For more information about this form of memory allocation, visit:
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
-template <class... Args> class LockfreeBump {
+template <class Provider, class... Args> class LockfreeBump {
 public:
-  // Allocator used to request memory from OS.
-  // Defaults to unconfigured Page allocator.
-  using Allocator =
-      typename ntp::type<ProviderT<provider::LockfreePage<>>, Args...>::value;
-
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
   // if |ReturnNull| is provided, then nullptr is returned on the allocation
@@ -46,25 +41,10 @@ public:
       ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
       WhenFull::GrowStorage;
 
-  struct Options {
-    std::size_t size;
-    bool grow_when_full;
-  };
+  explicit LockfreeBump(Provider& provider) : provider_(provider) {}
 
-  static constexpr Options kDefaultOptions = {
-      .grow_when_full = kGrowWhenFull,
-  };
-
-  explicit LockfreeBump(Options options = kDefaultOptions)
-      : allocator_(Allocator()), options_(std::move(options)) {}
-
-  explicit LockfreeBump(Allocator& allocator, Options options = kDefaultOptions)
-      : allocator_(allocator), options_(std::move(options)) {}
-
-  LockfreeBump(Allocator&& allocator, Options options)
-      : allocator_(std::move(allocator)), options_(std::move(options)) {}
-
-  // Allocator is neither copy-able nor move-able.
+  // Allocator is neither default-constructible, copy-able, nor move-able.
+  LockfreeBump() = delete;
   LockfreeBump(LockfreeBump&) = delete;
   LockfreeBump(LockfreeBump&&) = delete;
   LockfreeBump& operator=(LockfreeBump&) = delete;
@@ -79,7 +59,7 @@ public:
 
     std::size_t request_size = internal::AlignUp(layout.size, layout.alignment);
 
-    if (request_size > allocator_.GetBlockSize())
+    if (request_size > provider_.get().GetBlockSize())
       return cpp::fail(Error::SizeRequestTooLarge);
 
     // The loop here is a little deceiving. The intention here is not to
@@ -94,7 +74,7 @@ public:
         continue;
       }
 
-      std::size_t headroom = allocator_.GetBlockSize() - old_active.size;
+      std::size_t headroom = provider_.get().GetBlockSize() - old_active.size;
       if (headroom < request_size) {
         if (!kGrowWhenFull)
           return cpp::fail(Error::ReachedMemoryLimit);
@@ -127,7 +107,8 @@ public:
       return {};
 
     for (auto i = 0u; i <= old_active.index; i++) {
-      if (auto result = allocator_.Return(block_table_[i]); result.has_error())
+      if (auto result = provider_.get().Return(block_table_[i]);
+          result.has_error())
         return cpp::fail(result.error());
 
       block_table_[i] = nullptr;
@@ -180,13 +161,13 @@ private:
     // 0.
     new_active.initialized = 1;
 
-    auto new_block_or = allocator_.Provide(1);
+    auto new_block_or = provider_.get().Provide(1);
     if (new_block_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
     if (active_.compare_exchange_weak(old_active, new_active)) {
       block_table_[new_active.index] = new_block_or.value();
-    } else if (auto result = allocator_.Return(new_block_or.value());
+    } else if (auto result = provider_.get().Return(new_block_or.value());
                result.has_error()) {
       return cpp::fail(result.error());
     }
@@ -195,10 +176,7 @@ private:
   }
 
   // Backing allocator to used to acquire and release blocks.
-  Allocator allocator_;
-
-  // Override options for allocator.
-  Options options_;
+  std::reference_wrapper<Provider> provider_;
 
   // Tracking anchor for currently active_ block.
   std::atomic<BlockDescriptor> active_ = BlockDescriptor();
