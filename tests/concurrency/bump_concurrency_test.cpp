@@ -4,16 +4,16 @@
 #include <thread>
 #include <vector>
 
-#include <allocators/strategy/bump.hpp>
+#include <allocators/strategy/lockfree_bump.hpp>
 
 #include "../util.hpp"
 
 using namespace allocators;
 
-using AllocatorUnderTest = strategy::Bump<>;
+using AllocatorUnderTest = strategy::LockfreeBump<>;
 
-TEST_CASE("Bump allocator works in multi-threaded contexts",
-          "[concurrency][allocator][Bump]") {
+TEST_CASE("LockfreeBump allocator works in multi-threaded contexts",
+          "[concurrency][allocator][LockfreeBump]") {
   static constexpr std::size_t kNumThreads = 64;
 
   AllocatorUnderTest allocator;

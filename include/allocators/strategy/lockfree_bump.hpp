@@ -28,7 +28,7 @@ namespace allocators::strategy {
 //
 // For more information about this form of memory allocation, visit:
 // https://www.gingerbill.org/article/2019/02/08/memory-allocation-strategies-002.
-template <class... Args> class Bump {
+template <class... Args> class LockfreeBump {
 public:
   // Allocator used to request memory from OS.
   // Defaults to unconfigured Page allocator.
@@ -55,23 +55,23 @@ public:
       .grow_when_full = kGrowWhenFull,
   };
 
-  explicit Bump(Options options = kDefaultOptions)
+  explicit LockfreeBump(Options options = kDefaultOptions)
       : allocator_(Allocator()), options_(std::move(options)) {}
 
-  explicit Bump(Allocator& allocator, Options options = kDefaultOptions)
+  explicit LockfreeBump(Allocator& allocator, Options options = kDefaultOptions)
       : allocator_(allocator), options_(std::move(options)) {}
 
-  Bump(Allocator&& allocator, Options options)
+  LockfreeBump(Allocator&& allocator, Options options)
       : allocator_(std::move(allocator)), options_(std::move(options)) {}
 
   // Allocator is neither copy-able nor move-able.
-  Bump(Bump&) = delete;
-  Bump(Bump&&) = delete;
-  Bump& operator=(Bump&) = delete;
-  Bump& operator=(Bump&&) = delete;
+  LockfreeBump(LockfreeBump&) = delete;
+  LockfreeBump(LockfreeBump&&) = delete;
+  LockfreeBump& operator=(LockfreeBump&) = delete;
+  LockfreeBump& operator=(LockfreeBump&&) = delete;
 
   // TODO: Don't ignore this error.
-  ~Bump() { (void)Reset(); }
+  ~LockfreeBump() { (void)Reset(); }
 
   Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))
