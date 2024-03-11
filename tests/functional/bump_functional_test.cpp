@@ -3,8 +3,8 @@
 #include <ranges>
 #include <vector>
 
-#include <allocators/provider/lockfree_page.hpp>
-#include <allocators/strategy/lockfree_bump.hpp>
+#include <allocators/provider/lock_free_page.hpp>
+#include <allocators/strategy/lock_free_bump.hpp>
 
 #include "../util.hpp"
 
@@ -20,17 +20,17 @@ static constexpr std::size_t MaxBlockSize =
 template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
-using FixedBump = strategy::LockfreeBump<provider::LockfreePage<>,
+using FixedBump = strategy::LockFreeBump<provider::LockFreePage<>,
                                          GrowT<WhenFull::ReturnNull>, Args...>;
 
 using FixedBumpAllocators = AllocatorPack<
     FixedBump<LimitT<BlocksMust::HaveAtLeastSizeBytes>, SizeT<MinBlockSize>>,
     FixedBump<LimitT<BlocksMust::NoMoreThanSizeBytes>, SizeT<MaxBlockSize>>>;
 
-TEMPLATE_LIST_TEST_CASE("Fixed LockfreeBump allocator that can fit N objects",
-                        "[functional][allocator][LockfreeBump]",
+TEMPLATE_LIST_TEST_CASE("Fixed LockFreeBump allocator that can fit N objects",
+                        "[functional][allocator][LockFreeBump]",
                         FixedBumpAllocators) {
-  provider::LockfreePage<> provider;
+  provider::LockFreePage<> provider;
   TestType allocator(provider);
 
   std::array<T*, N> allocs;
@@ -63,16 +63,16 @@ TEMPLATE_LIST_TEST_CASE("Fixed LockfreeBump allocator that can fit N objects",
 
 template <class... Args>
 using VariableBump =
-    strategy::LockfreeBump<GrowT<WhenFull::GrowStorage>, Args...>;
+    strategy::LockFreeBump<GrowT<WhenFull::GrowStorage>, Args...>;
 
 using VariableBumpAllocators = AllocatorPack<
     VariableBump<LimitT<BlocksMust::HaveAtLeastSizeBytes>, SizeT<MinBlockSize>>,
     VariableBump<LimitT<BlocksMust::NoMoreThanSizeBytes>, SizeT<MaxBlockSize>>>;
 
 TEMPLATE_LIST_TEST_CASE(
-    "Variable-sized LockfreeBump allocator with block size fitting N objects",
-    "[functional][allocator][LockfreeBump]", VariableBumpAllocators) {
-  provider::LockfreePage<> provider;
+    "Variable-sized LockFreeBump allocator with block size fitting N objects",
+    "[functional][allocator][LockFreeBump]", VariableBumpAllocators) {
+  provider::LockFreePage<> provider;
   TestType allocator(provider);
 
   for (std::size_t i = 0; i < N; ++i)

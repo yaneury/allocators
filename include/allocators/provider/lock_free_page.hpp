@@ -15,32 +15,36 @@
 
 namespace allocators::provider {
 
-// Coarse-grained allocator that allocates multiples of system page size
-// on request. This is used internally by other allocators in this library
-// to fetch memory from the heap. However, it's available for general usage
-// in the public API.
-//
-// This is very limited in practice. Any non-trivial program will quickly exceed
-// the maximum number of pages configured. Also consider that certain objects
-// can exceed the size of a page. This structure doesn't accommodate those
-// requests at all.
-template <class... Args> class LockfreePage {
+// Provider class that returns page-aligned and page-sized blocks. The page size
+// is determined by the platform, 4KB for most scenarios. For the actual page
+// size used on particular platform, see |internal::GetPageSize|. This provider
+// is thread-safe using lock-free algorithms.
+template <class... Args> class LockFreePage;
+
+namespace {
+struct Params {
+  // Default limit is set to 1GB (1 << 30) of VA range
+  // divided by system page size.
+  static constexpr std::size_t kDefaultLimit =
+      (1 << 30) / internal::GetPageSize() - 1;
+
+  // Max number of pages that Provider will create. This is a strict limit.
+  // No more than this number of pages will be supported.
+  // Defaults to |kDefaultLimit| / |internal, which is roughly: 1GB /
+  // GetPageSize().
+  template <std::size_t R>
+  struct LimitT : std::integral_constant<std::size_t, R> {};
+};
+} // namespace
+
+template <class... Args> class LockFreePage : Params {
 public:
-  static constexpr std::size_t kDefaultMaxSize = 1 << 30;
+  LockFreePage() = default;
 
-  // Max number of pages that this allocator will allow. This is a strict limit.
-  // No more than |kCount| pages will be supported.
-  // Defaults to 1GB / GetPageSize().
-  static constexpr std::size_t kCount =
-      std::max({kDefaultMaxSize / internal::GetPageSize() - 1,
-                ntp::optional<CountT<0>, Args...>::value});
-
-  LockfreePage() = default;
-
-  ALLOCATORS_NO_COPY_NO_MOVE(LockfreePage);
+  ALLOCATORS_NO_COPY_NO_MOVE(LockFreePage);
 
   Result<std::byte*> Provide(std::size_t count) {
-    if (count == 0 || count > kCount)
+    if (count == 0 || count > kLimit)
       return cpp::fail(Error::InvalidInput);
 
     // TODO: Currently, this allocator doesn't support requesting more than
@@ -60,7 +64,7 @@ public:
         continue;
       }
 
-      if (old_anchor.available == 0 || old_anchor.head == kCount)
+      if (old_anchor.available == 0 || old_anchor.head == kLimit)
         return cpp::fail(Error::NoFreeBlock);
 
       auto new_anchor = old_anchor;
@@ -109,6 +113,9 @@ public:
   }
 
 private:
+  static constexpr std::size_t kLimit =
+      std::max({kDefaultLimit, ntp::optional<LimitT<0>, Args...>::value});
+
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {
     // Index of next entry in list.
@@ -120,7 +127,7 @@ private:
 
   struct alignas(internal::GetPageSize()) Heap {
     internal::VirtualAddressRange super_block;
-    Descriptor descriptors[kCount];
+    Descriptor descriptors[kLimit];
   };
 
   enum Status : std::uint64_t {
@@ -162,14 +169,14 @@ private:
     if (heap_va_range_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
-    auto sb_va_range_or = internal::FetchPages(kCount);
+    auto sb_va_range_or = internal::FetchPages(kLimit);
     if (sb_va_range_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
     auto heap_va_range = heap_va_range_or.value();
     Heap* heap = reinterpret_cast<Heap*>(heap_va_range.base);
     heap->super_block = sb_va_range_or.value();
-    for (auto i = 0u; i < kCount; ++i) {
+    for (auto i = 0u; i < kLimit; ++i) {
       Descriptor& descriptor = heap->descriptors[i];
       descriptor.occupied = false;
       descriptor.next = i + 1;
@@ -177,7 +184,7 @@ private:
 
     heap_ = heap_va_range;
 
-    new_anchor.available = kCount;
+    new_anchor.available = kLimit;
     new_anchor.status = Status::Allocated;
     anchor_.store(new_anchor);
     return {};

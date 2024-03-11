@@ -2,9 +2,9 @@
 
 #include "catch2/catch_all.hpp"
 
-#include <allocators/provider/lockfree_page.hpp>
+#include <allocators/provider/lock_free_page.hpp>
 #include <allocators/strategy/freelist.hpp>
-#include <allocators/strategy/lockfree_bump.hpp>
+#include <allocators/strategy/lock_free_bump.hpp>
 
 #include "../util.hpp"
 
@@ -13,8 +13,8 @@ using namespace allocators;
 template <class... Allocator> struct AllocatorPack {};
 
 using AllocatorsUnderTest =
-    AllocatorPack<strategy::LockfreeBump<provider::LockfreePage<>>,
-                  strategy::FreeList<provider::LockfreePage<>>>;
+    AllocatorPack<strategy::LockFreeBump<provider::LockFreePage<>>,
+                  strategy::FreeList<provider::LockFreePage<>>>;
 
 TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
                         AllocatorsUnderTest) {
@@ -28,7 +28,7 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
   using Allocator = TestType;
 
   auto make_allocations = []() {
-    auto page_provider = provider::LockfreePage();
+    auto page_provider = provider::LockFreePage();
     Allocator allocator(page_provider);
     std::stack<std::byte*> allocations;
     for (std::size_t size : kRequestSizes) {
@@ -36,8 +36,8 @@ TEMPLATE_LIST_TEST_CASE("Default allocators", "[allocator][all][performance]",
       allocations.push(GetValueOrFail<std::byte*>(p_or));
     }
 
-    if constexpr (std::is_same_v<Allocator, strategy::LockfreeBump<
-                                                provider::LockfreePage<>>>) {
+    if constexpr (std::is_same_v<Allocator, strategy::LockFreeBump<
+                                                provider::LockFreePage<>>>) {
       REQUIRE(allocator.Reset().has_value());
     } else {
       while (allocations.size()) {
