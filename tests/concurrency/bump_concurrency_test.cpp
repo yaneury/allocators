@@ -4,19 +4,21 @@
 #include <thread>
 #include <vector>
 
+#include <allocators/provider/lockfree_page.hpp>
 #include <allocators/strategy/lockfree_bump.hpp>
 
 #include "../util.hpp"
 
 using namespace allocators;
 
-using AllocatorUnderTest = strategy::LockfreeBump<>;
+using AllocatorUnderTest = strategy::LockfreeBump<provider::LockfreePage<>>;
 
 TEST_CASE("LockfreeBump allocator works in multi-threaded contexts",
           "[concurrency][allocator][LockfreeBump]") {
   static constexpr std::size_t kNumThreads = 64;
 
-  AllocatorUnderTest allocator;
+  provider::LockfreePage<> provider;
+  AllocatorUnderTest allocator(provider);
   std::mutex catch_mutex;
 
   auto allocate = [&]() {
