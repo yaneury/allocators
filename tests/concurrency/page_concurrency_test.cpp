@@ -6,11 +6,11 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include <allocators/provider/page.hpp>
+#include <allocators/provider/lockfree_page.hpp>
 
 using namespace allocators;
 
-using AllocatorUnderTest = provider::Page<>;
+using AllocatorUnderTest = provider::LockfreePage<>;
 
 TEST_CASE("Page allocator works in multi-threaded contexts",
           "[concurrency][allocator][Page]") {

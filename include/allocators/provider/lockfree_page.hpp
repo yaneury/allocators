@@ -23,7 +23,7 @@ namespace allocators::provider {
 // the maximum number of pages configured. Also consider that certain objects
 // can exceed the size of a page. This structure doesn't accommodate those
 // requests at all.
-template <class... Args> class Page {
+template <class... Args> class LockfreePage {
 public:
   static constexpr std::size_t kDefaultMaxSize = 1 << 30;
 
@@ -34,7 +34,7 @@ public:
       std::max({kDefaultMaxSize / internal::GetPageSize() - 1,
                 ntp::optional<CountT<0>, Args...>::value});
 
-  Page() = default;
+  LockfreePage() = default;
 
   Result<std::byte*> Provide(std::size_t count) {
     if (count == 0 || count > kCount)
