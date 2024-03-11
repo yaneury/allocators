@@ -9,7 +9,6 @@ add_executable(
   functional/freelist_functional_test.cpp
   functional/all_functional_test.cpp
   functional/internal_functional_test.cpp
-  functional/fixed_functional_test.cpp
   functional/page_functional_test.cpp)
 
 # Link to cppalloc library

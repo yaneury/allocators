@@ -8,10 +8,10 @@
 #include "catch2/catch_all.hpp"
 
 #include "cppalloc/bump.hpp"
-#include "cppalloc/fixed.hpp"
 #include "cppalloc/freelist.hpp"
 #include "cppalloc/internal/util.hpp"
 #include "cppalloc/page.hpp"
+#include "cppalloc/static.hpp"
 
 #include "../util.hpp"
 
@@ -102,7 +102,7 @@ TEMPLATE_LIST_TEST_CASE("All allocators are functional",
     // Invalid size.
     REQUIRE(allocator.Allocate(/*size=*/0) == cpp::fail(Error::InvalidInput));
 
-    if constexpr (std::is_same_v<Allocator, Fixed<>>) {
+    if constexpr (std::is_same_v<Allocator, Static<>>) {
       REQUIRE(allocator.Allocate(Layout(/*size=*/1, /*alignment=*/0)) ==
               cpp::fail(Error::InvalidInput));
     } else {

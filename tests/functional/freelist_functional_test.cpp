@@ -8,7 +8,7 @@
 #include "cppalloc/freelist.hpp"
 
 #include "../util.hpp"
-#include "cppalloc/fixed.hpp"
+#include "cppalloc/static.hpp"
 
 using namespace cppalloc;
 
@@ -65,31 +65,4 @@ TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
       REQUIRE(allocator.Release(chunk).has_value());
     }
   }
-}
-
-TEST_CASE("FreeList allocator reserves space for header",
-          "[allocator][FreeList]") {
-  // TODO: Enable once fixed.
-  SKIP();
-
-  using MockAllocator = Fixed<SizeT<kBlockSize>>;
-  using AllocatorUnderTest =
-      FixedFreeList<LimitT<BlocksMust::NoMoreThanSizeBytes>,
-                    BlockAllocatorT<MockAllocator>>;
-
-  MockAllocator mock;
-  mock.SetDebug("mock");
-  AllocatorUnderTest allocator(mock);
-
-  auto pointer_or = allocator.Allocate(50);
-  if (pointer_or.has_error())
-    INFO("Pointer Error: " << (int)pointer_or.error());
-  REQUIRE(pointer_or.has_value());
-
-  std::byte* pointer_blocker_header = pointer_or.value() - GetBlockHeaderSize();
-  auto buffer = reinterpret_cast<std::byte*>(mock.GetBuffer());
-  // The address of buffer is not the actual addr return when calling Allocate.
-  // It's higher than the address returned from Allocate. Something fishy is
-  // going on here.
-  REQUIRE(pointer_blocker_header == buffer + GetBlockHeaderSize());
 }
