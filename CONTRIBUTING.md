@@ -37,10 +37,11 @@ Though there's no hard rule as to what types are allowed, the ones generally use
 
 1. `fix`: a commit of the type fix patches a bug in your codebase.
 2. `feat`: a commit of the type feat introduces a new feature to the codebase.
-3. `test`: changes strictly to tests with no accompanying changes to API.
-4. `build`: changes to build (e.g. CMakeLists.txt) or Github Workflows config. 
-5. `chore`: cleanup or refactoring that don't modify public API.
-6. `misc`: anything else.
+3. `refactor`: publicly-visible refactors 
+4. `test`: changes strictly to tests with no accompanying changes to API.
+5. `build`: changes to build (e.g. CMakeLists.txt) or Github Workflows config. 
+6. `chore`: cleanup or refactoring that don't modify public API.
+7. `misc`: anything else.
 
 [conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/
 
