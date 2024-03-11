@@ -5,7 +5,7 @@ set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 project(
-  cppalloc
+  allocators
   VERSION 0.0.1
   LANGUAGES CXX)
 
@@ -52,16 +52,16 @@ FetchContent_MakeAvailable(magic_enum)
 
 target_link_libraries(${PROJECT_NAME} INTERFACE magic_enum)
 
-option(CPPALLOC_BUILD_TESTS "Set to ON to build tests" OFF)
-option(CPPALLOC_BUILD_SANDBOX "Set to ON to build sandbox" OFF)
-option(CPPALLOC_DEBUG "Set to ON to enable debug messages" OFF)
+option(ALLOCATORS_BUILD_TESTS "Set to ON to build tests" OFF)
+option(ALLOCATORS_BUILD_SANDBOX "Set to ON to build sandbox" OFF)
+option(ALLOCATORS_DEBUG "Set to ON to enable debug messages" OFF)
 
-if(CPPALLOC_BUILD_TESTS)
+if(ALLOCATORS_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
 
-if(CPPALLOC_BUILD_SANDBOX)
+if(ALLOCATORS_BUILD_SANDBOX)
   add_subdirectory(sandbox)
 endif()
 

@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include <cppalloc/adapter/adapter.hpp>
+#include <allocators/adapter/adapter.hpp>
 
-using namespace cppalloc;
+using namespace allocators;
 
 using T = long;
 

@@ -18,10 +18,10 @@
 
 #include <result.hpp>
 
-#include <cppalloc/internal/failure.hpp>
-#include <cppalloc/internal/platform.hpp>
+#include <allocators/internal/failure.hpp>
+#include <allocators/internal/platform.hpp>
 
-namespace cppalloc::internal {
+namespace allocators::internal {
 
 // A BlockHeader contains the necessary metadata used to track
 // a block of memory. The block is the bytes starting from
@@ -244,4 +244,4 @@ inline Failable<void> CoalesceBlock(BlockHeader* block) {
   return {};
 }
 
-} // namespace cppalloc::internal
+} // namespace allocators::internal

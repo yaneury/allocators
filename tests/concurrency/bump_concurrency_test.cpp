@@ -4,11 +4,11 @@
 #include <thread>
 #include <vector>
 
-#include <cppalloc/object/bump.hpp>
+#include <allocators/object/bump.hpp>
 
 #include "../util.hpp"
 
-using namespace cppalloc;
+using namespace allocators;
 
 using AllocatorUnderTest = Bump<>;
 

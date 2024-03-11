@@ -7,12 +7,12 @@
 
 #include <template/parameters.hpp>
 
-#include <cppalloc/error.hpp>
-#include <cppalloc/internal/platform.hpp>
-#include <cppalloc/parameters.hpp>
-#include <cppalloc/trait.hpp>
+#include <allocators/error.hpp>
+#include <allocators/internal/platform.hpp>
+#include <allocators/parameters.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // Coarse-grained allocator that allocates multiples of system page size
 // on request. This is used internally by other allocators in this library
@@ -191,4 +191,4 @@ private:
   std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
 };
 
-} // namespace cppalloc
+} // namespace allocators

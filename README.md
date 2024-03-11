@@ -1,4 +1,4 @@
-# cppalloc 
+# Allocators 
 A header-only C++ library offering several specialized memory allocators configurable at compile-time.
 
 [![Ubuntu][linux-badge]][linux-status] [![macOS][mac-badge]][mac-status]
@@ -73,14 +73,14 @@ Currently, the library only works for `c++20` and above. However, support for `c
 support will also be [added][windows-issue].
 
 ## License
-**cppalloc** is licensed under the [MIT License][mit-license].
+**allocators** is licensed under the [MIT License][mit-license].
 
-[linux-badge]: https://github.com/yaneury/cppalloc/actions/workflows/linux.yml/badge.svg?branch=main
-[linux-status]: https://github.com/yaneury/cppalloc/actions/workflows/linux.yml
-[mac-badge]: https://github.com/yaneury/cppalloc/actions/workflows/mac.yml/badge.svg?branch=main
-[mac-status]: https://github.com/yaneury/cppalloc/actions/workflows/mac.yml
+[linux-badge]: https://github.com/yaneury/allocators/actions/workflows/linux.yml/badge.svg?branch=main
+[linux-status]: https://github.com/yaneury/allocators/actions/workflows/linux.yml
+[mac-badge]: https://github.com/yaneury/allocators/actions/workflows/mac.yml/badge.svg?branch=main
+[mac-status]: https://github.com/yaneury/allocators/actions/workflows/mac.yml
 [allocator-traits]: https://en.cppreference.com/w/cpp/memory/allocator_traits
-[cpp11-issue]: https://github.com/yaneury/cppalloc/issues/29
-[windows-issue]: https://github.com/yaneury/cppalloc/issues/30
+[cpp11-issue]: https://github.com/yaneury/allocators/issues/29
+[windows-issue]: https://github.com/yaneury/allocators/issues/30
 [mit-license]: http://opensource.org/licenses/MIT
 

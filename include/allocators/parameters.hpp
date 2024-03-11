@@ -7,9 +7,9 @@
 
 #include <template/parameters.hpp>
 
-#include <cppalloc/trait.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // Size (in bytes) for allocator's blocks. Usually, an allocator uses fixed-size
 // blocks to allocate memory. Within a block, several objects of varying length
@@ -78,52 +78,52 @@ struct ObjectAllocatorT : ntp::integral_type<Allocator> {};
 template <BlockAllocator Allocator>
 struct BlockAllocatorT : ntp::integral_type<Allocator> {};
 
-} // namespace cppalloc
+} // namespace allocators
 
 // Macro-based defaults
 
-#ifndef CPPALLOC_ALLOCATOR_ALIGNMENT
-#define CPPALLOC_ALLOCATOR_ALIGNMENT sizeof(void*)
+#ifndef ALLOCATORS_ALLOCATORS_ALIGNMENT
+#define ALLOCATORS_ALLOCATORS_ALIGNMENT sizeof(void*)
 #endif
 
-#ifndef CPPALLOC_ALLOCATOR_SIZE
-#define CPPALLOC_ALLOCATOR_SIZE 4096ul
+#ifndef ALLOCATORS_ALLOCATORS_SIZE
+#define ALLOCATORS_ALLOCATORS_SIZE 4096ul
 #endif
 
-#ifndef CPPALLOC_ALLOCATOR_PAGE_SIZE
-#define CPPALLOC_ALLOCATOR_PAGE_SIZE 4096ul
+#ifndef ALLOCATORS_ALLOCATORS_PAGE_SIZE
+#define ALLOCATORS_ALLOCATORS_PAGE_SIZE 4096ul
 #endif
 
-#ifndef CPPALLOC_ALLOCATOR_BLOCKS_MUST
-#define CPPALLOC_ALLOCATOR_BLOCKS_MUST 0
+#ifndef ALLOCATORS_ALLOCATORS_BLOCKS_MUST
+#define ALLOCATORS_ALLOCATORS_BLOCKS_MUST 0
 #endif
 
-#if CPPALLOC_ALLOCATOR_BLOCKS_MUST == 0
-#define CPPALLOC_ALLOCATOR_LIMIT BlocksMust::HaveAtLeastSizeBytes
-#elif CPPALLOC_ALLOCATOR_BLOCKS_MUST == 1
-#define CPPALLOC_ALLOCATOR_LIMIT BlocksMust::NoMoreThanSizeBytes
+#if ALLOCATORS_ALLOCATORS_BLOCKS_MUST == 0
+#define ALLOCATORS_ALLOCATORS_LIMIT BlocksMust::HaveAtLeastSizeBytes
+#elif ALLOCATORS_ALLOCATORS_BLOCKS_MUST == 1
+#define ALLOCATORS_ALLOCATORS_LIMIT BlocksMust::NoMoreThanSizeBytes
 #else
 #error "Only values 0 or 1 can be provided"
 #endif
 
-#ifndef CPPALLOC_ALLOCATOR_WHEN_FULL
-#define CPPALLOC_ALLOCATOR_WHEN_FULL 0
+#ifndef ALLOCATORS_ALLOCATORS_WHEN_FULL
+#define ALLOCATORS_ALLOCATORS_WHEN_FULL 0
 #endif
 
-#if CPPALLOC_ALLOCATOR_WHEN_FULL == 0
-#define CPPALLOC_ALLOCATOR_GROW WhenFull::GrowStorage
-#elif CPPALLOC_ALLOCATOR_WHEN_FULL == 1
-#define CPPALLOC_ALLOCATOR_GROW WhenFull::ReturnNull
+#if ALLOCATORS_ALLOCATORS_WHEN_FULL == 0
+#define ALLOCATORS_ALLOCATORS_GROW WhenFull::GrowStorage
+#elif ALLOCATORS_ALLOCATORS_WHEN_FULL == 1
+#define ALLOCATORS_ALLOCATORS_GROW WhenFull::ReturnNull
 #else
 #error "Only values 0 or 1 can be provided"
 #endif
 
-#if CPPALLOC_ALLOCATOR_FIND_BY == 0
-#define CPPALLOC_ALLOCATOR_SEARCH FindBy::FirstFit
-#elif CPPALLOC_ALLOCATOR_FIND_BY == 1
-#define CPPALLOC_ALLOCATOR_SEARCH FindBy::BestFit
-#elif CPPALLOC_ALLOCATOR_FIND_BY == 2
-#define CPPALLOC_ALLOCATOR_SEARCH FindBy::WorstFit
+#if ALLOCATORS_ALLOCATORS_FIND_BY == 0
+#define ALLOCATORS_ALLOCATORS_SEARCH FindBy::FirstFit
+#elif ALLOCATORS_ALLOCATORS_FIND_BY == 1
+#define ALLOCATORS_ALLOCATORS_SEARCH FindBy::BestFit
+#elif ALLOCATORS_ALLOCATORS_FIND_BY == 2
+#define ALLOCATORS_ALLOCATORS_SEARCH FindBy::WorstFit
 #else
 #error "Only values 0, 1, or 2 can be provided"
 #endif

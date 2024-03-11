@@ -6,9 +6,9 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include <cppalloc/block/page.hpp>
+#include <allocators/block/page.hpp>
 
-using namespace cppalloc;
+using namespace allocators;
 
 using AllocatorUnderTest = Page<>;
 

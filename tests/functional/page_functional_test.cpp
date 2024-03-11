@@ -2,9 +2,9 @@
 
 #include <array>
 
-#include <cppalloc/block/page.hpp>
+#include <allocators/block/page.hpp>
 
-using namespace cppalloc;
+using namespace allocators;
 
 TEST_CASE("Page allocator", "[allocator][Page]") {
   static constexpr std::size_t kPageSize = 4096;

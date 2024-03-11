@@ -2,10 +2,10 @@
 
 #include <template/parameters.hpp>
 
-#include <cppalloc/error.hpp>
-#include <cppalloc/parameters.hpp>
+#include <allocators/error.hpp>
+#include <allocators/parameters.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // A wrapper over statically-initialized array that conforms to
 // the BlockAllocator interface. Unlike other allocators, memory
@@ -15,7 +15,7 @@ template <class... Args> class Static {
 public:
   // Size of the memory block.
   static constexpr std::size_t kSize =
-      ntp::optional<SizeT<CPPALLOC_ALLOCATOR_SIZE>, Args...>::value;
+      ntp::optional<SizeT<ALLOCATORS_ALLOCATORS_SIZE>, Args...>::value;
 
   Static() = default;
 
@@ -49,4 +49,4 @@ private:
   std::byte block_[kSize] = {std::byte(0)};
 };
 
-} // namespace cppalloc
+} // namespace allocators

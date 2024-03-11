@@ -5,12 +5,12 @@
 #include "catch2/catch_all.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-#include <cppalloc/internal/block.hpp>
-#include <cppalloc/internal/util.hpp>
+#include <allocators/internal/block.hpp>
+#include <allocators/internal/util.hpp>
 
 #include "../util.hpp"
 
-using namespace cppalloc::internal;
+using namespace allocators::internal;
 
 TEST_CASE("IsPowerOfTwo", "[internal/util]") {
   size_t kMaxExp = 16;

@@ -7,10 +7,10 @@
 
 #include <cstddef>
 
-#include <cppalloc/object/bump.hpp>
-#include <cppalloc/trait.hpp>
+#include <allocators/object/bump.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 template <class T, class... Args>
 class BumpAdapter : public Bump<AlignmentT<std::alignment_of_v<T>>, Args...> {
@@ -40,4 +40,4 @@ template <class T, class U>
 bool operator!=(const BumpAdapter<T>&, const BumpAdapter<U>&) {
   return false;
 }
-} // namespace cppalloc
+} // namespace allocators

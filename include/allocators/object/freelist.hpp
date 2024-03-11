@@ -4,13 +4,13 @@
 
 #include <template/optional.hpp>
 
-#include <cppalloc/error.hpp>
-#include <cppalloc/internal/block.hpp>
-#include <cppalloc/internal/util.hpp>
-#include <cppalloc/object/block.hpp>
-#include <cppalloc/trait.hpp>
+#include <allocators/error.hpp>
+#include <allocators/internal/block.hpp>
+#include <allocators/internal/util.hpp>
+#include <allocators/object/block.hpp>
+#include <allocators/trait.hpp>
 
-namespace cppalloc {
+namespace allocators {
 
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "parameters.hpp".
@@ -24,7 +24,7 @@ public:
   using Allocator = typename Parent::Allocator;
 
   static constexpr FindBy kSearchStrategy =
-      ntp::optional<SearchT<CPPALLOC_ALLOCATOR_SEARCH>, Args...>::value;
+      ntp::optional<SearchT<ALLOCATORS_ALLOCATORS_SEARCH>, Args...>::value;
 
   using BlockOptions = typename Parent::Options;
 
@@ -208,4 +208,4 @@ private:
   internal::BlockHeader* free_list_ = nullptr;
 };
 
-} // namespace cppalloc
+} // namespace allocators

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef CPPALLOC_DEBUG
+#ifdef ALLOCATORS_DEBUG
 
 #include <plog/Log.h>
 
@@ -13,7 +13,7 @@
 
 #include <cstddef>
 
-namespace cppalloc::internal {
+namespace allocators::internal {
 
 static constexpr size_t kMinimumAlignment = sizeof(void*);
 
@@ -56,4 +56,4 @@ template <class T> T* PtrSubtract(T* ptr, std::size_t offset) {
   return reinterpret_cast<T*>(addr - offset);
 }
 
-} // namespace cppalloc::internal
+} // namespace allocators::internal

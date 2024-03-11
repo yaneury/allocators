@@ -6,8 +6,8 @@
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CPPALLOC_BUILD_TESTS": "ON",
-        "CPPALLOC_BUILD_SANDBOX": "ON",
+        "ALLOCATORS_BUILD_TESTS": "ON",
+        "ALLOCATORS_BUILD_SANDBOX": "ON",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "1"
       }
     },
