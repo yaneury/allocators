@@ -3,7 +3,6 @@
 #include "catch2/catch_all.hpp"
 
 #include "cppalloc/bump.hpp"
-#include "cppalloc/fixed.hpp"
 #include "cppalloc/freelist.hpp"
 
 #include "../util.hpp"
