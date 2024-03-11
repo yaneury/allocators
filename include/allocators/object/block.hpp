@@ -2,10 +2,10 @@
 
 #include <template/parameters.hpp>
 
-#include <allocators/block/static.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
 #include <allocators/parameters.hpp>
+#include <allocators/provider/static.hpp>
 #include <allocators/trait.hpp>
 
 namespace allocators {

@@ -3,7 +3,7 @@
 #include <ranges>
 #include <vector>
 
-#include <allocators/block/bump.hpp>
+#include <allocators/provider/bump.hpp>
 
 #include "../util.hpp"
 

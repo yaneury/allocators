@@ -7,8 +7,8 @@
 
 #include "catch2/catch_all.hpp"
 
-#include <allocators/block/page.hpp>
-#include <allocators/block/static.hpp>
+#include <allocators/provider/page.hpp>
+#include <allocators/provider/static.hpp>
 #include <allocators/internal/util.hpp>
 #include <allocators/object/bump.hpp>
 #include <allocators/object/freelist.hpp>
