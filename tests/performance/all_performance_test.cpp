@@ -2,8 +2,8 @@
 
 #include "catch2/catch_all.hpp"
 
-#include "cppalloc/bump.hpp"
-#include "cppalloc/freelist.hpp"
+#include <cppalloc/object/bump.hpp>
+#include <cppalloc/object/freelist.hpp>
 
 #include "../util.hpp"
 

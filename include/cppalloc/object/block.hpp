@@ -2,11 +2,11 @@
 
 #include <template/parameters.hpp>
 
-#include "internal/block.hpp"
-#include "internal/util.hpp"
-#include "parameters.hpp"
-#include "static.hpp"
-#include "trait.hpp"
+#include <cppalloc/block/static.hpp>
+#include <cppalloc/internal/block.hpp>
+#include <cppalloc/internal/util.hpp>
+#include <cppalloc/parameters.hpp>
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 

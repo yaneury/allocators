@@ -4,7 +4,7 @@
 #include <thread>
 #include <vector>
 
-#include "cppalloc/bump.hpp"
+#include <cppalloc/object/bump.hpp>
 
 #include "../util.hpp"
 

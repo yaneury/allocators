@@ -6,7 +6,7 @@
 
 #include "atomic_queue/atomic_queue.h"
 
-#include "cppalloc/page.hpp"
+#include <cppalloc/block/page.hpp>
 
 using namespace cppalloc;
 

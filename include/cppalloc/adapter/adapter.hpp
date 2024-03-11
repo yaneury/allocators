@@ -7,8 +7,8 @@
 
 #include <cstddef>
 
-#include "bump.hpp"
-#include "trait.hpp"
+#include <cppalloc/object/bump.hpp>
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 

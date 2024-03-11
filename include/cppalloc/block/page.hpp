@@ -7,10 +7,10 @@
 
 #include <template/parameters.hpp>
 
-#include "error.hpp"
-#include "internal/platform.hpp"
-#include "parameters.hpp"
-#include "trait.hpp"
+#include <cppalloc/error.hpp>
+#include <cppalloc/internal/platform.hpp>
+#include <cppalloc/parameters.hpp>
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 

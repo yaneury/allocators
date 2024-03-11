@@ -4,11 +4,11 @@
 
 #include <template/parameters.hpp>
 
-#include "error.hpp"
-#include "internal/util.hpp"
-#include "page.hpp"
-#include "parameters.hpp"
-#include "trait.hpp"
+#include <cppalloc/block/page.hpp>
+#include <cppalloc/error.hpp>
+#include <cppalloc/internal/util.hpp>
+#include <cppalloc/parameters.hpp>
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 

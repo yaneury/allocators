@@ -18,8 +18,8 @@
 
 #include <result.hpp>
 
-#include "failure.hpp"
-#include "platform.hpp"
+#include <cppalloc/internal/failure.hpp>
+#include <cppalloc/internal/platform.hpp>
 
 namespace cppalloc::internal {
 

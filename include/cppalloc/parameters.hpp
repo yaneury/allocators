@@ -7,7 +7,7 @@
 
 #include <template/parameters.hpp>
 
-#include "trait.hpp"
+#include <cppalloc/trait.hpp>
 
 namespace cppalloc {
 

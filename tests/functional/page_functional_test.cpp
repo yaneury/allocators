@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "cppalloc/page.hpp"
+#include <cppalloc/block/page.hpp>
 
 using namespace cppalloc;
 
