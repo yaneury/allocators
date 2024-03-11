@@ -3,21 +3,18 @@
 #include <template/parameters.hpp>
 
 #include <allocators/common/error.hpp>
-#include <allocators/common/parameters.hpp>
-#include <allocators/internal/util.hpp>
 
 namespace allocators::provider {
 
-// A wrapper over statically-initialized array that conforms to
-// the BlockAllocator interface. Unlike other allocators, memory
-// is not fetched from the heap, but rather defined at compile time
-// as static data.
-template <class... Args> class Static {
+// Provider class that reserves memory static data instead of
+// fetching it from the heap. This is useful if a user wants to
+// leverage the various Strategy algorithms on statically-allocated
+// memory over that fetched from the heap.
+// The |Size| parameter specifies how much memory to reserve.
+// Note, the size can be too large, and its up to the user of
+// this class to restrict the upper bound size.
+template <std::size_t Size, class... Args> class Static {
 public:
-  // Size of the memory block.
-  static constexpr std::size_t kSize =
-      ntp::optional<SizeT<ALLOCATORS_ALLOCATORS_SIZE>, Args...>::value;
-
   Static() = default;
 
   ALLOCATORS_NO_COPY_NO_MOVE(Static);
@@ -36,12 +33,12 @@ public:
     return {};
   }
 
-  constexpr std::size_t GetBlockSize() const { return kSize; };
+  constexpr std::size_t GetBlockSize() const { return Size; };
 
 private:
   std::byte* AsPtr() { return &block_[0]; }
 
-  std::byte block_[kSize] = {std::byte(0)};
+  std::byte block_[Size] = {std::byte(0)};
 };
 
 } // namespace allocators::provider
