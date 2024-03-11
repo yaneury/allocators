@@ -8,28 +8,63 @@
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/strategy/block.hpp>
+#include <allocators/provider/page.hpp>
 
 namespace allocators {
 
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "common/parameters.hpp".
-template <class... Args> class FreeList : public Block<Args...> {
+template <class... Args> class FreeList {
 public:
-  // We have to explicitly provide the parent class in contexts with a
-  // nondepedent name. For more information, see:
-  // https://stackoverflow.com/questions/75595977/access-protected-members-of-base-class-when-using-template-parameter.
-  using Parent = Block<Args...>;
+  // Allocator used to request memory defaults to unconfigured Page allocator.
+  using Allocator = typename ntp::type<ProviderT<Page<>>, Args...>::value;
 
-  using Allocator = typename Parent::Allocator;
+  // Alignment used for the blocks requested. N.b. this is *not* the alignment
+  // for individual allocation requests, of which may have different alignment
+  // requirements.
+  //
+  // This field is optional. If not provided, will default to
+  // |ALLOCATORS_ALLOCATORS_ALIGNMENT|. If provided, it must greater than
+  // |ALLOCATORS_ALLOCATORS_ALIGNMENT| and be a power of two.
+  static constexpr std::size_t kAlignment =
+      std::max({ALLOCATORS_ALLOCATORS_ALIGNMENT,
+                ntp::optional<AlignmentT<0>, Args...>::value});
+
+  // Size of the blocks. This allocator doesn't support variable-sized blocks.
+  // All blocks allocated are of the same size. N.b. that the size here will
+  // *not* be the size of memory ultimately requested for blocks. This is so
+  // because supplemental memory is needed for block headers and to ensure
+  // alignment as specified with |kAlignment|.
+  //
+  // This field is optional. If not provided, will default
+  // |ALLOCATORS_ALLOCATORS_SIZE|.
+  static constexpr std::size_t kSize =
+      ntp::optional<SizeT<ALLOCATORS_ALLOCATORS_SIZE>, Args...>::value;
+
+  // Sizing limits placed on |kSize|.
+  // If |HaveAtLeastSizeBytes| is provided, then block must have |kSize| bytes
+  // available not including header size and alignment.
+  // If |NoMoreThanSizeBytes| is provided, then block must not exceed |kSize|
+  // bytes, including after accounting for header size and alignment.
+  static constexpr bool kMustContainSizeBytesInSpace =
+      ntp::optional<LimitT<ALLOCATORS_ALLOCATORS_LIMIT>, Args...>::value ==
+      BlocksMust::HaveAtLeastSizeBytes;
+
+  // Policy employed when block has no more space for pending request.
+  // If |GrowStorage| is provided, then a new block will be requested;
+  // if |ReturnNull| is provided, then nullptr is returned on the allocation
+  // request. This does not mean that it's impossible to request more memory
+  // though. It only means that the block has no more space for the requested
+  // size. If a smaller size request comes along, it may be possible that the
+  // block has sufficient storage for it.
+  static constexpr bool kGrowWhenFull =
+      ntp::optional<GrowT<ALLOCATORS_ALLOCATORS_GROW>, Args...>::value ==
+      WhenFull::GrowStorage;
 
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<ALLOCATORS_ALLOCATORS_SEARCH>, Args...>::value;
 
-  using BlockOptions = typename Parent::Options;
-
   struct Options {
-    // Inherited from Block::Options. Consult |Block| for documentation.
     std::size_t alignment;
     std::size_t size;
     bool must_contain_size_bytes_in_space;
@@ -38,45 +73,27 @@ public:
     FindBy search_strategy;
   };
 
-  static BlockOptions ToBlockOptions(Options options) {
-    return BlockOptions{
-        .alignment = options.alignment,
-        .size = options.size,
-        .must_contain_size_bytes_in_space =
-            options.must_contain_size_bytes_in_space,
-        .grow_when_full = options.grow_when_full,
-    };
-  }
-
   static constexpr Options kDefaultOptions = {
-      .alignment = Parent::kAlignment,
-      .size = Parent::kSize,
-      .must_contain_size_bytes_in_space = Parent::kMustContainSizeBytesInSpace,
-      .grow_when_full = Parent::kGrowWhenFull,
+      .alignment = kAlignment,
+      .size = kSize,
+      .must_contain_size_bytes_in_space = kMustContainSizeBytesInSpace,
+      .grow_when_full = kGrowWhenFull,
       .search_strategy = kSearchStrategy,
   };
 
-  // TODO: Add constructor (or factory method) that allows forwarding args
-  // and setting options.
-  template <class... AllocatorArgs>
-  FreeList(AllocatorArgs&&... args)
-      : Parent(Allocator(std::forward<AllocatorArgs>(args)...),
-               ToBlockOptions(kDefaultOptions)),
-        search_strategy_(kDefaultOptions.search_strategy) {}
-
   FreeList(Options options = kDefaultOptions)
-      : Parent(Allocator(), ToBlockOptions(options)),
-        search_strategy_(options.search_strategy) {}
+      : allocator_(Allocator()), options_(std::move(options)) {}
 
   FreeList(Allocator& allocator, Options options = kDefaultOptions)
-      : Parent(allocator, ToBlockOptions(options)),
-        search_strategy_(options.search_strategy) {}
+      : allocator_(allocator), options_(std::move(options)) {}
 
-  /*
   FreeList(Allocator&& allocator, Options options = kDefaultOptions)
-      : Parent(std::move(allocator), ToBlockOptions(options)),
-        search_strategy_(options.search_strategy) {}
-        */
+      : allocator_(std::move(allocator)), options_(std::move(options)) {}
+
+  template <class... AllocatorArgs>
+  FreeList(AllocatorArgs&&... args)
+      : allocator_(std::forward<AllocatorArgs>(args)...),
+        options_(kDefaultOptions) {}
 
   Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))
@@ -91,7 +108,7 @@ public:
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
 
-    if constexpr (Parent::kGrowWhenFull == WhenFull::ReturnNull)
+    if constexpr (kGrowWhenFull == WhenFull::ReturnNull)
       if (free_list_ == nullptr)
         return cpp::fail(Error::NoFreeBlock);
 
@@ -164,28 +181,80 @@ public:
         return cpp::fail(Error::Internal);
     }
 
-    if (free_list_->size == Parent::GetAlignedSize()) {
+    if (free_list_->size == GetAlignedSize()) {
       // TODO: Add error handling.
-      (void)Parent::ReleaseAllBlocks(block_);
+      (void)ReleaseAllBlocks(block_);
       // free_list_ = block_ = nullptr;
     }
 
     return {};
   }
 
-  Allocator& GetAllocator() { return Parent::allocator_; }
+  Allocator& GetAllocator() { return allocator_; }
 
   constexpr bool AcceptsAlignment() const { return true; }
 
   constexpr bool AcceptsReturn() const { return false; }
 
 private:
+  // Ultimate size of the blocks after accounting for header and alignment.
+  [[nodiscard]] constexpr std::size_t GetAlignedSize() const {
+    return options_.must_contain_size_bytes_in_space
+               ? internal::AlignUp(options_.size +
+                                       internal::GetBlockHeaderSize(),
+                                   options_.alignment)
+               : internal::AlignDown(options_.size, options_.alignment);
+  }
+
+  internal::VirtualAddressRange CreateAllocation(std::byte* base) {
+    return internal::VirtualAddressRange(base, GetAlignedSize());
+  }
+
+  Result<internal::BlockHeader*>
+  AllocateNewBlock(internal::BlockHeader* next = nullptr) {
+    Result<std::byte*> base_or = allocator_.Provide(GetAlignedSize());
+
+    if (base_or.has_error())
+      return cpp::fail(base_or.error());
+
+    auto allocation =
+        internal::VirtualAddressRange(base_or.value(), GetAlignedSize());
+    return internal::BlockHeader::Create(allocation, next);
+  }
+
+  Result<void> ReleaseBlock(internal::BlockHeader* block) { return {}; }
+
+  Result<void> ReleaseAllBlocks(internal::BlockHeader* block,
+                                internal::BlockHeader* sentinel = nullptr) {
+    auto release = [&](std::byte* p) -> internal::Failable<void> {
+      auto result = allocator_.Return(p);
+      if (result.has_error()) {
+        DERROR("Block release failed: " << (int)result.error());
+        return cpp::fail(internal::Failure::ReleaseFailed);
+      }
+
+      return {};
+    };
+    if (auto result =
+            internal::ReleaseBlockList(block, std::move(release), sentinel);
+        result.has_error())
+      return cpp::fail(Error::Internal);
+
+    return {};
+  }
+
+  // Various assertions hidden from user API but added here to ensure invariants
+  // are met at compile time.
+  static_assert(internal::IsPowerOfTwo(kAlignment),
+                "kAlignment must be a power of 2.");
+
   // Max size allowed per request.
-  constexpr std::size_t GetMaxRequestSize() { return Parent::GetAlignedSize(); }
+  constexpr std::size_t GetMaxRequestSize() { return GetAlignedSize(); }
 
   auto GetFindBlockFn() {
-    return search_strategy_ == FindBy::FirstFit ? internal::FindBlockByFirstFit
-           : search_strategy_ == FindBy::BestFit
+    return options_.search_strategy == FindBy::FirstFit
+               ? internal::FindBlockByFirstFit
+           : options_.search_strategy == FindBy::BestFit
                ? internal::FindBlockByBestFit
                : internal::FindBlockByWorstFit;
   }
@@ -195,7 +264,7 @@ private:
     if (block_)
       return {};
 
-    auto new_block_or = Parent::AllocateNewBlock();
+    auto new_block_or = AllocateNewBlock();
     if (new_block_or.has_error())
       return cpp::fail(new_block_or.error());
 
@@ -206,8 +275,8 @@ private:
     return {};
   }
 
-  FindBy search_strategy_;
-
+  Allocator allocator_;
+  Options options_;
   internal::BlockHeader* block_ = nullptr;
   internal::BlockHeader* free_list_ = nullptr;
 };
