@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-#include <allocators/object/bump.hpp>
+#include <allocators/strategy/bump.hpp>
 #include <allocators/trait.hpp>
 
 namespace allocators {

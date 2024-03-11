@@ -7,11 +7,11 @@
 
 #include "catch2/catch_all.hpp"
 
+#include <allocators/internal/util.hpp>
 #include <allocators/provider/page.hpp>
 #include <allocators/provider/static.hpp>
-#include <allocators/internal/util.hpp>
-#include <allocators/object/bump.hpp>
-#include <allocators/object/freelist.hpp>
+#include <allocators/strategy/bump.hpp>
+#include <allocators/strategy/freelist.hpp>
 
 #include "../util.hpp"
 

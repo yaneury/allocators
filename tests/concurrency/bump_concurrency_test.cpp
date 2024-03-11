@@ -4,7 +4,7 @@
 #include <thread>
 #include <vector>
 
-#include <allocators/object/bump.hpp>
+#include <allocators/strategy/bump.hpp>
 
 #include "../util.hpp"
 

@@ -5,7 +5,7 @@
 #include "magic_enum.hpp"
 
 #include <allocators/adapter/adapter.hpp>
-#include <allocators/object/freelist.hpp>
+#include <allocators/strategy/freelist.hpp>
 
 #include "../util.hpp"
 #include <allocators/provider/static.hpp>
