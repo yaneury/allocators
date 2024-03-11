@@ -7,7 +7,7 @@
 #include <allocators/error.hpp>
 #include <allocators/internal/block.hpp>
 #include <allocators/internal/util.hpp>
-#include <allocators/object/block.hpp>
+#include <allocators/strategy/block.hpp>
 #include <allocators/trait.hpp>
 
 namespace allocators {
