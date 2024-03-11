@@ -27,14 +27,14 @@ public:
   Static& operator=(Static&&) = delete;
   */
 
-  Result<std::byte*> Allocate(std::size_t count) {
+  Result<std::byte*> Provide(std::size_t count) {
     if (count != 1)
       return cpp::fail(Error::InvalidInput);
 
     return AsPtr();
   }
 
-  Result<void> Release(std::byte* ptr) {
+  Result<void> Return(std::byte* ptr) {
     if (ptr != AsPtr())
       return cpp::fail(Error::InvalidInput);
 

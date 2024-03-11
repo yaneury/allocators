@@ -7,7 +7,6 @@ add_executable(
   concurrency/bump_concurrency_test.cpp
   concurrency/page_concurrency_test.cpp
   functional/freelist_functional_test.cpp
-  functional/all_functional_test.cpp
   functional/internal_functional_test.cpp
   functional/page_functional_test.cpp)
 

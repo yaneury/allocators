@@ -19,7 +19,7 @@ TEST_CASE("Page allocator", "[allocator][Page]") {
     AllocatorUnderTest allocator;
 
     for (auto i = 0u; i < kMaxPages; ++i) {
-      auto p_or = allocator.Allocate(1);
+      auto p_or = allocator.Provide(1);
       REQUIRE(p_or.has_value());
       REQUIRE(p_or.value() != nullptr);
       allocations[i] = p_or.value();
@@ -34,7 +34,7 @@ TEST_CASE("Page allocator", "[allocator][Page]") {
     }
 
     for (auto i = 0u; i < kMaxPages; ++i) {
-      auto result = allocator.Release(allocations[i]);
+      auto result = allocator.Return(allocations[i]);
       REQUIRE(result.has_value());
     }
   }
@@ -45,7 +45,7 @@ TEST_CASE("Page allocator", "[allocator][Page]") {
   SECTION("While rejecting invalid sizes") {
     AllocatorUnderTest allocator;
     for (auto size : {0ul, kMaxPages + 1}) {
-      auto p_or = allocator.Allocate(size);
+      auto p_or = allocator.Provide(size);
       REQUIRE(p_or.has_error());
       REQUIRE(p_or.error() == Error::InvalidInput);
     }

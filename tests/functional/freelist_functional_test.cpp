@@ -39,30 +39,29 @@ TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
 
   std::array<T*, N> allocs;
   for (std::size_t i = 0; i < N; ++i)
-    allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
+    allocs[i] = GetPtrOrFail<T>(allocator.Find(SizeOfT));
 
   if constexpr (!TestType::kMustContainSizeBytesInSpace) {
     SECTION("Can not allocate more objects when at capacity") {
-      REQUIRE(allocator.Allocate(SizeOfT) == cpp::fail(Error::NoFreeBlock));
+      REQUIRE(allocator.Find(SizeOfT) == cpp::fail(Error::NoFreeBlock));
     }
   }
 
   SECTION("Can release all allocations") {
     for (std::size_t i = 0; i < N; ++i)
-      REQUIRE(allocator.Release(ToBytePtr(allocs[i])).has_value());
+      REQUIRE(allocator.Return(ToBytePtr(allocs[i])).has_value());
 
     SECTION("Allowing subsequent requests of N objects") {
       for (std::size_t i = 0; i < N; ++i)
-        allocs[i] = GetPtrOrFail<T>(allocator.Allocate(SizeOfT));
+        allocs[i] = GetPtrOrFail<T>(allocator.Find(SizeOfT));
 
       for (std::size_t i = 0; i < N; ++i)
-        REQUIRE(allocator.Release(ToBytePtr(allocs[i])).has_value());
+        REQUIRE(allocator.Return(ToBytePtr(allocs[i])).has_value());
     }
 
     SECTION("Allowing single request of ChunkSize object") {
-      std::byte* chunk =
-          GetValueOrFail<std::byte*>(allocator.Allocate(kChunkSize));
-      REQUIRE(allocator.Release(chunk).has_value());
+      std::byte* chunk = GetValueOrFail<std::byte*>(allocator.Find(kChunkSize));
+      REQUIRE(allocator.Return(chunk).has_value());
     }
   }
 }

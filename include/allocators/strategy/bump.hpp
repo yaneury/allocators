@@ -32,7 +32,7 @@ template <class... Args> class Bump {
 public:
   // Allocator used to request memory from OS.
   // Defaults to unconfigured Page allocator.
-  using Allocator = typename ntp::type<BlockAllocatorT<Page<>>, Args...>::value;
+  using Allocator = typename ntp::type<ProviderT<Page<>>, Args...>::value;
 
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
@@ -72,7 +72,7 @@ public:
   // TODO: Don't ignore this error.
   ~Bump() { (void)Reset(); }
 
-  Result<std::byte*> Allocate(Layout layout) noexcept {
+  Result<std::byte*> Find(Layout layout) noexcept {
     if (!IsValid(layout))
       return cpp::fail(Error::InvalidInput);
 
@@ -111,11 +111,11 @@ public:
     }
   }
 
-  Result<std::byte*> Allocate(std::size_t size) noexcept {
-    return Allocate(Layout(size, internal::kMinimumAlignment));
+  Result<std::byte*> Find(std::size_t size) noexcept {
+    return Find(Layout(size, internal::kMinimumAlignment));
   }
 
-  Result<void> Release(std::byte* ptr) {
+  Result<void> Return(std::byte* ptr) {
     // The bump allocator does not support per-object deallocation.
     return cpp::fail(Error::OperationNotSupported);
   }
@@ -126,7 +126,7 @@ public:
       return {};
 
     for (auto i = 0u; i <= old_active.index; i++) {
-      if (auto result = allocator_.Release(block_table_[i]); result.has_error())
+      if (auto result = allocator_.Return(block_table_[i]); result.has_error())
         return cpp::fail(result.error());
 
       block_table_[i] = nullptr;
@@ -136,6 +136,10 @@ public:
 
     return {};
   }
+
+  constexpr bool AcceptsAlignment() const { return true; }
+
+  constexpr bool AcceptsReturn() const { return false; }
 
 private:
   // This only allows ~1,000 descriptors which isn't a lot. Initially, this was
@@ -175,13 +179,13 @@ private:
     // 0.
     new_active.initialized = 1;
 
-    auto new_block_or = allocator_.Allocate(1);
+    auto new_block_or = allocator_.Provide(1);
     if (new_block_or.has_error())
       return cpp::fail(Error::OutOfMemory);
 
     if (active_.compare_exchange_weak(old_active, new_active)) {
       block_table_[new_active.index] = new_block_or.value();
-    } else if (auto result = allocator_.Release(new_block_or.value());
+    } else if (auto result = allocator_.Return(new_block_or.value());
                result.has_error()) {
       return cpp::fail(result.error());
     }

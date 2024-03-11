@@ -27,7 +27,7 @@ TEST_CASE("Bump allocator works in multi-threaded contexts",
                << count << "allocations.");
     }
     for (auto i = 0ul; i < count; ++i) {
-      auto p_or = allocator.Allocate(GetRandomNumber(1, 100));
+      auto p_or = allocator.Find(GetRandomNumber(1, 100));
       REQUIRE(p_or.has_value());
     }
   };

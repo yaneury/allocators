@@ -71,12 +71,10 @@ template <std::size_t R>
 struct CountT : std::integral_constant<std::size_t, R> {};
 
 // Allocator type used to fetch variable-sized objects.
-template <ObjectAllocator Allocator>
-struct ObjectAllocatorT : ntp::integral_type<Allocator> {};
+template <StrategyTrait S> struct StrategyT : ntp::integral_type<S> {};
 
 // Allocator type used to fetch fixed-size blocks.
-template <BlockAllocator Allocator>
-struct BlockAllocatorT : ntp::integral_type<Allocator> {};
+template <ProviderTrait P> struct ProviderT : ntp::integral_type<P> {};
 
 } // namespace allocators
 
