@@ -10,7 +10,7 @@
 #include <allocators/internal/util.hpp>
 #include <allocators/provider/page.hpp>
 
-namespace allocators {
+namespace allocators::strategy {
 
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
@@ -32,7 +32,8 @@ template <class... Args> class Bump {
 public:
   // Allocator used to request memory from OS.
   // Defaults to unconfigured Page allocator.
-  using Allocator = typename ntp::type<ProviderT<Page<>>, Args...>::value;
+  using Allocator =
+      typename ntp::type<ProviderT<provider::Page<>>, Args...>::value;
 
   // Policy employed when block has no more space for pending request.
   // If |GrowStorage| is provided, then a new block will be requested;
@@ -206,4 +207,4 @@ private:
   std::array<std::byte*, 1 << kTotalEntryInBits> block_table_ = {0};
 };
 
-} // namespace allocators
+} // namespace allocators::strategy

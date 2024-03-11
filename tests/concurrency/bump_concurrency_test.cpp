@@ -10,7 +10,7 @@
 
 using namespace allocators;
 
-using AllocatorUnderTest = Bump<>;
+using AllocatorUnderTest = strategy::Bump<>;
 
 TEST_CASE("Bump allocator works in multi-threaded contexts",
           "[concurrency][allocator][Bump]") {

@@ -10,14 +10,15 @@
 #include <allocators/internal/util.hpp>
 #include <allocators/provider/page.hpp>
 
-namespace allocators {
+namespace allocators::strategy {
 
 // Freelist allocator with tunable parameters. For reference as
 // to how to configure, see "common/parameters.hpp".
 template <class... Args> class FreeList {
 public:
   // Allocator used to request memory defaults to unconfigured Page allocator.
-  using Allocator = typename ntp::type<ProviderT<Page<>>, Args...>::value;
+  using Allocator =
+      typename ntp::type<ProviderT<provider::Page<>>, Args...>::value;
 
   // Alignment used for the blocks requested. N.b. this is *not* the alignment
   // for individual allocation requests, of which may have different alignment
@@ -281,4 +282,4 @@ private:
   internal::BlockHeader* free_list_ = nullptr;
 };
 
-} // namespace allocators
+} // namespace allocators::strategy

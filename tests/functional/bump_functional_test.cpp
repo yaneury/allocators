@@ -3,7 +3,7 @@
 #include <ranges>
 #include <vector>
 
-#include <allocators/provider/bump.hpp>
+#include <allocators/strategy/bump.hpp>
 
 #include "../util.hpp"
 
@@ -19,7 +19,7 @@ static constexpr std::size_t MaxBlockSize =
 template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
-using FixedBump = Bump<GrowT<WhenFull::ReturnNull>, Args...>;
+using FixedBump = strategy::Bump<GrowT<WhenFull::ReturnNull>, Args...>;
 
 using FixedBumpAllocators = AllocatorPack<
     FixedBump<LimitT<BlocksMust::HaveAtLeastSizeBytes>, SizeT<MinBlockSize>>,
@@ -58,7 +58,7 @@ TEMPLATE_LIST_TEST_CASE("Fixed Bump allocator that can fit N objects",
 }
 
 template <class... Args>
-using VariableBump = Bump<GrowT<WhenFull::GrowStorage>, Args...>;
+using VariableBump = strategy::Bump<GrowT<WhenFull::GrowStorage>, Args...>;
 
 using VariableBumpAllocators = AllocatorPack<
     VariableBump<LimitT<BlocksMust::HaveAtLeastSizeBytes>, SizeT<MinBlockSize>>,

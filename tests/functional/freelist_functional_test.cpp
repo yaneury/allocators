@@ -23,7 +23,7 @@ template <class... Allocator> struct AllocatorPack {};
 
 template <class... Args>
 using FixedFreeList =
-    FreeList<GrowT<WhenFull::ReturnNull>, SizeT<kBlockSize>, Args...>;
+    strategy::FreeList<GrowT<WhenFull::ReturnNull>, SizeT<kBlockSize>, Args...>;
 
 using FixedFreeListAllocators =
     AllocatorPack<FixedFreeList<LimitT<BlocksMust::HaveAtLeastSizeBytes>>,

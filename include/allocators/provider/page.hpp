@@ -12,7 +12,7 @@
 #include <allocators/common/trait.hpp>
 #include <allocators/internal/platform.hpp>
 
-namespace allocators {
+namespace allocators::provider {
 
 // Coarse-grained allocator that allocates multiples of system page size
 // on request. This is used internally by other allocators in this library
@@ -191,4 +191,4 @@ private:
   std::optional<internal::VirtualAddressRange> heap_ = std::nullopt;
 };
 
-} // namespace allocators
+} // namespace allocators::provider
