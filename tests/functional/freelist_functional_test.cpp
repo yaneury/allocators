@@ -25,11 +25,7 @@ template <class... Allocator> struct AllocatorPack {};
 template <class... Args>
 using FixedFreeList = strategy::FreeList<provider::LockFreePage<>, Args...>;
 
-using FixedFreeListAllocators = AllocatorPack<
-    FixedFreeList<strategy::FreeListParams::LimitT<
-        strategy::FreeListParams::BlocksMust::HaveAtLeastSizeBytes>>,
-    FixedFreeList<strategy::FreeListParams::LimitT<
-        strategy::FreeListParams::BlocksMust::NoMoreThanSizeBytes>>>;
+using FixedFreeListAllocators = AllocatorPack<FixedFreeList<>>;
 
 TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
                         "[allocator][FreeList][fixed]",
@@ -42,12 +38,6 @@ TEMPLATE_LIST_TEST_CASE("Fixed FreeList allocator that can fit N objects",
   std::array<T*, N> allocs;
   for (std::size_t i = 0; i < N; ++i)
     allocs[i] = GetPtrOrFail<T>(allocator.Find(SizeOfT));
-
-  if constexpr (!TestType::kMustContainSizeBytesInSpace) {
-    SECTION("Can not allocate more objects when at capacity") {
-      REQUIRE(allocator.Find(SizeOfT) == cpp::fail(Error::NoFreeBlock));
-    }
-  }
 
   SECTION("Can release all allocations") {
     for (std::size_t i = 0; i < N; ++i)

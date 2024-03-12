@@ -11,31 +11,6 @@
 
 namespace allocators::strategy {
 
-// Parameters for LockFreeBump allocator defined below.
-struct LockFreeBumpParams {
-  // Policy to employ when Bump allocator's block is out of space and
-  // can't fullfill an allocation request.
-  enum WhenFull {
-    // Return |nullptr|, signalling that no more allocations can be made on the
-    // allocator until a free request
-    // is made.
-    ReturnNull = 0,
-
-    // Grow storage by requesting a new block to allocate the request and
-    // subsequent requests in.
-    GrowStorage = 1
-  };
-
-  // If |GrowStorage| is provided, then a new block will be requested;
-  // if |ReturnNull| is provided, then nullptr is returned on the allocation
-  // request. This does not mean that it's impossible to request more memory
-  // though. It only means that the block has no more space for the requested
-  // size. If a request with a smaller size comes along, it may be possible that
-  // the block has sufficient storage for it.
-  // Defaults to |WhenFull::GrowStorage|.
-  template <WhenFull WF> struct GrowT : std::integral_constant<WhenFull, WF> {};
-};
-
 // A simple Bump allocator. This allocator creates a big block of bytes on
 // first allocation, hereafter "block", that fits a large number of objects.
 // Each allocation moves a pointer upward, tracking the location of the most
@@ -56,7 +31,7 @@ struct LockFreeBumpParams {
 // This provider is thread-safe using lock-free algorithms.
 template <class Provider, class... Args>
 requires ProviderTrait<Provider>
-class LockFreeBump : LockFreeBumpParams {
+class LockFreeBump {
 public:
   explicit LockFreeBump(Provider& provider) : provider_(provider) {}
 
@@ -88,9 +63,6 @@ public:
 
       std::size_t headroom = provider_.get().GetBlockSize() - old_active.size;
       if (headroom < request_size) {
-        if (!kGrowWhenFull)
-          return cpp::fail(Error::ReachedMemoryLimit);
-
         if (auto result = AllocateNewBlock(); result.has_error())
           return cpp::fail(result.error());
 
@@ -143,10 +115,6 @@ private:
   //  virtual address space. Perhaps, we can model something like the page table
   //  structures where multiple tables are used to determine the final address.
   static constexpr unsigned kTotalEntryInBits = 10;
-
-  static constexpr bool kGrowWhenFull =
-      ntp::optional<GrowT<WhenFull::GrowStorage>, Args...>::value ==
-      WhenFull::GrowStorage;
 
   struct BlockDescriptor {
     // Whether the block was status.
