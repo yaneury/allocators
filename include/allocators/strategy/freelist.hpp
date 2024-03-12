@@ -13,29 +13,11 @@
 namespace allocators::strategy {
 
 struct FreeListParams {
-  // Size (in bytes) for allocator's blocks. Usually, an allocator uses
-  // fixed-size blocks to allocate memory. Within a block, several objects of
-  // varying length can be "allocated", so long as they fit within the amount of
-  // memory already acquired. Currently, this field is used by the Bump
-  // allocator.
-  template <std::size_t Size>
-  struct SizeT : std::integral_constant<std::size_t, Size> {};
-
   // Alignment used when making an allocation. Usually, allocators defer to the
   // alignment of the underlying object they are allocating. The constrains for
   // this value are that it is a power of two and greater than |sizeof(void*)|.
   template <std::size_t Alignment>
   struct AlignmentT : std::integral_constant<std::size_t, Alignment> {};
-
-  // Policy used to determine sizing constraint for blocks.
-  enum BlocksMust {
-    // Block must have enough space to fulfill requested size in |SizeT|
-    // parameter.
-    HaveAtLeastSizeBytes = 0,
-
-    // Block can not be larger than requested size in |SizeT| parameter.
-    NoMoreThanSizeBytes = 1,
-  };
 
   // Policy to employ when looking for free block in free list.
   enum FindBy {
@@ -50,9 +32,6 @@ struct FreeListParams {
   };
 
   template <FindBy FB> struct SearchT : std::integral_constant<FindBy, FB> {};
-
-  template <BlocksMust CM>
-  struct LimitT : std::integral_constant<BlocksMust, CM> {};
 };
 
 // Freelist allocator with tunable parameters. For reference as
@@ -63,12 +42,6 @@ class FreeList : public FreeListParams {
 public:
   static constexpr std::size_t kAlignment =
       std::max({sizeof(void*), ntp::optional<AlignmentT<0>, Args...>::value});
-
-  static constexpr bool kMustContainSizeBytesInSpace =
-      ntp::optional<LimitT<BlocksMust::NoMoreThanSizeBytes>, Args...>::value ==
-      BlocksMust::HaveAtLeastSizeBytes;
-
-  static constexpr bool kGrowWhenFull = true;
 
   static constexpr FindBy kSearchStrategy =
       ntp::optional<SearchT<FindBy::BestFit>, Args...>::value;
@@ -89,10 +62,6 @@ public:
 
     if (auto init = InitBlockIfUnset(); init.has_error())
       return cpp::fail(init.error());
-
-    if constexpr (kGrowWhenFull == false)
-      if (free_list_ == nullptr)
-        return cpp::fail(Error::NoFreeBlock);
 
     internal::Failable<std::optional<internal::HeaderPair>> first_fit_or_error =
         GetFindBlockFn()(free_list_, request_size);
@@ -179,11 +148,7 @@ public:
 private:
   // Ultimate size of the blocks after accounting for header and alignment.
   [[nodiscard]] static constexpr std::size_t GetAlignedSize() {
-    return kMustContainSizeBytesInSpace
-               ? internal::AlignUp(Provider::GetBlockSize() +
-                                       internal::GetBlockHeaderSize(),
-                                   kAlignment)
-               : internal::AlignDown(Provider::GetBlockSize(), kAlignment);
+    return Provider::GetBlockSize();
   }
 
   internal::VirtualAddressRange CreateAllocation(std::byte* base) {
