@@ -70,8 +70,9 @@ public:
         auto& descriptor = GetHeap()->descriptors[old_anchor.head];
         descriptor.occupied = true;
         descriptor.next = 0;
-        auto ptr = GetHeap()->super_block.base +
-                   old_anchor.head * internal::GetPageSize();
+        auto ptr =
+            reinterpret_cast<std::byte*>(GetHeap()->super_block.address) +
+            old_anchor.head * internal::GetPageSize();
         return reinterpret_cast<std::byte*>(ptr);
       }
     }
@@ -82,8 +83,7 @@ public:
       return cpp::fail(Error::InvalidInput);
 
     auto distance =
-        reinterpret_cast<std::uintptr_t>(p) -
-        reinterpret_cast<std::uintptr_t>(GetHeap()->super_block.base);
+        reinterpret_cast<std::uintptr_t>(p) - GetHeap()->super_block.address;
 
     std::size_t index = distance / internal::GetPageSize();
     GetHeap()->descriptors[index].occupied = false;
@@ -170,7 +170,7 @@ private:
       return cpp::fail(Error::OutOfMemory);
 
     auto heap_va_range = heap_va_range_or.value();
-    Heap* heap = reinterpret_cast<Heap*>(heap_va_range.base);
+    Heap* heap = reinterpret_cast<Heap*>(heap_va_range.address);
     heap->super_block = sb_va_range_or.value();
     for (auto i = 0u; i < kLimit; ++i) {
       Descriptor& descriptor = heap->descriptors[i];
@@ -190,7 +190,7 @@ private:
     if (!heap_.has_value())
       return nullptr;
 
-    return reinterpret_cast<Heap*>(heap_->base);
+    return reinterpret_cast<Heap*>(heap_->address);
   }
 
   std::atomic<Anchor> anchor_ = {};
