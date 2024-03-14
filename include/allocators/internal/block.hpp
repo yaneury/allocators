@@ -39,9 +39,9 @@ struct BlockHeader {
   // Cast |allocation| to |BlockHeader*|.
   static inline BlockHeader* Create(VirtualAddressRange allocation,
                                     BlockHeader* next = nullptr) {
-    assert(allocation.base != nullptr && allocation.pages != 0);
+    assert(allocation.address != 0 && allocation.count != 0);
 
-    BlockHeader* header = reinterpret_cast<BlockHeader*>(allocation.base);
+    BlockHeader* header = reinterpret_cast<BlockHeader*>(allocation.address);
     header->size = allocation.GetSize();
     header->next = next;
     return header;

@@ -152,7 +152,9 @@ private:
   }
 
   internal::VirtualAddressRange CreateAllocation(std::byte* base) {
-    return internal::VirtualAddressRange(base, GetAlignedSize());
+    return internal::VirtualAddressRange{
+        .address = reinterpret_cast<std::uint64_t>(base),
+        .count = GetAlignedSize()};
   }
 
   Result<internal::BlockHeader*>
@@ -162,8 +164,9 @@ private:
     if (base_or.has_error())
       return cpp::fail(base_or.error());
 
-    auto allocation =
-        internal::VirtualAddressRange(base_or.value(), GetAlignedSize());
+    auto allocation = internal::VirtualAddressRange{
+        .address = reinterpret_cast<std::uint64_t>(base_or.value()),
+        .count = GetAlignedSize()};
     return internal::BlockHeader::Create(allocation, next);
   }
 

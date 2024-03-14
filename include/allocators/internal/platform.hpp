@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <cstdint>
 #include <cstdlib>
 
 #include <allocators/internal/failure.hpp>
@@ -15,19 +15,13 @@ constexpr inline std::size_t GetPageSize();
 // to be page aligned. The total size of allocated memory is determined by
 // multiplying GetPageSize() with |pages|.
 struct VirtualAddressRange {
-  std::byte* base = nullptr;
-  std::size_t pages = 0;
+  static constexpr std::size_t kMaxPageCount = (1 << 16) - 1;
 
-  VirtualAddressRange() : base(nullptr), pages(0){};
-
-  constexpr explicit VirtualAddressRange(std::byte* base, std::size_t pages)
-      : base(base), pages(pages) {
-    // This should never happen.
-    assert(base != nullptr && pages != 0);
-  }
+  std::uint64_t address : 48;
+  std::uint64_t count : 16;
 
   [[nodiscard]] constexpr std::size_t GetSize() const {
-    return pages * GetPageSize();
+    return count * GetPageSize();
   }
 };
 
@@ -71,12 +65,14 @@ inline Failable<VirtualAddressRange> FetchPages(std::size_t count) {
   if (ptr == MAP_FAILED)
     return cpp::fail(Failure::AllocationFailed);
 
-  return VirtualAddressRange(static_cast<std::byte*>(ptr), size);
+  return VirtualAddressRange{.address = reinterpret_cast<std::uint64_t>(ptr),
+                             .count = count};
 }
 
 inline Failable<void> ReturnPages(VirtualAddressRange allocation) {
+  void* address = reinterpret_cast<void*>(allocation.address);
   // TODO: Log platform error
-  if (auto result = munmap(allocation.base, allocation.GetSize()); result != 0)
+  if (auto result = munmap(address, allocation.GetSize()); result != 0)
     return cpp::fail(Failure::ReleaseFailed);
 
   return {};
