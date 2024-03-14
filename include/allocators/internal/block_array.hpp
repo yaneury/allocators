@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
+#include <optional>
 #include <utility>
 
 #include <allocators/internal/util.hpp>
@@ -54,6 +56,18 @@ public:
     }
 
     return false;
+  }
+
+  std::optional<T> Remove(std::function<bool(const T&)> predicate) {
+    for (auto i = 0; i < header.size; ++i) {
+      if (predicate(entries[i])) {
+        if (i != header.size - 1)
+          std::swap(entries[i], entries[header.size - 1]);
+        return PopBackUnchecked();
+      }
+    }
+
+    return std::nullopt;
   }
 
   void SetNext(std::uintptr_t next) { header.next = next; }
