@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <allocators/common/error.hpp>
+#include <allocators/internal/block_array.hpp>
 #include <allocators/internal/util.hpp>
 
 namespace allocators::provider {
@@ -35,7 +36,7 @@ public:
     auto va_range = va_range_or.value();
     head_->PushBackUnchecked(va_range);
 
-    return reinterpret_cast<std::byte*>(va_range.base);
+    return reinterpret_cast<std::byte*>(va_range.address);
   }
 
   Result<void> Return(std::byte* bytes) {
@@ -52,14 +53,16 @@ public:
       if (auto value_or = itr->Remove(predicate); value_or.has_value()) {
         (void)internal::ReturnPages(
             value_or.value()); // TODO: Don't ignore error
-        return;
+        return {};
       }
     }
 
     return cpp::fail(Error::InvalidInput);
   }
 
-  constexpr std::size_t GetBlockSize() const { return internal::GetPageSize(); }
+  static constexpr std::size_t GetBlockSize() {
+    return internal::GetPageSize();
+  }
 
 private:
   using BlockArray =
@@ -76,12 +79,10 @@ private:
 
     auto va_range = va_range_or.value();
 
-    BlockArray* new_block_array =
-        internal::AsBlockArrayPtr<GetBlockSize(),
-                                  internal::VirtualAddressRange>(va_range.base);
+    BlockArray* new_block_array = internal::AsBlockArrayPtr<
+        GetBlockSize(), internal::VirtualAddressRange>(va_range.address);
 
-    if (head_ != nullptr)
-      new_block_array->next = head_;
+    new_block_array->next = head_;
     head_ = new_block_array;
   }
 
