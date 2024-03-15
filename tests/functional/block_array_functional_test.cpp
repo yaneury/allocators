@@ -7,6 +7,8 @@
 
 #include <allocators/internal/block_array.hpp>
 
+#include "../util.hpp"
+
 using namespace allocators::internal;
 
 constexpr std::size_t kBlockSize = 4096;
@@ -100,7 +102,7 @@ TEST_CASE("BlockArray returns pointer to next block after using |SetNext|",
   TypedBlockArray* block_as_array =
       AsBlockArrayPtr<kBlockSize, std::uint64_t>(block_as_bytes);
 
-  block_as_array->SetNext(reinterpret_cast<std::uintptr_t>(block_as_array));
+  block_as_array->SetNext(AsBytePtr(block_as_array));
 
   REQUIRE(block_as_array->GetNext() == block_as_array);
 }

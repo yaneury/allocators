@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #ifdef ALLOCATORS_DEBUG
 
 #include <plog/Log.h>
@@ -67,6 +69,14 @@ template <class T> T* PtrAdd(T* ptr, std::size_t offset) {
 template <class T> T* PtrSubtract(T* ptr, std::size_t offset) {
   auto addr = reinterpret_cast<std::size_t>(ptr);
   return reinterpret_cast<T*>(addr - offset);
+}
+
+template <std::integral T> std::byte* ToBytePtr(T ptr) {
+  return reinterpret_cast<std::byte*>(ptr);
+}
+
+template <std::integral T> T FromBytePtr(std::byte* ptr) {
+  return reinterpret_cast<T>(ptr);
 }
 
 } // namespace allocators::internal
