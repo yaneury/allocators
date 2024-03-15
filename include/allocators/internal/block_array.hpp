@@ -12,7 +12,7 @@ namespace allocators::internal {
 
 struct BlockArrayHeader {
   std::size_t size;
-  std::uintptr_t next;
+  std::byte* next;
 };
 
 template <std::size_t Size, class T> class BlockArray {
@@ -58,7 +58,7 @@ public:
     return false;
   }
 
-  std::optional<T> Remove(std::function<bool(const T&)> predicate) {
+  std::optional<T> RemoveIf(std::function<bool(const T&)> predicate) {
     for (auto i = 0; i < header.size; ++i) {
       if (predicate(entries[i])) {
         if (i != header.size - 1)
@@ -70,7 +70,7 @@ public:
     return std::nullopt;
   }
 
-  void SetNext(std::uintptr_t next) { header.next = next; }
+  void SetNext(std::byte* next) { header.next = next; }
 
 private:
   static constexpr std::size_t kCapacity =

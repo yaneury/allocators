@@ -36,21 +36,21 @@ public:
     auto va_range = va_range_or.value();
     head_->PushBackUnchecked(va_range);
 
-    return reinterpret_cast<std::byte*>(va_range.address);
+    return internal::ToBytePtr(va_range.address);
   }
 
   Result<void> Return(std::byte* bytes) {
     if (bytes == nullptr) [[unlikely]]
       return cpp::fail(Error::InvalidInput);
 
-    std::uint64_t address = reinterpret_cast<std::uint64_t>(bytes);
-    auto predicate = [&](const auto& va_range) {
-      return va_range.base == address;
+    auto address = internal::FromBytePtr<std::uint64_t>(bytes);
+    auto predicate = [&](const auto& va_range) -> bool {
+      return va_range.address == address;
     };
 
     BlockArray* itr = head_;
     while (itr != nullptr) {
-      if (auto value_or = itr->Remove(predicate); value_or.has_value()) {
+      if (auto value_or = itr->RemoveIf(predicate); value_or.has_value()) {
         (void)internal::ReturnPages(
             value_or.value()); // TODO: Don't ignore error
         return {};
@@ -79,11 +79,15 @@ private:
 
     auto va_range = va_range_or.value();
 
-    BlockArray* new_block_array = internal::AsBlockArrayPtr<
-        GetBlockSize(), internal::VirtualAddressRange>(va_range.address);
+    BlockArray* new_block_array =
+        internal::AsBlockArrayPtr<GetBlockSize(),
+                                  internal::VirtualAddressRange>(
+            internal::ToBytePtr(va_range.address));
 
-    new_block_array->next = head_;
+    new_block_array->SetNext(reinterpret_cast<std::byte*>(head_));
     head_ = new_block_array;
+
+    return {};
   }
 
   BlockArray* head_ = nullptr;

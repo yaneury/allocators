@@ -32,7 +32,12 @@ template <class T> inline T GetValueOrFail(Result<T> result) {
 }
 
 template <class T> inline T* GetPtrOrFail(Result<std::byte*> result) {
-  return FromBytePtr<T>(GetValueOrFail(result));
+  if (!result.has_value())
+    UNSCOPED_INFO(
+        "Result failed with: " << magic_enum::enum_name(result.error()));
+
+  REQUIRE(result.has_value());
+  return reinterpret_cast<T*>((result.value()));
 }
 
 inline constexpr std::size_t SizeWithHeader(std::size_t sz) {
