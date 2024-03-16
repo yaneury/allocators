@@ -16,17 +16,14 @@ namespace allocators::provider {
 
 // Parameters for LockFreePage class defined below.
 struct LockFreePageParams {
-  // Default limit is set to 1GB (1 << 30) of VA range
-  // divided by system page size.
-  static constexpr std::size_t kDefaultLimit =
-      (1 << 30) / internal::GetPageSize() - 1;
+  static constexpr std::uint64_t kDefaultLimit = (1 << 18) - 1;
 
   // Max number of pages that Provider will create. This is a strict limit.
   // No more than this number of pages will be supported.
   // Defaults to |kDefaultLimit| / |internal, which is roughly: 1GB /
   // GetPageSize().
-  template <std::size_t R>
-  struct LimitT : std::integral_constant<std::size_t, R> {};
+  template <std::uint64_t R>
+  struct LimitT : std::integral_constant<std::uint64_t, R> {};
 };
 
 // Provider class that returns page-aligned and page-sized blocks. The page size
@@ -109,8 +106,8 @@ public:
   }
 
 private:
-  static constexpr std::size_t kLimit = 100;
-  // std::max({kDefaultLimit, ntp::optional<LimitT<0>, Args...>::value});
+  static constexpr std::uint64_t kLimit =
+      std::max({kDefaultLimit, ntp::optional<LimitT<0>, Args...>::value});
 
   // A block descriptor is an entry in the linked list of blocks.
   struct Descriptor {

@@ -10,7 +10,7 @@
 
 using namespace allocators;
 
-static constexpr std::size_t kLimit = (1 << 30) / 4096;
+static constexpr std::uint64_t kLimit = (1 << 18) - 1;
 
 using AllocatorUnderTest =
     provider::LockFreePage<provider::LockFreePageParams::LimitT<kLimit>>;
