@@ -23,6 +23,10 @@ struct VirtualAddressRange {
   [[nodiscard]] constexpr std::size_t GetSize() const {
     return count * GetPageSize();
   }
+
+  bool operator==(const VirtualAddressRange& rhs) {
+    return address == rhs.address && count == rhs.count;
+  }
 };
 
 Failable<VirtualAddressRange> FetchPages(std::size_t count);
