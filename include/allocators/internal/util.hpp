@@ -2,7 +2,7 @@
 
 #include <concepts>
 
-#ifdef ALLOCATORS_DEBUG
+#ifdef DEBUG
 
 #include <plog/Log.h>
 
