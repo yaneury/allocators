@@ -8,15 +8,12 @@
 using namespace allocators;
 
 static constexpr std::size_t kPageSize = 4096;
-static constexpr std::size_t kMaxPages = (1 << 30) / kPageSize;
-// static constexpr std::size_t kMaxPages = 100;
+static constexpr std::uint64_t kMaxPages = (1 << 18) - 1;
 
 template <class... Allocator> struct AllocatorPack {};
 
-using AllocatorsUnderTest = AllocatorPack<
-    /* provider::LockFreePage<provider::LockFreePageParams::LimitT<kMaxPages>>,
-     */
-    provider::UnsynchronizedPage<>>;
+using AllocatorsUnderTest =
+    AllocatorPack<provider::LockFreePage<>, provider::UnsynchronizedPage<>>;
 
 TEMPLATE_LIST_TEST_CASE("Page allocator", "[functional][allocator][Page]",
                         AllocatorsUnderTest) {
